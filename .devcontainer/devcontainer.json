@@ -1,0 +1,70 @@
+{
+  "name": "Sobat Pintar Dev Environment",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // Extensions to install inside the container
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Go
+        "golang.go",
+        // TypeScript & Next.js
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        // Database
+        "cweijan.vscode-postgresql-client2",
+        // Docker
+        "ms-azuretools.vscode-docker",
+        // General
+        "eamodio.gitlens",
+        "PKief.material-icon-theme",
+        "christian-kohler.path-intellisense"
+      ],
+      "settings": {
+        // Go settings
+        "go.toolsManagement.autoUpdate": true,
+        "go.useLanguageServer": true,
+        "[go]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "golang.go"
+        },
+        // TypeScript settings
+        "[typescript]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescriptreact]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        // Editor settings
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  // Ports to forward from container to local machine
+  "forwardPorts": [
+    3000,  // Next.js frontend
+    8080,  // Go backend
+    5432,  // PostgreSQL
+    6379   // Redis
+  ],
+
+  "portsAttributes": {
+    "3000": { "label": "Frontend (Next.js)" },
+    "8080": { "label": "Backend (Go API)" },
+    "5432": { "label": "PostgreSQL" },
+    "6379": { "label": "Redis" }
+  },
+
+  // Commands to run after container starts
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "remoteUser": "vscode"
+}

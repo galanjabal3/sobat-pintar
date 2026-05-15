@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id VARCHAR(36) PRIMARY KEY,
+    session_id VARCHAR(36) NOT NULL REFERENCES chat_sessions(id),
+    role VARCHAR(20) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

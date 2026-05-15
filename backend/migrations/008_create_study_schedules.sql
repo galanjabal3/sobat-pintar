@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS study_schedules (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+    subject VARCHAR(100) NOT NULL,
+    exam_date DATE,
+    sessions JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

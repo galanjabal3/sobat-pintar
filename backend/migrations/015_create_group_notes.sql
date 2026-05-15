@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS group_notes (
+    id VARCHAR(36) PRIMARY KEY,
+    group_id VARCHAR(36) NOT NULL REFERENCES study_groups(id),
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

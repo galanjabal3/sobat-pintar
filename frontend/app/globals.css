@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #2DD48F;
+  --secondary: #FACC15;
+  --tertiary: #FFAC5A;
+  --neutral: #717676;
+  --background: #FFFFFF;
+  --surface: #F9FAFB;
+}
+
+body {
+  font-family: var(--font-plus-jakarta-sans);
+  color: #1A1C1E;
+  background-color: var(--background);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-heading;
+  font-weight: 700;
+}
+
+.btn-primary {
+  @apply bg-[#02D48F] text-white font-semibold py-3 px-6 rounded-2xl active:scale-95 transition-transform;
+}
+
+.btn-secondary {
+  @apply bg-[#FACC15] text-[#1A1C1E] font-semibold py-3 px-6 rounded-2xl active:scale-95 transition-transform;
+}
+
+.card-soft {
+  @apply bg-[#F9FAFB] p-4 rounded-2xl shadow-sm border border-gray-100;
+}
+
+.input-field {
+  @apply w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#02D48F] transition-colors;
+}
+
+/* Tab Bar Blur Effect */
+.bottom-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-100 flex justify-around items-center py-2 px-4 z-50;
+}

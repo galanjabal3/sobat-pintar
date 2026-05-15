@@ -1,0 +1,56 @@
+services:
+  # Main dev container — Go + Node environment
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../:/workspace:cached
+      - go-modules:/go/pkg/mod        # Cache Go modules
+      - node-modules:/workspace/frontend/node_modules  # Cache node_modules
+    command: sleep infinity            # Keep container running
+    environment:
+      - GOPATH=/go
+      - GOROOT=/usr/local/go
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - sobat-pintar-network
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sobat_pintar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - sobat-pintar-network
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6380:6379"
+    networks:
+      - sobat-pintar-network
+
+volumes:
+  postgres-data:
+  redis-data:
+  go-modules:
+  node-modules:
+
+networks:
+  sobat-pintar-network:
+    driver: bridge

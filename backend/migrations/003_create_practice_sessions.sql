@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS practice_sessions (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+    subject VARCHAR(100) NOT NULL,
+    difficulty VARCHAR(20) NOT NULL,
+    score INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP WITH TIME ZONE
+);
