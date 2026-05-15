@@ -116,21 +116,25 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-2">
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="bg-white p-1.5 px-4 rounded-full flex items-center gap-2 shadow-xl shadow-black/5 border border-neutral-50"
-            >
-              <Flame size={18} className="text-tertiary fill-tertiary" />
-              <span className="text-sm font-black text-neutral-800">{user?.streak || 0}</span>
-            </motion.div>
+            <Link href="/leaderboard">
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="bg-white p-1.5 px-4 rounded-full flex items-center gap-2 shadow-xl shadow-black/5 border border-neutral-50 cursor-pointer"
+              >
+                <Flame size={18} className="text-tertiary fill-tertiary" />
+                <span className="text-sm font-black text-neutral-800">{user?.streak || 0}</span>
+              </motion.div>
+            </Link>
 
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="bg-white p-1.5 px-4 rounded-full flex items-center gap-2 shadow-xl shadow-black/5 border border-neutral-50"
-            >
-              <Zap size={18} className="text-primary fill-primary" />
-              <span className="text-sm font-black text-neutral-800">{user?.points || 0}</span>
-            </motion.div>
+            <Link href="/leaderboard">
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="bg-white p-1.5 px-4 rounded-full flex items-center gap-2 shadow-xl shadow-black/5 border border-neutral-50 cursor-pointer"
+              >
+                <Zap size={18} className="text-primary fill-primary" />
+                <span className="text-sm font-black text-neutral-800">{user?.points || 0}</span>
+              </motion.div>
+            </Link>
           </div>
         </motion.header>
 
@@ -225,7 +229,7 @@ export default function DashboardPage() {
           repeat: Infinity,
           ease: "easeInOut"
         }}
-        className="fixed -bottom-10 -right-10 w-48 h-48 pointer-events-none opacity-20 grayscale blur-[2px] -z-10"
+        className="fixed bottom-24 -right-8 w-48 h-48 pointer-events-none opacity-20 grayscale blur-[2px] z-0"
       >
         <Image
           src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
