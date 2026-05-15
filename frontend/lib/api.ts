@@ -36,7 +36,7 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem("refresh_token");
+      const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
 
       if (refreshToken) {
         try {
@@ -44,25 +44,37 @@ api.interceptors.response.use(
             refresh_token: refreshToken,
           });
 
-          const { access_token } = response.data;
-          localStorage.setItem("access_token", access_token);
+          // response.data is the BaseResponse from backend
+          const { access_token } = response.data.data;
+          
+          if (typeof window !== "undefined") {
+            localStorage.setItem("access_token", access_token);
+          }
 
           // Update authStore agar state tetap sinkron
           const { useAuthStore } = await import("@/store/authStore");
           const currentState = useAuthStore.getState();
-          if (currentState.user && currentState.refreshToken) {
-            currentState.setAuth(currentState.user, access_token, currentState.refreshToken);
+          if (currentState.user) {
+            currentState.setAuth(currentState.user, access_token, refreshToken);
           }
 
           api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+          originalRequest.headers["Authorization"] = `Bearer ${access_token}`;
           return api(originalRequest);
         } catch (refreshError) {
-          // Redirect to login if refresh fails
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
+          // Refresh gagal, logout
+          const { useAuthStore } = await import("@/store/authStore");
+          useAuthStore.getState().logout();
           if (typeof window !== "undefined") {
             window.location.href = "/login";
           }
+        }
+      } else {
+        // Tidak ada refresh token, langsung logout
+        const { useAuthStore } = await import("@/store/authStore");
+        useAuthStore.getState().logout();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
         }
       }
     }

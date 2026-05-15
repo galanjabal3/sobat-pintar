@@ -119,3 +119,33 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 		},
 	})
 }
+
+func (h *AuthHandler) Refresh(c *gin.Context) {
+	var req dto.RefreshRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Success: false,
+			Message: "Refresh token tidak valid",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	accessToken, err := h.authService.RefreshToken(c.Request.Context(), req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Success: false,
+			Message: "Sesi telah berakhir, silakan login kembali",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Token berhasil diperbarui",
+		Data: dto.RefreshResponse{
+			AccessToken: accessToken,
+		},
+	})
+}

@@ -26,3 +26,11 @@ type UserResponse struct {
 	Points int    `json:"points"`
 	Streak int    `json:"streak"`
 }
+
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type RefreshResponse struct {
+	AccessToken string `json:"access_token"`
+}

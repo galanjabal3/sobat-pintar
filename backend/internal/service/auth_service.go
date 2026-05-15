@@ -17,6 +17,7 @@ type AuthService interface {
 	Register(ctx context.Context, name, email, password, level string) (*model.User, error)
 	Login(ctx context.Context, email, password string) (string, string, *model.User, error)
 	GetProfile(ctx context.Context, userID string) (*model.User, error)
+	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 }
 
 type authService struct {
@@ -116,4 +117,23 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 
 func (s *authService) GetProfile(ctx context.Context, userID string) (*model.User, error) {
 	return s.repo.GetByID(ctx, userID)
+}
+
+func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
+	claims, err := s.jwtService.ValidateToken(refreshToken)
+	if err != nil {
+		return "", errors.New("invalid refresh token")
+	}
+
+	user, err := s.repo.GetByID(ctx, claims.UserID)
+	if err != nil {
+		return "", errors.New("user not found")
+	}
+
+	accessToken, _, err := s.jwtService.GenerateToken(user.ID, user.Level)
+	if err != nil {
+		return "", err
+	}
+
+	return accessToken, nil
 }
