@@ -19,6 +19,7 @@ func RegisterAuthRoutes(rg *gin.RouterGroup, h *handler.AuthHandler) {
 	{
 		auth.POST("/register", h.Register)
 		auth.POST("/login", h.Login)
+		auth.POST("/refresh", h.Refresh)
 	}
 }
 
@@ -71,6 +72,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 			practice.POST("/questions/:id/answer", practiceH.SubmitAnswer)
 			practice.GET("/sessions/:id/result", practiceH.GetResult)
 			practice.GET("/history", practiceH.GetHistory)
+			practice.GET("/progress", practiceH.GetDailyProgress)
 		}
 
 		// Summary routes
