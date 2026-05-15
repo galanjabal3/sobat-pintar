@@ -430,55 +430,13 @@ docs/
 ## Build Order (Phase by Phase)
 
 ```
-Phase 1 — Foundation
-  ✅ Project scaffolding (Go + Next.js)
-  ✅ Docker Compose local setup
-  ✅ Database migrations (users, explanations)
-  ✅ Auth (register, login, JWT refresh)
-  ✅ Gemini client wrapper
-  ✅ Explain feature — text input
-  ✅ Explain feature — image upload
-  ✅ Frontend: Login, Register, Dashboard, Explain pages
-  ✅ Deploy: Railway + Vercel
-
-Phase 2 — Latihan Soal
-  ☐ DB migrations (practice_sessions, questions)
-  ☐ Practice service + Gemini question generator
-  ☐ Practice handler + routes
-  ☐ Frontend: Practice pages + components
-
-Phase 3 — Tanya Sobi
-  ☐ DB migrations (chat_sessions, messages)
-  ☐ Chat service with conversation context
-  ☐ Frontend: Chat page + components
-
-Phase 4 — Rangkum Materi
-  ☐ PDF text extraction
-  ☐ Summary service + Gemini
-  ☐ Cloudflare R2 integration
-  ☐ Frontend: Summary pages
-
-Phase 5 — Jadwal & Reminder
-  ☐ DB migrations (study_schedules, reminders)
-  ☐ Schedule generator service + Gemini
-  ☐ Schedule handler + routes
-  ☐ Push notification setup (Firebase FCM)
-  ☐ Frontend: Schedule pages + reminder components
-
-Phase 6 — Gamification
-  ☐ DB migrations (badges, user_badges, leaderboard)
-  ☐ Points system (earn points per activity)
-  ☐ Streak tracking (daily login + activity)
-  ☐ Badge unlock logic
-  ☐ Leaderboard service
-  ☐ Frontend: Points display, streak card, badge collection, leaderboard page
-
-Phase 7 — Kolaborasi
-  ☐ DB migrations (study_groups, group_members, group_notes)
-  ☐ Study group CRUD
-  ☐ Shared notes service
-  ☐ Group discussion on questions
-  ☐ Frontend: Group pages + shared notes editor
+Phase 1 — Foundation ✅ Done
+Phase 2 — Latihan Soal ✅ Done
+Phase 3 — Tanya Sobi ✅ Done
+Phase 4 — Rangkum Materi ✅ Done
+Phase 5 — Jadwal & Reminder ✅ Done
+Phase 6 — Gamification ✅ Done
+Phase 7 — Kolaborasi ✅ Done
 ```
 
 ---

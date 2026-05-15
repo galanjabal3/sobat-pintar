@@ -11,12 +11,12 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 | Fitur | Deskripsi | Status |
 |---|---|---|
 | 📸 **Jelasin Soal** | Foto atau ketik soal, AI jelaskan sesuai level | ✅ Done |
-| 💬 **Tanya Sobi** | Chat bebas dengan AI tutor | 📋 Planned |
-| 📝 **Latihan Soal** | Soal adaptif yang makin susah sesuai kemampuan | 📋 Planned |
-| 📄 **Rangkum Materi** | Upload buku/PDF, AI buat rangkuman otomatis | 📋 Planned |
-| 🗓️ **Jadwal Belajar** | AI bantu buat jadwal belajar yang realistis | 📋 Planned |
-| 🏆 **Gamification** | Poin, streak harian, badge, leaderboard | 📋 Planned |
-| 👥 **Kolaborasi** | Grup belajar, shared notes, diskusi soal | 📋 Planned |
+| 💬 **Tanya Sobi** | Chat bebas dengan AI tutor | ✅ Done |
+| 📝 **Latihan Soal** | Soal adaptif yang makin susah sesuai kemampuan | ✅ Done |
+| 📄 **Rangkum Materi** | Upload buku/PDF, AI buat rangkuman otomatis | ✅ Done |
+| 🗓️ **Jadwal Belajar** | AI bantu buat jadwal belajar yang realistis | ✅ Done |
+| 🏆 **Gamification** | Poin, streak harian, badge, leaderboard | ✅ Done |
+| 👥 **Kolaborasi** | Grup belajar, shared notes, diskusi soal | ✅ Done |
 
 ---
 
@@ -35,7 +35,7 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 - **PostgreSQL 15** — primary database
 - **Redis 7** — caching & session
 - **Google Gemini 1.5 Flash** — AI engine (free tier)
-- **Cloudflare R2** — file storage (images, PDFs)
+- **Cloudflare R2 + Cloudinary** — file storage (images, PDFs)
 
 ### Frontend
 - **Next.js 14** (App Router)
@@ -181,13 +181,9 @@ PUT  /user/profile    Update profile
 ## 🗺️ Roadmap
 
 ```
-Q2 2026   Phase 1 — Jelasin Soal (MVP)
-Q3 2026   Phase 2 — Latihan Soal Adaptif
-Q3 2026   Phase 3 — Tanya Sobi (AI Chat)
-Q4 2026   Phase 4 — Rangkum Materi
-Q4 2026   Phase 5 — Jadwal & Reminder
-Q1 2027   Phase 6 — Gamification
-Q1 2027   Phase 7 — Kolaborasi Grup
+Q2 2026   Phase 1-7 — Core Features ✅ Complete
+Q3 2026   Phase 8 — Advanced Analytics & Teacher Dashboard
+Q4 2026   Phase 9 — Interactive Live Quiz
 ```
 
 ---

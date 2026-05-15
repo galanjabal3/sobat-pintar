@@ -27,16 +27,39 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - Explanation history — done
 - Frontend UI — done
 - Dev Container (VSCode + Docker) — done
-- PostgreSQL + Redis running — done
-- Login page live at localhost:3000 — done
 
-### Next Focus: Phase 2 — Latihan Soal
-- [ ] DB migrations (practice_sessions, questions tables)
-- [ ] Practice service + Gemini question generator
-- [ ] Practice handler + routes
-- [ ] Frontend: subject selector, question card, answer options
-- [ ] Score + result page
-- [ ] Sobi encouragement after each answer
+### Phase 2 — Latihan Soal ✅ DONE
+- DB migrations (practice_sessions, questions tables) — done
+- Practice service + Gemini question generator — done
+- Practice handler + routes — done
+- Frontend: subject selector, question card, answer options — done
+- Score + result page — done
+- Sobi encouragement after each answer — done
+
+### Phase 3 — Tanya Sobi ✅ DONE
+- DB migrations (chat_sessions, messages) — done
+- Chat service with conversation context — done
+- Frontend: Chat page + messages UI — done
+- Chat history management — done
+
+### Phase 4 — Rangkum Materi ✅ DONE
+- PDF/Text summary service + Gemini — done
+- History and detailed view — done
+- Frontend: Summary upload & result pages — done
+
+### Phase 5 — Jadwal Belajar ✅ DONE
+- AI-generated study schedule logic — done
+- Subject input and exam date management — done
+- Frontend: Schedule generator and view pages — done
+
+### Phase 6 — Gamification ✅ DONE
+- Points system and streak tracking — done
+- Badge unlock logic and leaderboard — done
+- Frontend: Points display, badges, leaderboard UI — done
+
+### Phase 7 — Kolaborasi ✅ DONE
+- Study group CRUD and member management — done
+- Shared notes and discussion (initial version) — done
 
 ---
 
@@ -50,7 +73,7 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 | Database    | PostgreSQL 15                           |
 | Cache       | Redis 7                                 |
 | Auth        | JWT (access + refresh token)            |
-| Storage     | Cloudflare R2 (images, PDFs)            |
+| Storage     | Cloudflare R2 + Cloudinary (images)     |
 | Deploy      | Railway (backend) + Vercel (frontend)   |
 
 ---
@@ -86,89 +109,32 @@ done
 sobat-pintar/
 ├── backend/
 │   ├── cmd/
-│   │   ├── server/main.go              # Entry point — starts HTTP server
-│   │   └── migrate/main.go            # Run DB migrations (up/down)
+│   │   ├── server/main.go              # Entry point
+│   │   └── migrate/main.go            # Run DB migrations
 │   ├── internal/
-│   │   ├── config/
-│   │   │   ├── config.go              # Load & validate env variables
-│   │   │   └── database.go            # DB connection setup
-│   │   ├── middleware/
-│   │   │   ├── auth.go                # JWT authentication middleware
-│   │   │   ├── cors.go                # CORS configuration
-│   │   │   ├── logger.go              # Request logging middleware
-│   │   │   ├── ratelimit.go           # Rate limiting per IP/user
-│   │   │   └── recovery.go            # Panic recovery middleware
-│   │   ├── handler/                   # HTTP handlers per feature
+│   │   ├── handler/                   # HTTP handlers (auth, explain, practice, chat, summary, schedule, gamify, group)
 │   │   ├── service/                   # Business logic
 │   │   ├── repository/                # DB queries
-│   │   ├── model/                     # DB models / structs
+│   │   ├── model/                     # DB models
 │   │   ├── dto/                       # Request/Response DTOs
-│   │   └── router/router.go           # Register all routes + middleware
+│   │   └── router/router.go           # Route registration
 │   ├── pkg/
-│   │   ├── gemini/                    # Gemini API wrapper
-│   │   ├── jwt/                       # JWT generate & validate
+│   │   ├── gemini/                    # Gemini SDK wrapper
+│   │   ├── jwt/                       # JWT logic
 │   │   ├── redis/                     # Redis wrapper
 │   │   ├── storage/                   # Cloudflare R2 wrapper
-│   │   ├── logger/                    # Structured logger (zerolog)
-│   │   └── validator/                 # Request body validation
-│   └── migrations/                    # SQL migration files (001–015)
+│   │   ├── cloudinary/                # Cloudinary wrapper
+│   │   └── logger/                    # Structured logger (zerolog)
+│   └── migrations/                    # SQL files (001–017)
 │
 ├── frontend/
 │   ├── app/
-│   │   ├── (auth)/login/              # Login page
-│   │   ├── (auth)/register/           # Register + level selector
-│   │   └── (app)/                     # Main app with bottom nav
-│   │       ├── dashboard/             # Home dashboard
-│   │       ├── explain/               # Jelasin Soal feature
-│   │       ├── practice/              # Latihan Soal feature
-│   │       ├── chat/                  # Tanya Sobi feature
-│   │       ├── summary/               # Rangkum Materi feature
-│   │       ├── schedule/              # Jadwal Belajar feature
-│   │       ├── leaderboard/           # Leaderboard
-│   │       ├── badges/                # Badge collection
-│   │       ├── groups/                # Study groups
-│   │       └── profile/               # User profile
-│   ├── components/                    # Reusable UI components
-│   ├── lib/                           # API client (lib/api.ts), helpers
-│   └── public/                        # Static assets (Sobi mascot, icons)
-│
-├── docs/                              # Documentation
-├── GEMINI.md                          # This file
-├── CLAUDE.md                          # Claude Code context (same content)
-├── PROJECT_STRUCTURE.md               # Full folder & file blueprint
-├── SETUP.md                           # Setup & running guide
-└── README.md                          # Public documentation
+│   │   ├── (auth)/                    # Login & Register
+│   │   └── (app)/                     # Dashboard, Explain, Practice, Chat, Summary, Schedule, Leaderboard, Badges, Groups, Profile
+│   ├── components/                    # UI components per feature
+│   ├── lib/                           # API client & utils
+│   └── store/                         # Zustand stores (auth, toast)
 ```
-
----
-
-## Coding Conventions
-
-- Commit messages: lowercase with prefix (`feat:`, `fix:`, `refactor:`, `chore:`)
-- Comments and docs: **English**
-- UI text and user-facing strings: **Bahasa Indonesia**
-- Prefer minimal, focused changes over large rewrites
-- Single responsibility per handler/service function
-- Always handle errors explicitly — no silent failures
-- Use structured logging (zerolog)
-
-### Go Naming Pattern
-```go
-// Handler: <Feature>Handler
-// Service: <Feature>Service
-// Repository: <Feature>Repository
-
-type PracticeHandler struct {
-    service PracticeService
-}
-
-func (h *PracticeHandler) StartSession(c *gin.Context) { ... }
-```
-
-### Next.js Conventions
-- App Router only (no Pages Router)
-- Server components by default, client components only when needed
-- All API calls go through `lib/api.ts`, never directly in components
 
 ---
 
@@ -178,28 +144,25 @@ func (h *PracticeHandler) StartSession(c *gin.Context) { ... }
 ```
 POST /api/v1/auth/register
 POST /api/v1/auth/login
-POST /api/v1/auth/refresh
-POST /api/v1/auth/logout
+GET  /api/v1/user/profile
 ```
 
-### Phase 1 — Jelasin Soal (DONE)
+### Jelasin Soal
 ```
 POST   /api/v1/explain
 GET    /api/v1/explain/history
-DELETE /api/v1/explain/:id
 POST   /api/v1/explain/:id/re-explain
 ```
 
-### Phase 2 — Latihan Soal (NEXT)
+### Latihan Soal
 ```
-GET    /api/v1/practice/subjects
 POST   /api/v1/practice/start
-POST   /api/v1/practice/:id/answer
-GET    /api/v1/practice/:id/result
+POST   /api/v1/practice/questions/:id/answer
+GET    /api/v1/practice/sessions/:id/result
 GET    /api/v1/practice/history
 ```
 
-### Phase 3 — Tanya Sobi
+### Tanya Sobi (Chat)
 ```
 POST   /api/v1/chat/sessions
 GET    /api/v1/chat/sessions
@@ -208,144 +171,43 @@ POST   /api/v1/chat/sessions/:id/messages
 DELETE /api/v1/chat/sessions/:id
 ```
 
+### Rangkum Materi (Summary)
+```
+POST   /api/v1/summary
+GET    /api/v1/summary/:id
+GET    /api/v1/summary/history
+```
+
+### Jadwal Belajar (Schedule)
+```
+POST   /api/v1/schedule/generate
+GET    /api/v1/schedule
+```
+
+### Gamification
+```
+GET    /api/v1/gamification/points
+GET    /api/v1/gamification/badges
+GET    /api/v1/gamification/leaderboard
+```
+
+### Collaboration (Groups)
+```
+POST   /api/v1/groups
+GET    /api/v1/groups
+```
+
 ---
 
 ## Design System
 
-### Brand Colors
-```
-Primary    → #02D48F  (Teal — main brand color)
-Secondary  → #FACC15  (Yellow — accent, CTA buttons)
-Tertiary   → #FFAC5A  (Orange — warnings, highlights)
-Neutral    → #717676  (Gray — secondary text)
-Background → #FFFFFF  (White)
-Surface    → #F9FAFB  (Light gray — cards)
-Error      → #EF4444  (Red)
-Success    → #22C55E  (Green)
-```
-
-### Typography
-- Headings: **Poppins**
-- Body: **Plus Jakarta Sans**
-- All UI text in **Bahasa Indonesia**
-- Mobile-first design (375px base)
+- **Primary**: #02D48F (Teal)
+- **Secondary**: #FACC15 (Yellow)
+- **Tertiary**: #FFAC5A (Orange)
+- **Neutral**: #717676 (Gray)
+- **Background**: #FFFFFF (White)
 
 ---
 
 ## Gemini Prompt Templates
-
-### Phase 1 — Jelasin Soal
-```
-Kamu adalah Sobi, teman belajar AI yang friendly dan sabar.
-Jelaskan soal berikut kepada siswa tingkat {level} dengan bahasa yang mudah dipahami.
-Gunakan analogi yang sederhana jika perlu.
-Jangan langsung kasih jawaban — jelaskan konsepnya dulu step by step.
-
-Soal: {question}
-```
-
-### Phase 1 — Re-explain
-```
-Kamu adalah Sobi. Siswa tingkat {level} masih bingung dengan penjelasan sebelumnya.
-Coba jelaskan dengan cara yang BERBEDA — gunakan analogi lain, contoh nyata dalam kehidupan sehari-hari, atau ilustrasi yang lebih sederhana.
-Penjelasan sebelumnya: {previous_explanation}
-Soal: {question}
-```
-
-### Phase 2 — Generate Latihan Soal
-```
-Kamu adalah Sobi. Buatkan {count} soal latihan mata pelajaran {subject} untuk siswa tingkat {level}.
-Tingkat kesulitan: {difficulty} (mudah/sedang/sulit).
-Format response HANYA JSON seperti ini, tanpa teks lain:
-{
-  "questions": [
-    {
-      "question": "teks soal",
-      "options": { "A": "...", "B": "...", "C": "...", "D": "..." },
-      "correct_answer": "A",
-      "explanation": "kenapa jawabannya A"
-    }
-  ]
-}
-```
-
-### Phase 2 — Explain Wrong Answer
-```
-Kamu adalah Sobi yang sabar dan encouraging.
-Siswa tingkat {level} menjawab {user_answer} tapi jawaban benarnya {correct_answer}.
-Jelaskan dengan ramah kenapa jawabannya salah dan bagaimana cara berpikir yang benar.
-Jangan bikin siswa merasa bodoh — semangati mereka.
-Soal: {question}
-```
-
-### Phase 3 — Tanya Sobi (Chat)
-```
-Kamu adalah Sobi, teman belajar AI yang friendly, sabar, dan selalu semangat.
-Kamu sedang ngobrol dengan siswa tingkat {level}.
-Jawab pertanyaan mereka dengan bahasa yang sesuai usia mereka.
-Kalau mereka nanya di luar pelajaran, tetap ramah tapi arahkan balik ke topik belajar.
-Riwayat chat sebelumnya: {chat_history}
-```
-
----
-
-## Environment Variables
-
-### Backend (.env)
-```env
-APP_PORT=8080
-APP_ENV=development
-
-DB_HOST=postgres
-DB_PORT=5432
-DB_NAME=sobat_pintar
-DB_USER=postgres
-DB_PASSWORD=postgres123
-
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_PASSWORD=
-
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-1.5-flash
-
-JWT_SECRET=sobat-pintar-secret-2026
-JWT_ACCESS_TTL=15m
-JWT_REFRESH_TTL=7d
-
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY=
-R2_SECRET_KEY=
-R2_BUCKET=sobat-pintar
-```
-
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
-NEXT_PUBLIC_APP_NAME=Sobat Pintar
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
----
-
-## Key Dependencies
-
-### Backend (go.mod)
-```
-github.com/gin-gonic/gin
-github.com/golang-jwt/jwt/v5
-github.com/jackc/pgx/v5
-github.com/redis/go-redis/v9
-github.com/google/generative-ai-go
-github.com/rs/zerolog
-github.com/joho/godotenv
-github.com/go-playground/validator
-golang.org/x/crypto
-```
-
-### Frontend (package.json)
-```
-next@14, react@18, tailwindcss
-zustand, axios, react-hook-form, zod
-lucide-react, @radix-ui/react-*, framer-motion
-```
+(See backend/pkg/gemini for implementation details)
