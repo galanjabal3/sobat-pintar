@@ -123,3 +123,23 @@ func (h *PracticeHandler) GetHistory(c *gin.Context) {
 		Data:    res,
 	})
 }
+
+func (h *PracticeHandler) GetDailyProgress(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	count, err := h.service.GetDailyProgress(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Success: false,
+			Message: "Gagal mengambil progress harian",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Progress harian berhasil diambil",
+		Data:    gin.H{"count": count},
+	})
+}

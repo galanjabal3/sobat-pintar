@@ -18,6 +18,7 @@ type PracticeService interface {
 	SubmitAnswer(ctx context.Context, userID string, req dto.SubmitAnswerRequest) (*dto.SubmitAnswerResponse, error)
 	GetResult(ctx context.Context, userID, sessionID string) (*dto.PracticeResultResponse, error)
 	GetHistory(ctx context.Context, userID string) ([]*model.PracticeSession, error)
+	GetDailyProgress(ctx context.Context, userID string) (int, error)
 }
 
 func (s *practiceService) GetHistory(ctx context.Context, userID string) ([]*model.PracticeSession, error) {
@@ -167,4 +168,8 @@ func (s *practiceService) GetResult(ctx context.Context, userID, sessionID strin
 		CorrectAnswers: correctCount,
 		Questions:      questions,
 	}, nil
+}
+
+func (s *practiceService) GetDailyProgress(ctx context.Context, userID string) (int, error) {
+	return s.repo.CountQuestionsAnsweredToday(ctx, userID)
 }

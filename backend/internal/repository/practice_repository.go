@@ -17,6 +17,7 @@ type PracticeRepository interface {
 	GetQuestionByID(ctx context.Context, questionID string) (*model.Question, error)
 	UpdateQuestionAnswer(ctx context.Context, questionID string, userAnswer string, isCorrect bool) error
 	CompleteSession(ctx context.Context, sessionID string, score int) error
+	CountQuestionsAnsweredToday(ctx context.Context, userID string) (int, error)
 }
 
 func (r *practiceRepository) GetHistoryByUserID(ctx context.Context, userID string) ([]*model.PracticeSession, error) {
@@ -133,4 +134,21 @@ func (r *practiceRepository) CompleteSession(ctx context.Context, sessionID stri
 	query := `UPDATE practice_sessions SET score = $1, completed_at = NOW() WHERE id = $2`
 	_, err := r.db.Exec(ctx, query, score, sessionID)
 	return err
+}
+
+func (r *practiceRepository) CountQuestionsAnsweredToday(ctx context.Context, userID string) (int, error) {
+	query := `
+		SELECT COUNT(q.id)
+		FROM questions q
+		JOIN practice_sessions ps ON q.session_id = ps.id
+		WHERE ps.user_id = $1
+		  AND q.user_answer IS NOT NULL
+		  AND DATE(ps.created_at) = CURRENT_DATE
+	`
+	var count int
+	err := r.db.QueryRow(ctx, query, userID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
