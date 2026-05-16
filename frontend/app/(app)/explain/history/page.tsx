@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, MessageSquare } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import api from "@/lib/api";
 import { useToastStore } from "@/store/toastStore";
 
@@ -54,8 +55,13 @@ export default function ExplainHistoryPage() {
           ))}
         </div>
       ) : history.length === 0 ? (
-        <div className="bg-white p-12 rounded-[2.5rem] text-center border-2 border-dashed border-gray-100 shadow-sm">
-          <p className="text-neutral-400 text-sm font-medium">Belum ada riwayat pertanyaan</p>
+        <div className="py-10">
+          <EmptyState 
+            title="Belum Ada Pertanyaan"
+            description="Ada soal yang bikin bingung? Foto atau ketik soalnya, Sobi siap bantu jelasin!"
+            actionLabel="Tanya Sobi Sekarang"
+            onAction={() => router.push("/explain")}
+          />
         </div>
       ) : (
         <div className="space-y-4">

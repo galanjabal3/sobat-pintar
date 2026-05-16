@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Trophy, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import api from "@/lib/api";
 import { useToastStore } from "@/store/toastStore";
 import { format } from "date-fns";
@@ -50,9 +51,13 @@ export default function PracticeHistoryPage() {
       {isLoading ? (
         <div className="text-center py-20 text-neutral-400">Memuat riwayat...</div>
       ) : history.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-[2rem] border border-gray-100">
-          <p className="text-neutral-500 font-medium">Belum ada riwayat latihan.</p>
-          <Button onClick={() => router.push("/practice")} className="mt-4">Mulai Latihan!</Button>
+        <div className="py-10">
+          <EmptyState 
+            title="Belum Ada Latihan"
+            description="Ayo mulai latihan pertamamu bersama Sobi dan kumpulkan poinnya!"
+            actionLabel="Mulai Latihan Sekarang"
+            onAction={() => router.push("/practice")}
+          />
         </div>
       ) : (
         <div className="space-y-4">

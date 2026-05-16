@@ -5,6 +5,7 @@
  import { cn } from "@/lib/utils";
  import { motion } from "framer-motion";
  import { Sparkles, Heart } from "lucide-react";
+ import { SOBI_ASSETS } from "@/lib/assets";
  
  interface SobiEncouragementProps {
    message?: string;
@@ -35,11 +36,11 @@
          className="w-20 h-20 relative shrink-0 z-10"
        >
          <Image
-           src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+           src={isCorrect ? SOBI_ASSETS.WAVING : SOBI_ASSETS.SAD}
            alt="Sobi Mascot"
            fill
            unoptimized
-           className="object-contain"
+           className="object-contain drop-shadow-lg"
          />
        </motion.div>
  

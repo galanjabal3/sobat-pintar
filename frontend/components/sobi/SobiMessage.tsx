@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { SOBI_ASSETS } from "@/lib/assets";
 
 interface SobiMessageProps {
   message: string;
@@ -15,7 +16,7 @@ export default function SobiMessage({ message, isSobi = true }: SobiMessageProps
       {isSobi && (
         <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0 border border-primary/20">
           <Image
-            src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+            src={SOBI_ASSETS.DEFAULT}
             alt="Sobi"
             width={32}
             height={32}

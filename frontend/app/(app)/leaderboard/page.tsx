@@ -4,9 +4,11 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Trophy, Medal, Flame, Crown, Star, ArrowUpRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { EmptyState } from "@/components/ui/EmptyState";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { SOBI_ASSETS } from "@/lib/assets";
 
 interface LeaderboardEntry {
   user_name: string;
@@ -186,8 +188,11 @@ export default function LeaderboardPage() {
                   </motion.div>
                 ))
               ) : (
-                <div className="text-center py-10 bg-white/50 backdrop-blur-md rounded-[2.5rem] border-2 border-dashed border-gray-100">
-                   <p className="text-xs text-neutral-400 font-bold tracking-widest uppercase">Belum ada peringkat lainnya</p>
+                <div className="py-8">
+                  <EmptyState 
+                    title="Belum Ada Pesaing"
+                    description="Jadilah yang pertama untuk memimpin papan peringkat!"
+                  />
                 </div>
               )}
             </AnimatePresence>
@@ -212,7 +217,7 @@ export default function LeaderboardPage() {
         className="fixed bottom-24 -right-8 w-48 h-48 pointer-events-none opacity-20 grayscale blur-[2px] z-0"
       >
         <Image
-          src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+          src={SOBI_ASSETS.DEFAULT}
           alt="Sobi BG"
           fill
           className="object-contain"

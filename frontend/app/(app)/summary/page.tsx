@@ -5,6 +5,7 @@
  import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight, BookOpen, FileUp, Flame } from "lucide-react";
  import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useToastStore } from "@/store/toastStore";
 import { useAuthStore } from "@/store/authStore";
 import Image from "next/image";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Modal } from "@/components/ui/Modal";
+import { SOBI_ASSETS } from "@/lib/assets";
 
 interface SummaryHistory {
   id: string;
@@ -228,17 +230,13 @@ export default function SummaryPage() {
                  </motion.div>
                ))
              ) : (
-               <motion.div 
-                 initial={{ opacity: 0 }}
-                 animate={{ opacity: 1 }}
-                 className="py-20 text-center"
-               >
-                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                   <BookOpen size={32} className="text-neutral-200" />
-                 </div>
-                 <p className="text-neutral-400 font-bold text-sm">Belum ada rangkuman.</p>
-                 <p className="text-neutral-300 text-xs mt-1">Ayo rangkum materi belajarmu!</p>
-               </motion.div>
+                <div className="py-10">
+                  <EmptyState 
+                    title="Belum Ada Rangkuman"
+                    description="Ayo rangkum materi belajarmu biar belajarnya makin cepat dan efisien!"
+                    imageSrc={SOBI_ASSETS.TEACHER}
+                  />
+                </div>
              )}
            </AnimatePresence>
          </div>

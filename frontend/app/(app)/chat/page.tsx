@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, MessageCircle, Plus, Search, Sparkles, Clock, Trash2, ArrowRight, Flame } from "lucide-react";
 import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useToastStore } from "@/store/toastStore";
 import { useAuthStore } from "@/store/authStore";
 import Image from "next/image";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Modal } from "@/components/ui/Modal";
+import { SOBI_ASSETS } from "@/lib/assets";
 
 interface ChatSession {
   id: string;
@@ -163,9 +165,9 @@ export default function ChatPage() {
             </motion.button>
           </div>
           
-          <div className="absolute -bottom-4 -right-4 w-40 h-40 opacity-10 grayscale group-hover:grayscale-0 transition-all pointer-events-none">
+          <div className="absolute -bottom-2 -right-4 w-40 h-40 transition-all pointer-events-none drop-shadow-2xl">
             <Image
-              src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+              src={SOBI_ASSETS.WAVING}
               alt="Sobi Mascot"
               fill
               className="object-contain"
@@ -233,17 +235,15 @@ export default function ChatPage() {
                 </motion.div>
               ))
             ) : (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="py-20 text-center"
-              >
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <MessageCircle size={32} className="text-neutral-200" />
-                </div>
-                <p className="text-neutral-400 font-bold text-sm">Belum ada obrolan.</p>
-                <p className="text-neutral-300 text-xs mt-1">Ayo mulai tanya Sobi sekarang!</p>
-              </motion.div>
+              <div className="py-10">
+                <EmptyState 
+                  title="Belum Ada Obrolan"
+                  description="Ayo mulai sesi chat barumu dan tanya Sobi sekarang!"
+                  actionLabel="Mulai Chat Baru"
+                  onAction={handleCreateSession}
+                />
+              </div>
+
             )}
           </AnimatePresence>
         </div>

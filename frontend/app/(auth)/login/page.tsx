@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
+import { SOBI_ASSETS } from "@/lib/assets";
 
 const loginSchema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -78,15 +79,15 @@ export default function LoginPage() {
         <ChevronLeft size={28} />
       </Link>
 
-      <div className="mb-12 flex flex-col items-center">
-        <div className="w-32 h-32 relative mb-6">
+      <div className="mb-8 flex flex-col items-center">
+        <div className="w-48 h-48 sm:w-56 sm:h-56 relative mb-4">
           <Image
-            src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+            src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
             fill
             priority
-            sizes="128px"
-            className="object-contain"
+            sizes="(max-width: 640px) 192px, 224px"
+            className="object-contain drop-shadow-2xl"
           />
         </div>
         <h1 className="text-3xl font-black text-neutral-800 mb-2">Halo, Sobat!</h1>

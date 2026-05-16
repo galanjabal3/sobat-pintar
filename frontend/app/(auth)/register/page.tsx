@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SOBI_ASSETS } from "@/lib/assets";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter"),
@@ -73,15 +74,15 @@ export default function RegisterPage() {
         <ChevronLeft size={28} />
       </Link>
 
-      <div className="mb-10 flex flex-col items-center">
-        <div className="w-24 h-24 relative mb-4">
+      <div className="mb-6 flex flex-col items-center">
+        <div className="w-40 h-40 sm:w-48 sm:h-48 relative mb-2">
           <Image
-            src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+            src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
             fill
             priority
-            sizes="96px"
-            className="object-contain"
+            sizes="(max-width: 640px) 160px, 192px"
+            className="object-contain drop-shadow-2xl"
           />
         </div>
         <h1 className="text-3xl font-black text-neutral-800 mb-1 text-center">Gabung Sobi</h1>

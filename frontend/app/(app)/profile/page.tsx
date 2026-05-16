@@ -8,6 +8,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { User, Mail, School, Zap, LogOut, ChevronRight, Settings, ShieldCheck, HelpCircle } from "lucide-react";
 import Image from "next/image";
+import { SOBI_ASSETS } from "@/lib/assets";
 import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/utils";
 
@@ -90,7 +91,7 @@ export default function ProfilePage() {
                 <Zap size={20} strokeWidth={2.5} />
               </div>
               <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">Poin Sobi</p>
-              <p className="text-lg font-black text-neutral-800">{user?.points || 1250}</p>
+              <p className="text-lg font-black text-neutral-800">{user?.points || 0}</p>
             </motion.div>
           </Link>
         </div>
@@ -170,7 +171,7 @@ export default function ProfilePage() {
         className="fixed bottom-24 -right-8 w-48 h-48 pointer-events-none opacity-20 grayscale blur-[2px] z-0"
       >
         <Image
-          src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+          src={SOBI_ASSETS.DEFAULT}
           alt="Sobi BG"
           fill
           className="object-contain"

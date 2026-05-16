@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { SOBI_ASSETS } from "@/lib/assets";
 
 export default function DashboardPage() {
   const { user, fetchProfile } = useAuthStore();
@@ -232,7 +233,7 @@ export default function DashboardPage() {
         className="fixed bottom-24 -right-8 w-48 h-48 pointer-events-none opacity-20 grayscale blur-[2px] z-0"
       >
         <Image
-          src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+          src={SOBI_ASSETS.DEFAULT}
           alt="Sobi BG"
           fill
           className="object-contain"

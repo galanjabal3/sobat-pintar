@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
+import { SOBI_ASSETS } from "@/lib/assets";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -63,7 +64,7 @@ export default function SharePage() {
           <div className="absolute -top-6 -left-2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg shadow-black/5 border border-gray-100 overflow-hidden p-1">
             <div className="w-full h-full relative">
               <Image 
-                src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png" 
+                src={SOBI_ASSETS.DEFAULT} 
                 alt="Sobi" 
                 fill 
                 unoptimized 

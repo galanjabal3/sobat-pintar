@@ -11,6 +11,7 @@
  import Link from "next/link";
  import Image from "next/image";
  import { motion, AnimatePresence } from "framer-motion";
+ import { SOBI_ASSETS } from "@/lib/assets";
  
  export default function ExplainPage() {
    const router = useRouter();
@@ -311,13 +312,13 @@
            repeat: Infinity,
            ease: "easeInOut"
          }}
-         className="fixed -bottom-10 -right-10 w-40 h-40 pointer-events-none opacity-20 grayscale blur-[2px]"
+         className="fixed -bottom-10 -right-10 w-40 h-40 pointer-events-none opacity-30 z-0"
        >
          <Image
-           src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+           src={SOBI_ASSETS.IDEA}
            alt="Sobi BG"
            fill
-           className="object-contain"
+           className="object-contain drop-shadow-xl"
            priority
            sizes="160px"
          />

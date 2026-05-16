@@ -8,6 +8,7 @@
  import { useToastStore } from "@/store/toastStore";
  import Image from "next/image";
  import { motion } from "framer-motion";
+ import { SOBI_ASSETS } from "@/lib/assets";
  
  interface PracticeResult {
    session_id: string;
@@ -110,16 +111,16 @@
          initial={{ opacity: 0, scale: 0.5, y: 50 }}
          animate={{ opacity: 1, scale: 1, y: 0 }}
          transition={{ type: "spring", stiffness: 200, damping: 20 }}
-         className="mb-8 relative w-48 h-48"
+         className="mb-6 relative w-64 h-64 sm:w-72 sm:h-72"
        >
          <Image 
-           src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png" 
+           src={SOBI_ASSETS.TROPHY} 
            alt="Sobi Celebration" 
            fill 
            unoptimized 
            priority 
-           className="object-contain" 
-           sizes="192px"
+           className="object-contain drop-shadow-2xl" 
+           sizes="(max-width: 640px) 256px, 288px"
          />
          <motion.div 
            animate={{ rotate: 360 }}

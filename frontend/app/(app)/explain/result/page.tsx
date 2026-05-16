@@ -9,6 +9,7 @@
  import api from "@/lib/api";
  import { useToastStore } from "@/store/toastStore";
  import Image from "next/image";
+ import { SOBI_ASSETS } from "@/lib/assets";
  import ShareModal from "@/components/ui/ShareModal";
  import { motion, AnimatePresence } from "framer-motion";
  
@@ -190,7 +191,7 @@
              <div className="absolute -top-10 left-8 flex items-center gap-3">
                <div className="w-20 h-20 bg-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-primary/20 border-2 border-primary/10 overflow-hidden p-2">
                  <div className="w-full h-full relative">
-                   <Image src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png" alt="Sobi" fill unoptimized priority sizes="80px" className="object-contain" />
+                    <Image src={SOBI_ASSETS.DEFAULT} alt="Sobi" fill unoptimized priority sizes="80px" className="object-contain" />
                  </div>
                </div>
                <div className="bg-primary text-white text-[10px] font-black px-4 py-2 rounded-full shadow-lg shadow-primary/30 uppercase tracking-widest mt-6">

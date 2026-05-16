@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import Image from "next/image";
+import { SOBI_ASSETS } from "@/lib/assets";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
@@ -35,7 +36,7 @@ export default function LandingPage() {
       <div className="flex flex-col items-center mb-10 relative">
         <div className="w-64 h-64 relative mb-4">
           <Image
-            src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+            src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
             fill
             priority

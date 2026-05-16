@@ -7,6 +7,7 @@
  import { motion } from "framer-motion";
  import { useToastStore } from "@/store/toastStore";
  import Image from "next/image";
+ import { SOBI_ASSETS } from "@/lib/assets";
  import { format } from "date-fns";
  import { id as idLocale } from "date-fns/locale";
  
@@ -136,7 +137,7 @@
            >
              <div className="w-12 h-12 relative shrink-0">
                <Image
-                 src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+                 src={SOBI_ASSETS.DEFAULT}
                  alt="Sobi Mascot"
                  fill
                  className="object-contain"

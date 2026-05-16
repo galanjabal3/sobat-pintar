@@ -11,6 +11,7 @@
  import { useToastStore } from "@/store/toastStore";
  import { motion } from "framer-motion";
  import Image from "next/image";
+ import { SOBI_ASSETS } from "@/lib/assets";
  
  const SUBJECTS = [
    { id: "Matematika", icon: <Calculator size={24} />, color: "bg-blue-100 text-blue-600 border-blue-200", desc: "Berhitung jadi seru!" },
@@ -190,7 +191,7 @@
          className="fixed bottom-32 -left-10 w-40 h-40 pointer-events-none opacity-20 grayscale blur-[2px] -z-10"
        >
          <Image
-           src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
+            src={SOBI_ASSETS.DEFAULT}
            alt="Sobi BG"
            fill
            className="object-contain"

@@ -6,6 +6,8 @@
  import { motion } from "framer-motion";
  import { Button } from "@/components/ui/Button";
  import Image from "next/image";
+ import { SOBI_ASSETS } from "@/lib/assets";
+ import { EmptyState } from "@/components/ui/EmptyState";
  
  export default function SchedulePage() {
    const router = useRouter();
@@ -60,14 +62,14 @@
              </Button>
            </div>
            
-           <div className="absolute -bottom-8 -right-8 w-48 h-48 opacity-10 grayscale pointer-events-none">
+           <div className="absolute -bottom-4 -right-4 w-44 h-44 pointer-events-none drop-shadow-2xl">
              <Image
-               src="https://res.cloudinary.com/dzzflhq79/image/upload/v1778706261/image_tyr7o1.png"
-               alt="Sobi BG"
+               src={SOBI_ASSETS.CALENDAR}
+               alt="Sobi Calendar"
                fill
                className="object-contain"
                priority
-               sizes="192px"
+               sizes="176px"
              />
            </div>
          </motion.div>
@@ -83,20 +85,13 @@
              </span>
            </div>
  
-           <motion.div 
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.2 }}
-             className="bg-white border-2 border-primary/5 p-10 rounded-[2.5rem] shadow-xl shadow-primary/5 border-dashed flex flex-col items-center text-center"
-           >
-             <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-neutral-200 mb-6">
-               <Clock size={32} />
-             </div>
-             <h4 className="font-black text-neutral-800 mb-2">Belum ada jadwal</h4>
-             <p className="text-xs text-neutral-400 font-bold max-w-[200px] leading-relaxed">
-               Klik tombol di atas untuk mulai mengatur jadwal belajarmu bareng Sobi!
-             </p>
-           </motion.div>
+           <div className="py-6">
+             <EmptyState
+               title="Belum Ada Jadwal"
+               description="Klik tombol di atas untuk mulai mengatur jadwal belajarmu bareng Sobi!"
+               imageSrc={SOBI_ASSETS.CALENDAR}
+             />
+           </div>
          </div>
  
          {/* Quick Stats/Tips */}
