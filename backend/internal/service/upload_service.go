@@ -31,15 +31,15 @@ func NewUploadService(cfg *config.Config, cloudinary *cloudinary.Client, imageRe
 }
 
 func (s *UploadService) UploadProfileImage(c *gin.Context, file multipart.File, fileHeader *multipart.FileHeader) (*dto.UploadImageResponse, error) {
-	return s.uploadImageInternal(c, file, fileHeader, "profile")
+	return s.uploadImageInternal(c, file, fileHeader, "sobat-pintar/profile")
 }
 
 func (s *UploadService) UploadPostImage(c *gin.Context, file multipart.File, fileHeader *multipart.FileHeader) (*dto.UploadImageResponse, error) {
-	return s.uploadImageInternal(c, file, fileHeader, "posts")
+	return s.uploadImageInternal(c, file, fileHeader, "sobat-pintar/posts")
 }
 
 func (s *UploadService) UploadAttachment(c *gin.Context, file multipart.File, fileHeader *multipart.FileHeader) (*dto.UploadImageResponse, error) {
-	return s.uploadImageInternal(c, file, fileHeader, "attachments")
+	return s.uploadImageInternal(c, file, fileHeader, "sobat-pintar/attachments")
 }
 
 func (s *UploadService) uploadImageInternal(c *gin.Context, file multipart.File, fileHeader *multipart.FileHeader, folder string) (*dto.UploadImageResponse, error) {

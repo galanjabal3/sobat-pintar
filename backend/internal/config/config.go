@@ -32,12 +32,6 @@ type Config struct {
 	JWTAccessTTL  time.Duration
 	JWTRefreshTTL time.Duration
 
-	R2AccountID string
-	R2AccessKey string
-	R2SecretKey string
-	R2Bucket    string
-	R2PublicURL string
-
 	CloudinaryCloudName string
 	CloudinaryAPIKey    string
 	CloudinaryAPISecret string
@@ -71,12 +65,6 @@ func LoadConfig() *Config {
 		JWTAccessTTL:  getDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
 		JWTRefreshTTL: getDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
 
-		R2AccountID: getEnv("R2_ACCOUNT_ID", ""),
-		R2AccessKey: getEnv("R2_ACCESS_KEY", ""),
-		R2SecretKey: getEnv("R2_SECRET_KEY", ""),
-		R2Bucket:    getEnv("R2_BUCKET", "sobat-pintar"),
-		R2PublicURL: getEnv("R2_PUBLIC_URL", ""),
-
 		CloudinaryCloudName: getEnv("CLOUDINARY_CLOUD_NAME", ""),
 		CloudinaryAPIKey:    getEnv("CLOUDINARY_API_KEY", ""),
 		CloudinaryAPISecret: getEnv("CLOUDINARY_API_SECRET", ""),
@@ -99,15 +87,6 @@ func LoadConfig() *Config {
 		logger.Fatal(nil, "DB_PASSWORD is not set")
 	}
 	if cfg.AppEnv == "production" {
-		if cfg.R2AccountID == "" {
-			logger.Fatal(nil, "R2_ACCOUNT_ID is not set")
-		}
-		if cfg.R2AccessKey == "" {
-			logger.Fatal(nil, "R2_ACCESS_KEY is not set")
-		}
-		if cfg.R2SecretKey == "" {
-			logger.Fatal(nil, "R2_SECRET_KEY is not set")
-		}
 		if cfg.CloudinaryCloudName == "" {
 			logger.Fatal(nil, "CLOUDINARY_CLOUD_NAME is not set")
 		}
@@ -118,9 +97,6 @@ func LoadConfig() *Config {
 			logger.Fatal(nil, "CLOUDINARY_API_SECRET is not set")
 		}
 	} else {
-		if cfg.R2AccountID == "" || cfg.R2AccessKey == "" || cfg.R2SecretKey == "" {
-			logger.Info("R2 storage credentials not fully set, cloud storage features will be disabled")
-		}
 		if cfg.CloudinaryCloudName == "" || cfg.CloudinaryAPIKey == "" || cfg.CloudinaryAPISecret == "" {
 			logger.Info("Cloudinary credentials not fully set, cloud image upload features will be disabled")
 		}
