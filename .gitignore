@@ -8,6 +8,7 @@ backend/vendor/
 .next/
 out/
 build/
+*.tsbuildinfo
 
 # Backend binaries
 backend/main

@@ -26,7 +26,7 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - "Jelaskan ulang" flow — done
 - Explanation history — done
 - Frontend UI — done
-- Dev Container (VSCode + Docker) — done
+- Local development setup — done
 
 ### Phase 2 — Latihan Soal ✅ DONE
 - DB migrations (practice_sessions, questions tables) — done
@@ -69,9 +69,9 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 |-------------|-----------------------------------------|
 | Backend     | Go 1.22+ with Gin framework             |
 | Frontend    | Next.js 14 (App Router) + TailwindCSS   |
-| AI          | Google Gemini 1.5 Flash API (free tier) |
-| Database    | PostgreSQL 15                           |
-| Cache       | Redis 7                                 |
+| AI          | Google Gemini API                        |
+| Database    | Supabase PostgreSQL                     |
+| Cache       | Redis 7 (optional local testing)        |
 | Auth        | JWT (access + refresh token)            |
 | Storage     | Cloudflare R2 + Cloudinary (images)     |
 | Deploy      | Railway (backend) + Vercel (frontend)   |
@@ -82,23 +82,20 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 
 - Backend: http://localhost:8080
 - Frontend: http://localhost:3000
-- Dev Container: VSCode + Docker
-- DB: PostgreSQL 15 (host: postgres, port: 5432, db: sobat_pintar, password: postgres123)
-- Cache: Redis 7 (host: redis, port: 6379)
+- Backend: Go server running directly on the local machine
+- DB: Supabase PostgreSQL through `DATABASE_URL`
+- Cache: Redis 7 is optional, default disabled with `REDIS_ENABLED=false`
 
 ### How to Run
 ```bash
 # Backend
-cd /workspace/backend && go run cmd/server/main.go
+cd backend && go run cmd/server/main.go
 
 # Frontend
-cd /workspace/frontend && npm run dev
+cd frontend && npm run dev
 
 # Run migrations
-cd /workspace/backend
-for f in migrations/*.sql; do
-  psql -h postgres -U postgres -d sobat_pintar -f "$f"
-done
+cd backend && go run cmd/migrate/main.go up
 ```
 
 ---
