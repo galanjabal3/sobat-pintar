@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/api/idtoken"
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
 	"sobat-pintar/pkg/jwt"
@@ -16,19 +17,22 @@ import (
 type AuthService interface {
 	Register(ctx context.Context, name, email, password, level string) (*model.User, error)
 	Login(ctx context.Context, email, password string) (string, string, *model.User, error)
+	GoogleLogin(ctx context.Context, idToken string) (string, string, *model.User, error)
 	GetProfile(ctx context.Context, userID string) (*model.User, error)
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 }
 
 type authService struct {
-	repo       repository.UserRepository
-	jwtService *jwt.JWTService
+	repo           repository.UserRepository
+	jwtService     *jwt.JWTService
+	googleClientID string
 }
 
-func NewAuthService(repo repository.UserRepository, jwtService *jwt.JWTService) AuthService {
+func NewAuthService(repo repository.UserRepository, jwtService *jwt.JWTService, googleClientID string) AuthService {
 	return &authService{
-		repo:       repo,
-		jwtService: jwtService,
+		repo:           repo,
+		jwtService:     jwtService,
+		googleClientID: googleClientID,
 	}
 }
 
@@ -47,11 +51,12 @@ func (s *authService) Register(ctx context.Context, name, email, password, level
 		return nil, err
 	}
 
+	hashedPasswordStr := string(hashedPassword)
 	user := &model.User{
 		ID:           uuid.New().String(),
 		Name:         name,
 		Email:        email,
-		PasswordHash: string(hashedPassword),
+		PasswordHash: &hashedPasswordStr,
 		Level:          level,
 		LastActivityAt: time.Now(),
 		CreatedAt:      time.Now(),
@@ -71,7 +76,11 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 		return "", "", nil, errors.New("invalid email or password")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if user.PasswordHash == nil {
+		return "", "", nil, errors.New("this account uses Google Login. Please sign in with Google")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(password))
 	if err != nil {
 		return "", "", nil, errors.New("invalid email or password")
 	}
@@ -81,38 +90,85 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 		return "", "", nil, err
 	}
 
-	// Calculate Streak
+	// Update Streak
+	s.updateStreak(ctx, user)
+
+	return accessToken, refreshToken, user, nil
+}
+
+func (s *authService) GoogleLogin(ctx context.Context, idToken string) (string, string, *model.User, error) {
+	payload, err := idtoken.Validate(ctx, idToken, s.googleClientID)
+	if err != nil {
+		return "", "", nil, errors.New("invalid google token")
+	}
+
+	email := payload.Claims["email"].(string)
+	name := payload.Claims["name"].(string)
+	googleID := payload.Subject
+
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil && !strings.Contains(err.Error(), "no rows") {
+		return "", "", nil, err
+	}
+
+	if user == nil {
+		// Auto-register
+		user = &model.User{
+			ID:             uuid.New().String(),
+			Name:           name,
+			Email:          email,
+			GoogleID:       &googleID,
+			Level:          "SD", // Default level
+			LastActivityAt: time.Now(),
+			CreatedAt:      time.Now(),
+		}
+		err = s.repo.Create(ctx, user)
+		if err != nil {
+			return "", "", nil, err
+		}
+	} else {
+		// Update GoogleID if not set
+		if user.GoogleID == nil {
+			user.GoogleID = &googleID
+			_ = s.repo.Update(ctx, user)
+		}
+	}
+
+	accessToken, refreshToken, err := s.jwtService.GenerateToken(user.ID, user.Level)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	s.updateStreak(ctx, user)
+
+	return accessToken, refreshToken, user, nil
+}
+
+func (s *authService) updateStreak(ctx context.Context, user *model.User) {
 	now := time.Now()
 	lastActivity := user.LastActivityAt
 
-	// Reset time to midnight for day comparison
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	lastDay := time.Date(lastActivity.Year(), lastActivity.Month(), lastActivity.Day(), 0, 0, 0, 0, lastActivity.Location())
 
 	daysDiff := int(today.Sub(lastDay).Hours() / 24)
 
 	if daysDiff == 1 {
-		// Continued streak
 		user.Streak++
 		user.LastActivityAt = now
 		_ = s.repo.Update(ctx, user)
 	} else if daysDiff > 1 {
-		// Streak broken
 		user.Streak = 1
 		user.LastActivityAt = now
 		_ = s.repo.Update(ctx, user)
 	} else if daysDiff == 0 && user.Streak == 0 {
-		// First activity of the day (for new users or if streak was 0)
 		user.Streak = 1
 		user.LastActivityAt = now
 		_ = s.repo.Update(ctx, user)
 	} else {
-		// Already active today, just update last activity time
 		user.LastActivityAt = now
 		_ = s.repo.Update(ctx, user)
 	}
-
-	return accessToken, refreshToken, user, nil
 }
 
 func (s *authService) GetProfile(ctx context.Context, userID string) (*model.User, error) {

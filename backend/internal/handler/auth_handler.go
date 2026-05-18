@@ -149,3 +149,42 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		},
 	})
 }
+
+func (h *AuthHandler) GoogleLogin(c *gin.Context) {
+	var req dto.GoogleLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Success: false,
+			Message: "ID Token tidak valid",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	at, rt, user, err := h.authService.GoogleLogin(c.Request.Context(), req.IDToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Success: false,
+			Message: "Gagal login dengan Google",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Login Google berhasil",
+		Data: dto.AuthResponse{
+			AccessToken:  at,
+			RefreshToken: rt,
+			User: dto.UserResponse{
+				ID:     user.ID,
+				Name:   user.Name,
+				Email:  user.Email,
+				Level:  user.Level,
+				Points: user.Points,
+				Streak: user.Streak,
+			},
+		},
+	})
+}

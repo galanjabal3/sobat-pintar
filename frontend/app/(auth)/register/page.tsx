@@ -1,17 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import Script from "next/script";
 import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+
 import { Button } from "@/components/ui/Button";
 import api from "@/lib/api";
-import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SOBI_ASSETS } from "@/lib/assets";
+import { renderGoogleButton } from "@/lib/googleAuth";
+import { useAuthStore } from "@/store/authStore";
+
+const GOOGLE_REGISTER_BUTTON_ID = "googleRegisterBtn";
+const GOOGLE_BUTTON_WIDTH = 340;
 
 const registerSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter"),
@@ -26,9 +33,12 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
 
   const {
     register,
@@ -45,37 +55,88 @@ export default function RegisterPage() {
 
   const selectedLevel = watch("level");
 
+  const handleGoogleResponse = useCallback(
+    async (response: any) => {
+      setIsLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      try {
+        const res = await api.post("/auth/google", {
+          id_token: response.credential,
+        });
+
+        const { access_token, refresh_token, user } = res.data;
+
+        setAuth(user, access_token, refresh_token);
+        router.push("/dashboard");
+      } catch (err: any) {
+        setError(
+          err.response?.data?.error ||
+            "Google register gagal. Silakan coba lagi."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [router, setAuth]
+  );
+
+  const initializeGoogle = useCallback(() => {
+    const isReady = renderGoogleButton({
+      buttonElementId: GOOGLE_REGISTER_BUTTON_ID,
+      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      callback: handleGoogleResponse,
+      text: "signup_with",
+    });
+
+    setIsGoogleReady(isReady);
+  }, [handleGoogleResponse]);
+
+  useEffect(() => {
+    initializeGoogle();
+  }, [initializeGoogle]);
+
   const onSubmit = async (data: RegisterFormValues) => {
-    console.log("Submitting registration data:", data);
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
+
     try {
-      console.log("Calling API: POST /auth/register");
       await api.post("/auth/register", data);
-      console.log("Registration successful");
+
       setSuccess("Pendaftaran berhasil! Mengalihkan ke halaman masuk...");
+
       setTimeout(() => {
         router.push("/login");
-      }, 2000);
+      }, 1500);
     } catch (err: any) {
-      setError(err.response?.data?.error || "Pendaftaran gagal. Silakan coba lagi.");
+      setError(
+        err.response?.data?.error || "Pendaftaran gagal. Silakan coba lagi."
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen px-8 py-12 bg-white relative">
-      {/* Back Button */}
-      <Link 
-        href="/" 
-        className="absolute top-8 left-6 p-2 text-neutral-400 hover:text-neutral-800 transition-colors"
+    <div className="relative flex min-h-screen flex-col bg-white px-8 py-12">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={initializeGoogle}
+      />
+
+      <Link
+        href="/"
+        className="absolute left-6 top-8 p-2 text-neutral-400 transition-colors hover:text-neutral-800"
+        aria-label="Kembali ke halaman utama"
       >
         <ChevronLeft size={28} />
       </Link>
 
       <div className="mb-6 flex flex-col items-center">
-        <div className="w-40 h-40 sm:w-48 sm:h-48 relative mb-2">
+        <div className="relative mb-2 h-40 w-40 sm:h-48 sm:w-48">
           <Image
             src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
@@ -85,19 +146,30 @@ export default function RegisterPage() {
             className="object-contain drop-shadow-2xl"
           />
         </div>
-        <h1 className="text-3xl font-black text-neutral-800 mb-1 text-center">Gabung Sobi</h1>
-        <p className="text-neutral-400 font-medium text-center">Belajar jadi lebih seru bareng AI</p>
+
+        <h1 className="mb-1 text-center text-3xl font-black text-neutral-800">
+          Gabung Sobi
+        </h1>
+
+        <p className="text-center font-medium text-neutral-400">
+          Belajar jadi lebih seru bareng AI
+        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div>
           <input
             {...register("name")}
+            type="text"
             placeholder="Nama Lengkap"
-            className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-neutral-700 font-medium"
+            autoComplete="name"
+            className="w-full rounded-2xl border border-gray-100 bg-gray-50 p-4 font-medium text-neutral-700 transition-all focus:border-primary focus:outline-none"
           />
+
           {errors.name && (
-            <p className="text-error text-[10px] font-bold mt-1.5 ml-2">{errors.name.message}</p>
+            <p className="ml-2 mt-1.5 text-[10px] font-bold text-error">
+              {errors.name.message}
+            </p>
           )}
         </div>
 
@@ -106,10 +178,14 @@ export default function RegisterPage() {
             {...register("email")}
             type="email"
             placeholder="Email"
-            className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-neutral-700 font-medium"
+            autoComplete="email"
+            className="w-full rounded-2xl border border-gray-100 bg-gray-50 p-4 font-medium text-neutral-700 transition-all focus:border-primary focus:outline-none"
           />
+
           {errors.email && (
-            <p className="text-error text-[10px] font-bold mt-1.5 ml-2">{errors.email.message}</p>
+            <p className="ml-2 mt-1.5 text-[10px] font-bold text-error">
+              {errors.email.message}
+            </p>
           )}
         </div>
 
@@ -118,55 +194,102 @@ export default function RegisterPage() {
             {...register("password")}
             type="password"
             placeholder="Password"
-            className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-neutral-700 font-medium"
+            autoComplete="new-password"
+            className="w-full rounded-2xl border border-gray-100 bg-gray-50 p-4 font-medium text-neutral-700 transition-all focus:border-primary focus:outline-none"
           />
+
           {errors.password && (
-            <p className="text-error text-[10px] font-bold mt-1.5 ml-2">{errors.password.message}</p>
+            <p className="ml-2 mt-1.5 text-[10px] font-bold text-error">
+              {errors.password.message}
+            </p>
           )}
         </div>
 
         <div className="pt-2">
-          <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest mb-3 ml-1">Pilih Jenjang</p>
+          <p className="mb-3 ml-1 text-[10px] font-black uppercase tracking-widest text-neutral-300">
+            Pilih Jenjang
+          </p>
+
           <div className="grid grid-cols-4 gap-2">
-            {["TK", "SD", "SMP", "SMA"].map((level) => (
+            {(["TK", "SD", "SMP", "SMA"] as const).map((level) => (
               <button
                 key={level}
                 type="button"
-                onClick={() => setValue("level", level as any)}
+                onClick={() =>
+                  setValue("level", level, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
                 className={cn(
-                  "py-3 rounded-xl text-xs font-black transition-all border-2",
+                  "rounded-xl border-2 py-3 text-xs font-black transition-all",
                   selectedLevel === level
-                    ? "bg-primary border-primary text-white shadow-md shadow-primary/20"
-                    : "bg-gray-50 border-transparent text-neutral-400 hover:bg-gray-100"
+                    ? "border-primary bg-primary text-white shadow-md shadow-primary/20"
+                    : "border-transparent bg-gray-50 text-neutral-400 hover:bg-gray-100"
                 )}
               >
                 {level}
               </button>
             ))}
           </div>
+
+          {errors.level && (
+            <p className="ml-2 mt-1.5 text-[10px] font-bold text-error">
+              {errors.level.message}
+            </p>
+          )}
         </div>
 
         {error && (
-          <div className="bg-red-50 text-error p-4 rounded-2xl text-xs font-bold border border-red-100">
+          <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-xs font-bold text-error">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="bg-teal-50 text-primary p-4 rounded-2xl text-xs font-bold border border-teal-100">
+          <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4 text-xs font-bold text-primary">
             {success}
           </div>
         )}
 
-        <Button type="submit" className="w-full py-6 h-auto text-lg rounded-2xl shadow-lg shadow-primary/20 mt-4" isLoading={isLoading}>
+        <Button
+          type="submit"
+          className="mt-4 h-auto w-full rounded-2xl py-6 text-lg shadow-lg shadow-primary/20"
+          isLoading={isLoading}
+        >
           Daftar Sekarang
         </Button>
       </form>
 
+      <div className="mt-6 flex flex-col items-center gap-4">
+        <div className="flex w-full items-center gap-4">
+          <div className="h-px flex-1 bg-gray-100" />
+          <span className="text-xs font-bold uppercase tracking-widest text-neutral-300">
+            Atau
+          </span>
+          <div className="h-px flex-1 bg-gray-100" />
+        </div>
+
+        <div className="w-full">
+          {!isGoogleReady && (
+            <div className="flex h-[44px] items-center justify-center">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-primary" />
+            </div>
+          )}
+
+          <div className={isGoogleReady ? "block w-full" : "invisible h-0 w-full"}>
+            <div
+              id={GOOGLE_REGISTER_BUTTON_ID}
+              className="flex min-h-[44px] w-full justify-center"
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="mt-auto pt-10 text-center">
-        <p className="text-neutral-400 text-sm font-medium">
+        <p className="text-sm font-medium text-neutral-400">
           Sudah punya akun?{" "}
-          <Link href="/login" className="text-primary font-black">
+          <Link href="/login" className="font-black text-primary">
             Masuk
           </Link>
         </p>

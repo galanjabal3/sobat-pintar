@@ -6,7 +6,8 @@ type User struct {
 	ID             string    `json:"id"`
 	Name           string    `json:"name"`
 	Email          string    `json:"email"`
-	PasswordHash   string    `json:"-"`
+	PasswordHash   *string   `json:"-"`
+	GoogleID       *string   `json:"-"`
 	Level          string    `json:"level"` // TK, SD, SMP, SMA
 	Points         int       `json:"points"`
 	Streak         int       `json:"streak"`

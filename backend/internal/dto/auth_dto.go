@@ -34,3 +34,7 @@ type RefreshRequest struct {
 type RefreshResponse struct {
 	AccessToken string `json:"access_token"`
 }
+
+type GoogleLoginRequest struct {
+	IDToken string `json:"id_token" binding:"required"`
+}

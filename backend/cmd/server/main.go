@@ -65,7 +65,7 @@ func main() {
 
 	// Initialize app services
 	gamificationService := service.NewGamificationService(gamificationRepo)
-	authService := service.NewAuthService(userRepo, jwtService)
+	authService := service.NewAuthService(userRepo, jwtService, cfg.GoogleClientID)
 	explainService := service.NewExplainService(explainRepo, geminiClient, gamificationService)
 	chatService := service.NewChatService(chatRepo, geminiClient, gamificationService)
 	practiceService := service.NewPracticeService(practiceRepo, userRepo, geminiClient, gamificationService)

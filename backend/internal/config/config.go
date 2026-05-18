@@ -35,6 +35,8 @@ type Config struct {
 	CloudinaryCloudName string
 	CloudinaryAPIKey    string
 	CloudinaryAPISecret string
+
+	GoogleClientID string
 }
 
 func LoadConfig() *Config {
@@ -68,6 +70,8 @@ func LoadConfig() *Config {
 		CloudinaryCloudName: getEnv("CLOUDINARY_CLOUD_NAME", ""),
 		CloudinaryAPIKey:    getEnv("CLOUDINARY_API_KEY", ""),
 		CloudinaryAPISecret: getEnv("CLOUDINARY_API_SECRET", ""),
+
+		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
 	}
 
 	// Validate critical environment variables
