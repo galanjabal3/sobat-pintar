@@ -48,6 +48,8 @@ export function renderGoogleButton({
       },
       auto_select: false,
       cancel_on_tap_outside: true,
+      use_fedcm_for_button: true,
+      button_auto_select: false,
     });
 
     window.__googleAuthInitialized = true;

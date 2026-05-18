@@ -1,6 +1,6 @@
-# Sobat Pintar — CLAUDE.md
+# Sobat Pintar — AGENTS.md
 
-> AI context file for Claude Code / Continue.dev
+> AI context file for Codex / Continue.dev
 > Last updated: May 2026
 
 ---
@@ -58,7 +58,7 @@ VSCode
 ├── testing
 └── git operations
 
-Claude / Antigravity
+Codex / Antigravity
 ├── generate feature
 ├── refactor
 ├── scaffold
@@ -67,12 +67,10 @@ Claude / Antigravity
 
 ### Starter Prompt
 ```
-Read CLAUDE.md first.
+Read AGENTS.md first.
 
 Current status:
-- Local development active
-- Supabase PostgreSQL configured through DATABASE_URL
-- Redis optional for local testing
+- Dev Container active
 - Backend on :8080
 - Frontend on :3000
 

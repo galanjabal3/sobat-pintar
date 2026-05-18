@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,7 +14,12 @@ type Client struct {
 	Redis *redis.Client
 }
 
-func ConnectRedis(host, port, password string) *Client {
+func ConnectRedis(host, port, password string, enabled bool) (*Client, error) {
+	if !enabled {
+		logger.Info("Redis is disabled")
+		return nil, nil
+	}
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", host, port),
 		Password: password,
@@ -25,9 +31,13 @@ func ConnectRedis(host, port, password string) *Client {
 
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
-		logger.Fatal(err, "Failed to connect to redis")
+		closeErr := rdb.Close()
+		if closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+		return nil, fmt.Errorf("failed to connect to redis: %w", err)
 	}
 
 	logger.Info("Successfully connected to redis")
-	return &Client{Redis: rdb}
+	return &Client{Redis: rdb}, nil
 }

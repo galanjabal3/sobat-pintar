@@ -32,9 +32,9 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 
 ### Backend
 - **Go 1.22+** with **Gin** framework
-- **PostgreSQL 15** — primary database
-- **Redis 7** — caching & session
-- **Google Gemini 1.5 Flash** — AI engine (free tier)
+- **Supabase PostgreSQL** — primary database
+- **Redis 7** — optional local cache/session backend
+- **Google Gemini** — AI engine
 - **Cloudflare R2 + Cloudinary** — file storage (images, PDFs)
 
 ### Frontend
@@ -45,7 +45,7 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 ### Infrastructure
 - **Railway** — backend deployment
 - **Vercel** — frontend deployment
-- **Docker** — containerization
+- **Supabase** — managed PostgreSQL
 
 ---
 
@@ -54,8 +54,8 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 ### Prerequisites
 - Go 1.22+
 - Node.js 20+
-- PostgreSQL 15
-- Redis 7
+- Supabase project with PostgreSQL connection string
+- Redis 7 (optional for local testing)
 - Gemini API Key ([get free at Google AI Studio](https://aistudio.google.com))
 
 ### 1. Clone Repository
@@ -72,7 +72,7 @@ cd backend
 
 # Copy env file
 cp .env.example .env
-# Fill in your values in .env
+# Fill DATABASE_URL, GEMINI_API_KEY, and JWT_SECRET in .env
 
 # Install dependencies
 go mod tidy
