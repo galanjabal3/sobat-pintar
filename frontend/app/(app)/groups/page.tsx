@@ -13,10 +13,10 @@ export default function GroupsPage() {
       {/* Premium Background Mesh */}
       <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary/5 to-transparent -z-10" />
       
-      <div className="px-6 pt-12 pb-36 max-w-2xl mx-auto">
+      <div className="px-6 pt-12 pb-20 max-w-2xl mx-auto">
         <header className="flex items-center gap-4 mb-12">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/dashboard")}
             className="p-3 bg-white hover:bg-gray-50 rounded-2xl shadow-xl shadow-primary/5 border border-primary/5 transition-all"
           >
             <ChevronLeft size={24} />

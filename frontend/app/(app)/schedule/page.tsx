@@ -18,7 +18,7 @@
        <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary/5 to-transparent -z-10" />
        <div className="absolute -top-24 -left-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] -z-10" />
  
-       <div className="px-6 pt-12 pb-36 max-w-2xl mx-auto">
+       <div className="px-6 pt-12 pb-20 max-w-2xl mx-auto">
          <motion.header 
            initial={{ opacity: 0, y: -10 }}
            animate={{ opacity: 1, y: 0 }}

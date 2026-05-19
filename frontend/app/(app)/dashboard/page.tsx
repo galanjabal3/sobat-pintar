@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, Sparkles, Trophy, Zap } from "lucide-react";
+import { Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
@@ -12,6 +12,10 @@ import { motion } from "framer-motion";
 export default function DashboardPage() {
   const { user, fetchProfile } = useAuthStore();
   const [dailyProgress, setDailyProgress] = React.useState(0);
+  const hasDailyProgress = dailyProgress > 0;
+  const progressMessage = dailyProgress > 0
+    ? "Wah, hebat! Teruskan belajarnya ya!"
+    : "Mulai satu soal dulu hari ini, yuk!";
 
   React.useEffect(() => {
     fetchProfile();
@@ -34,7 +38,7 @@ export default function DashboardPage() {
   const features = [
     {
       title: "Jelasin Soal",
-      desc: "Foto & tanya soal sulit",
+      desc: "Foto soal, solusi cepat",
       icon: Camera,
       color: "bg-[#E6F9F3]", // Soft Teal
       iconColor: "text-primary",
@@ -42,17 +46,8 @@ export default function DashboardPage() {
       enabled: true,
     },
     {
-      title: "Latihan Soal",
-      desc: "Uji kemampuanmu",
-      icon: BookOpen,
-      color: "bg-[#EEF2FF]", // Soft Indigo
-      iconColor: "text-blue-500",
-      href: "/practice",
-      enabled: true,
-    },
-    {
       title: "Tanya Sobi",
-      desc: "Chat seru bareng AI",
+      desc: "Chat AI seru",
       icon: MessageCircle,
       color: "bg-[#FFFBEB]", // Soft Amber
       iconColor: "text-secondary",
@@ -60,11 +55,20 @@ export default function DashboardPage() {
       enabled: true,
     },
     {
-      title: "Rangkuman",
-      desc: "Buat ringkasan cepat",
-      icon: FileText,
+      title: "Latihan Soal",
+      desc: "Asah otak tiap hari",
+      icon: BookOpen,
       color: "bg-[#FFF7ED]", // Soft Orange
       iconColor: "text-orange-500",
+      href: "/practice",
+      enabled: true,
+    },
+    {
+      title: "Rangkuman",
+      desc: "Intisari materi sekolah",
+      icon: FileText,
+      color: "bg-[#EEF2FF]", // Soft Indigo
+      iconColor: "text-blue-500",
       href: "/summary",
       enabled: true,
     },
@@ -92,69 +96,61 @@ export default function DashboardPage() {
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] -z-10" />
       <div className="absolute top-1/4 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-[80px] -z-10" />
 
-      <div className="px-6 pt-12 pb-16 max-w-2xl mx-auto">
-        <motion.header 
+      <div className="px-6 pt-10 pb-16 max-w-2xl mx-auto">
+        <motion.section
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex justify-between items-center mb-10"
+          className="mb-10 rounded-[2rem] bg-white/85 border border-primary/5 p-4 shadow-xl shadow-primary/5"
         >
-          <div className="flex items-center gap-4">
-            <Link href="/profile" className="relative group" aria-label="Buka profil">
-              <div className="w-12 h-12 bg-[#E6F9F3] rounded-full flex items-center justify-center border-4 border-white shadow-lg overflow-hidden transition-transform group-hover:scale-110">
-                {user?.avatar_url ? (
-                  <Image
-                    src={user.avatar_url}
-                    alt="Foto profil"
-                    width={48}
-                    height={48}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-primary font-black text-lg">
-                    {user?.name?.[0] || "S"}
-                  </div>
-                )}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <Link href="/profile" className="relative group shrink-0" aria-label="Buka profil">
+                <div className="w-12 h-12 bg-[#E6F9F3] rounded-full flex items-center justify-center border-4 border-white shadow-lg overflow-hidden transition-transform group-hover:scale-110">
+                  {user?.avatar_url ? (
+                    <Image
+                      src={user.avatar_url}
+                      alt="Foto profil"
+                      width={48}
+                      height={48}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-primary font-black text-lg">
+                      {user?.name?.[0] || "S"}
+                    </div>
+                  )}
+                </div>
+                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
+              </Link>
+              <div className="min-w-0">
+              <p className="text-[10px] font-black text-primary uppercase tracking-[0.18em]">Sobat Pintar</p>
+              <h1 className="flex items-center gap-1 text-lg font-black text-neutral-800 leading-tight">
+                  <span className="min-[361px]:hidden">Halo!</span>
+                  <span className="hidden min-[361px]:inline truncate">Halo, {user?.name?.split(' ')[0] || "Sobat"}!</span>
+                  <span className="shrink-0 animate-bounce" aria-hidden="true">👋</span>
+                </h1>
               </div>
-              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
-            </Link>
-            <div>
-              <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Sobat Pintar</p>
-              <h1 className="text-xl font-black text-neutral-800 leading-tight">
-                Halo, {user?.name?.split(' ')[0] || "Sobat"}! <span className="inline-block animate-bounce">👋</span>
-              </h1>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Link href="/leaderboard">
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="bg-white p-1.5 px-4 rounded-full flex items-center gap-2 shadow-xl shadow-black/5 border border-neutral-50 cursor-pointer"
-              >
-                <Flame size={18} className="text-tertiary fill-tertiary" />
-                <span className="text-sm font-black text-neutral-800">{user?.streak || 0}</span>
-              </motion.div>
-            </Link>
 
-            <Link href="/leaderboard">
-              <motion.div 
+            <Link href="/leaderboard" className="shrink-0" aria-label="Buka papan peringkat">
+              <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="bg-white p-1.5 px-4 rounded-full flex items-center gap-2 shadow-xl shadow-black/5 border border-neutral-50 cursor-pointer"
+                className="h-11 rounded-2xl bg-secondary px-4 flex items-center justify-center gap-2 shadow-lg shadow-secondary/20 border border-secondary/20"
               >
-                <Zap size={18} className="text-primary fill-primary" />
-                <span className="text-sm font-black text-neutral-800">{user?.points || 0}</span>
+                <Flame size={17} className="text-neutral-900 fill-neutral-900 shrink-0" />
+                <span className="text-sm font-black text-neutral-900">{user?.streak || 0}</span>
               </motion.div>
             </Link>
           </div>
-        </motion.header>
+        </motion.section>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="mb-12"
+          className="mb-10"
         >
-          <h2 className="text-4xl font-black text-neutral-800 leading-[1.1]">
+          <h2 className="text-[2.6rem] sm:text-5xl font-black text-neutral-800 leading-[1.05]">
             Mau belajar <br />
             <span className="text-primary">
               apa hari ini?
@@ -168,58 +164,72 @@ export default function DashboardPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
           whileHover={{ y: -5 }}
-          className="bg-white p-8 rounded-[3rem] mb-12 relative overflow-hidden shadow-2xl shadow-primary/5 border border-neutral-50"
+          className="bg-white p-7 rounded-[2.5rem] mb-10 relative overflow-hidden shadow-2xl shadow-primary/5 border border-neutral-50"
         >
-          <div className="relative z-10">
+          <div className="relative z-10 pr-24 sm:pr-28">
             <div className="flex items-center gap-2 mb-4">
               <Trophy size={16} className="text-secondary" />
               <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Progress Hari Ini</p>
             </div>
             <h3 className="text-3xl font-black text-neutral-800 leading-tight mb-2">
-              {dailyProgress} Soal <br /> <span className="text-primary">Selesai</span>
+              {dailyProgress} Soal <br />
+              <span className="text-primary">{hasDailyProgress ? "Selesai" : "Belum Mulai"}</span>
             </h3>
-            <p className="text-[10px] font-bold text-neutral-400">Wah, hebat! Teruskan belajarnya ya!</p>
+            <p className="text-[10px] font-bold text-neutral-400">{progressMessage}</p>
+            <Link
+              href="/leaderboard"
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary"
+            >
+              <Zap size={13} className="fill-primary" />
+              {user?.points || 0} Poin
+            </Link>
           </div>
           
-          <div className="absolute top-1/2 right-8 -translate-y-1/2">
-            <div className="w-24 h-24 rounded-full bg-primary/5 flex items-center justify-center relative z-10 border-4 border-white shadow-xl">
+          <div className="absolute top-1/2 right-5 sm:right-6 -translate-y-1/2">
+            <div className="w-[72px] h-[72px] sm:w-24 sm:h-24 rounded-full bg-primary/5 flex items-center justify-center relative z-10 border-4 border-white shadow-xl">
               <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-[spin_3s_linear_infinite]" />
-              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                <CheckCircle2 size={32} className="text-white" strokeWidth={3} />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                <CheckCircle2 size={24} className="text-white sm:size-7" strokeWidth={3} />
               </div>
             </div>
           </div>
 
-          {/* Decorative Sparkle */}
-          <div className="absolute top-4 right-4 text-secondary/20">
-            <Sparkles size={40} />
-          </div>
+          <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary/10" />
         </motion.div>
+
+        <div className="mb-5 flex items-center gap-4">
+          <h2 className="shrink-0 text-base font-black text-neutral-800">Apa rencanamu?</h2>
+          <div className="h-px flex-1 bg-neutral-200" />
+          <div className="hidden sm:flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
+            <TrendingUp size={12} />
+            Mulai belajar
+          </div>
+        </div>
 
         {/* Feature Grid */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 gap-6"
+          className="grid grid-cols-2 gap-3 min-[380px]:gap-4 sm:gap-6"
         >
           {features.map((feature, idx) => {
             const Icon = feature.icon;
             return (
-              <motion.div key={feature.title} variants={itemVariants}>
+              <motion.div key={feature.title} variants={itemVariants} className="min-w-0">
                 <Link
                   href={feature.href}
                   className={cn(
-                    "group p-6 rounded-[2.5rem] flex flex-col gap-5 transition-all duration-300 hover:scale-[1.05] active:scale-95 border-4 border-white shadow-xl shadow-primary/5 relative overflow-hidden",
+                    "group min-h-[148px] min-[380px]:min-h-[156px] sm:min-h-[176px] p-4 min-[380px]:p-5 rounded-[1.75rem] sm:rounded-[2rem] flex flex-col justify-between gap-4 min-[380px]:gap-5 transition-all duration-300 hover:scale-[1.03] active:scale-95 border-4 border-white shadow-xl shadow-primary/5 relative overflow-hidden",
                     feature.color
                   )}
                 >
-                  <div className={cn("p-4 rounded-2xl w-fit shadow-lg shadow-black/5 transition-transform group-hover:rotate-12", "bg-white")}>
-                    <Icon size={24} strokeWidth={3} className={feature.iconColor} />
+                  <div className="p-3 min-[380px]:p-4 rounded-2xl w-fit shadow-lg shadow-black/5 transition-transform group-hover:rotate-12 bg-white shrink-0">
+                    <Icon size={20} strokeWidth={3} className={cn("min-[380px]:size-[22px]", feature.iconColor)} />
                   </div>
-                  <div>
-                    <h3 className="font-black text-sm text-neutral-800 mb-1">{feature.title}</h3>
-                    <p className="text-[10px] text-neutral-500 font-bold leading-relaxed opacity-80">{feature.desc}</p>
+                  <div className="min-w-0">
+                    <h3 className="break-words font-black text-sm min-[380px]:text-base text-neutral-800 mb-1 leading-tight">{feature.title}</h3>
+                    <p className="text-[11px] min-[380px]:text-xs text-neutral-500 font-bold leading-relaxed opacity-80">{feature.desc}</p>
                   </div>
                 </Link>
               </motion.div>
