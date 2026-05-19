@@ -87,6 +87,25 @@ func (h *SummaryHandler) GetSummary(c *gin.Context) {
 	})
 }
 
+func (h *SummaryHandler) GetPublicSummary(c *gin.Context) {
+	id := c.Param("id")
+
+	res, err := h.service.GetPublicSummaryByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.ErrorResponse{
+			Success: false,
+			Message: "Rangkuman tidak ditemukan",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Rangkuman berhasil diambil",
+		Data:    res,
+	})
+}
+
 func (h *SummaryHandler) DeleteSummary(c *gin.Context) {
 	userID := c.GetString("user_id")
 	id := c.Param("id")

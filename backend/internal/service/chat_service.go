@@ -35,6 +35,10 @@ func NewChatService(repo repository.ChatRepository, geminiClient *gemini.Client,
 }
 
 func (s *chatService) CreateSession(ctx context.Context, userID string, req dto.CreateChatSessionRequest) (*dto.ChatSessionResponse, error) {
+	if req.Level == "" {
+		req.Level = "SD"
+	}
+
 	session := &model.ChatSession{
 		ID:        uuid.New().String(),
 		UserID:    userID,
@@ -98,6 +102,7 @@ func (s *chatService) GetSessionDetail(ctx context.Context, userID string, sessi
 			Role:      m.Role,
 			Content:   m.Content,
 			CreatedAt: m.CreatedAt,
+			Status:    m.Status,
 		})
 	}
 
@@ -129,6 +134,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		SessionID: sessionID,
 		Role:      "user",
 		Content:   req.Message,
+		Status:    "sent",
 		CreatedAt: time.Now(),
 	}
 	if err := s.repo.CreateMessage(ctx, userMsg); err != nil {
@@ -156,7 +162,24 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 	// 3. Call Gemini
 	aiResponse, err := s.geminiClient.SendChatMessage(ctx, session.Level, history, req.Message)
 	if err != nil {
-		return nil, err
+		failedMsg := &model.Message{
+			ID:        uuid.New().String(),
+			SessionID: sessionID,
+			Role:      "assistant",
+			Content:   "Maaf, Sobi belum bisa menjawab sekarang. Coba kirim lagi sebentar lagi ya.",
+			Status:    "failed",
+			CreatedAt: time.Now(),
+		}
+		if createErr := s.repo.CreateMessage(ctx, failedMsg); createErr != nil {
+			return nil, createErr
+		}
+		return &dto.MessageResponse{
+			ID:        failedMsg.ID,
+			Role:      failedMsg.Role,
+			Content:   failedMsg.Content,
+			CreatedAt: failedMsg.CreatedAt,
+			Status:    failedMsg.Status,
+		}, nil
 	}
 
 	// 4. Save AI response
@@ -165,6 +188,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		SessionID: sessionID,
 		Role:      "assistant",
 		Content:   aiResponse,
+		Status:    "sent",
 		CreatedAt: time.Now(),
 	}
 	if err := s.repo.CreateMessage(ctx, aiMsg); err != nil {
@@ -182,6 +206,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		Role:      aiMsg.Role,
 		Content:   aiMsg.Content,
 		CreatedAt: aiMsg.CreatedAt,
+		Status:    "sent",
 	}, nil
 }
 

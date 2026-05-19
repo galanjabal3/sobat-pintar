@@ -14,6 +14,7 @@ import api from "@/lib/api";
 export default function SharePage() {
   const { id } = useParams();
   const [data, setData] = useState<any>(null);
+  const [type, setType] = useState<"explain" | "summary" | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -22,10 +23,17 @@ export default function SharePage() {
     
     const fetchShared = async () => {
       try {
-        const response = await api.get(`/public/explain/${cleanId}`);
-        setData(response.data);
+        try {
+          const response = await api.get(`/public/explain/${cleanId}`);
+          setData(response.data);
+          setType("explain");
+        } catch {
+          const response = await api.get(`/public/summary/${cleanId}`);
+          setData(response.data);
+          setType("summary");
+        }
       } catch (err) {
-        console.error("Failed to fetch shared explanation", err);
+        console.error("Failed to fetch shared content", err);
       } finally {
         setIsLoading(false);
       }
@@ -34,7 +42,60 @@ export default function SharePage() {
   }, [id]);
 
   if (isLoading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div>;
-  if (!data) return <div className="text-center p-20 text-neutral-500">Penjelasan tidak ditemukan.</div>;
+  if (!data) return <div className="text-center p-20 text-neutral-500">Konten tidak ditemukan.</div>;
+
+  if (type === "summary") {
+    return (
+      <div className="px-6 pt-12 pb-24 max-w-2xl mx-auto">
+        <h1 className="text-xl font-black text-neutral-800 mb-8 text-center">Rangkuman Sobi</h1>
+
+        <div className="bg-white border-2 border-primary/20 rounded-[2.5rem] p-6 relative shadow-sm">
+          <div className="absolute -top-6 -left-2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg shadow-black/5 border border-gray-100 overflow-hidden p-1">
+            <div className="w-full h-full relative">
+              <Image
+                src={SOBI_ASSETS.DEFAULT}
+                alt="Sobi"
+                fill
+                unoptimized
+                priority
+                sizes="56px"
+                className="object-contain"
+              />
+            </div>
+          </div>
+          <div className="pt-6">
+            <p className="text-[10px] font-black text-primary mb-3 uppercase tracking-widest">Rangkuman Sobi</p>
+            <div className="prose prose-sm max-w-none text-neutral-800">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({children}) => <h1 className="text-lg font-bold text-gray-800 mt-3 mb-1">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-base font-bold text-gray-800 mt-3 mb-1">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-sm font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
+                  p: ({children}) => <p className="text-gray-700 mb-2 leading-relaxed">{children}</p>,
+                  strong: ({children}) => <strong className="font-bold text-primary">{children}</strong>,
+                  ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                  ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                  li: ({children}) => <li className="text-gray-700 text-sm">{children}</li>,
+                  hr: () => <div className="my-5 h-px bg-primary/10" />,
+                }}
+              >
+                {data.summary || ""}
+              </ReactMarkdown>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10">
+          <Link href="/">
+            <Button className="w-full py-6 rounded-2xl shadow-lg shadow-primary/30 font-bold">
+              Mau Belajar Lebih Banyak? Daftar Sobat Pintar!
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 pt-12 pb-24 max-w-2xl mx-auto">

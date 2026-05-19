@@ -19,26 +19,26 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#FDFEFF] flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-red-50 to-transparent -z-10" />
-      
-      <div className="w-full max-w-md">
-        <EmptyState
-          type="error"
-          title="Sistem Sedang Sibuk"
-          description="Ups! Ada sedikit masalah saat memuat halaman ini. Sobi sedang berusaha memperbaikinya!"
-          actionLabel="Muat Ulang Halaman"
-          onAction={() => reset()}
-        />
-        
-        <div className="mt-8 text-center">
-           <button 
-             onClick={() => router.push("/dashboard")}
-             className="text-xs font-black uppercase tracking-widest text-neutral-400 hover:text-primary transition-colors"
-           >
-             Kembali ke Beranda
-           </button>
+    <div className="min-h-screen bg-[#FDFEFF] flex items-center justify-center px-6 py-12 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-72 bg-gradient-to-b from-red-50 to-transparent -z-10" />
+
+      <div className="w-full max-w-sm text-center">
+        <div className="scale-90 origin-center">
+          <EmptyState
+            type="error"
+            title="Sistem Sedang Sibuk"
+            description="Ups! Ada sedikit masalah saat memuat halaman ini. Coba muat ulang atau kembali ke beranda."
+            actionLabel="Muat Ulang"
+            onAction={() => reset()}
+          />
         </div>
+
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="mt-2 inline-flex h-12 items-center justify-center px-6 text-xs font-black uppercase tracking-widest text-neutral-500 hover:text-primary transition-colors"
+        >
+          Kembali ke Beranda
+        </button>
       </div>
     </div>
   );

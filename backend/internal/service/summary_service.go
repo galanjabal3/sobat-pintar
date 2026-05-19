@@ -16,6 +16,7 @@ type SummaryService interface {
 	CreateSummary(ctx context.Context, userID, level string, req dto.CreateSummaryRequest) (*dto.SummaryResponse, error)
 	ListHistory(ctx context.Context, userID string) ([]dto.SummaryHistoryResponse, error)
 	GetSummaryByID(ctx context.Context, id, userID string) (*dto.SummaryHistoryResponse, error)
+	GetPublicSummaryByID(ctx context.Context, id string) (*dto.SummaryHistoryResponse, error)
 	DeleteSummary(ctx context.Context, id, userID string) error
 }
 
@@ -98,6 +99,20 @@ func (s *summaryService) GetSummaryByID(ctx context.Context, id, userID string) 
 
 	if summary.UserID != userID {
 		return nil, fmt.Errorf("unauthorized")
+	}
+
+	return &dto.SummaryHistoryResponse{
+		ID:         summary.ID,
+		SourceType: summary.SourceType,
+		Summary:    summary.Summary,
+		CreatedAt:  summary.CreatedAt,
+	}, nil
+}
+
+func (s *summaryService) GetPublicSummaryByID(ctx context.Context, id string) (*dto.SummaryHistoryResponse, error) {
+	summary, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
 	}
 
 	return &dto.SummaryHistoryResponse{
