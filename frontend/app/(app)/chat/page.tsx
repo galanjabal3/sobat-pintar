@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Plus, Sparkles, Clock, Trash2, ArrowRight, Flame } from "lucide-react";
+import { ChevronLeft, Plus, Sparkles, Clock, Trash2, ArrowRight } from "lucide-react";
 import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -110,31 +110,20 @@ export default function ChatPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="bg-white border-2 border-primary/5 p-1.5 px-3 rounded-xl flex items-center gap-1.5 shadow-xl shadow-primary/5">
-                <Flame size={14} className="text-secondary fill-secondary" />
-                <span className="text-[11px] font-black text-neutral-800">{user?.streak || 0}</span>
-              </div>
-              <div className="bg-white border-2 border-primary/5 p-1.5 px-3 rounded-xl flex items-center gap-1.5 shadow-xl shadow-primary/5">
-                <Sparkles size={14} className="text-primary fill-primary" />
-                <span className="text-[11px] font-black text-neutral-800">{user?.points || 0}</span>
-              </div>
-            </div>
-
-             <motion.button
-               whileHover={{ scale: 1.05 }}
-               whileTap={{ scale: 0.95 }}
-               onClick={handleCreateSession}
-               disabled={isCreating}
-               className="w-12 h-12 bg-primary rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center text-white relative overflow-hidden"
-             >
+          <div className="flex items-center">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCreateSession}
+              disabled={isCreating}
+              className="w-12 h-12 bg-primary rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center text-white relative overflow-hidden"
+            >
              {isCreating ? (
                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
              ) : (
                <Plus size={24} strokeWidth={3} />
              )}
-           </motion.button>
+            </motion.button>
           </div>
          </motion.header>
 

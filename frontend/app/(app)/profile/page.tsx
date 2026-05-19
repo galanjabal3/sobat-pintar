@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { User, Mail, School, Zap, LogOut, ChevronRight, Settings, ShieldCheck, HelpCircle } from "lucide-react";
+import { User, Mail, School, Zap, LogOut, ChevronRight, Settings, ShieldCheck, HelpCircle, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { SOBI_ASSETS } from "@/lib/assets";
 import { Modal } from "@/components/ui/Modal";
@@ -32,7 +32,19 @@ export default function ProfilePage() {
       <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary/5 to-transparent -z-10" />
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -z-10" />
 
-      <div className="px-6 pt-16 pb-36 max-w-2xl mx-auto">
+      <div className="px-6 pt-12 pb-36 max-w-2xl mx-auto">
+        <motion.button
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => router.push("/dashboard")}
+          className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800 mb-8"
+          aria-label="Kembali ke beranda"
+        >
+          <ChevronLeft size={24} strokeWidth={2.5} />
+        </motion.button>
+
         {/* Profile Header */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}

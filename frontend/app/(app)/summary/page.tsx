@@ -2,7 +2,7 @@
  
  import React, { useEffect, useState } from "react";
  import { useRouter } from "next/navigation";
- import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight, Flame } from "lucide-react";
+ import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight } from "lucide-react";
  import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -119,16 +119,6 @@ export default function SummaryPage() {
              </div>
            </div>
 
-           <div className="flex items-center gap-2">
-             <div className="bg-white border-2 border-primary/5 p-1.5 px-3 rounded-xl flex items-center gap-1.5 shadow-xl shadow-primary/5">
-               <Flame size={14} className="text-secondary fill-secondary" />
-               <span className="text-[11px] font-black text-neutral-800">{user?.streak || 0}</span>
-             </div>
-             <div className="bg-white border-2 border-primary/5 p-1.5 px-3 rounded-xl flex items-center gap-1.5 shadow-xl shadow-primary/5">
-               <Sparkles size={14} className="text-primary fill-primary" />
-               <span className="text-[11px] font-black text-neutral-800">{user?.points || 0}</span>
-             </div>
-           </div>
          </motion.header>
  
          {/* Input Section */}

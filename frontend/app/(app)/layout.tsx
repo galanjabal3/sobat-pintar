@@ -2,7 +2,6 @@
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import BottomNav from "@/components/layout/BottomNav";
 import { useAuthStore } from "@/store/authStore";
 
 export default function AppLayout({
@@ -42,9 +41,8 @@ export default function AppLayout({
   }
 
   return (
-    <div className="pb-24">
+    <div>
       {children}
-      <BottomNav />
     </div>
   );
 }
