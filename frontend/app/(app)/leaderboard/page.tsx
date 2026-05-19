@@ -74,7 +74,7 @@ export default function LeaderboardPage() {
       {/* Premium Background Mesh */}
       <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-primary/10 to-transparent -z-10" />
       
-      <div className="px-6 pt-12 pb-36 max-w-2xl mx-auto relative z-10">
+      <div className="px-6 pt-12 pb-20 max-w-2xl mx-auto relative z-10">
         <motion.header 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

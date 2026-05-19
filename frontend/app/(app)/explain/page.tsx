@@ -92,7 +92,7 @@
        <div className="absolute -top-24 -right-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] -z-10" />
        <div className="absolute top-1/2 -left-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -z-10" />
  
-       <div className="px-6 pt-12 pb-36 max-w-2xl mx-auto">
+       <div className="px-6 pt-12 pb-20 max-w-2xl mx-auto">
          <motion.header 
            initial={{ opacity: 0, y: -20 }}
            animate={{ opacity: 1, y: 0 }}

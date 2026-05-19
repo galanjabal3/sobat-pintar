@@ -77,7 +77,7 @@
    const wrong = total - correct;
  
    return (
-     <div className="min-h-screen bg-[#FDFEFF] flex flex-col items-center px-6 pt-20 pb-36 relative overflow-hidden">
+     <div className="min-h-screen bg-[#FDFEFF] flex flex-col items-center px-6 pt-20 pb-20 relative overflow-hidden">
        {/* Premium Background Mesh */}
        <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-primary/10 to-transparent -z-10" />
        
