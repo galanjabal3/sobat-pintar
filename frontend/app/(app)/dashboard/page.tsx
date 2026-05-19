@@ -7,8 +7,6 @@ import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { motion } from "framer-motion";
-import Image from "next/image";
-import { SOBI_ASSETS } from "@/lib/assets";
 
 export default function DashboardPage() {
   const { user, fetchProfile } = useAuthStore();
@@ -93,21 +91,21 @@ export default function DashboardPage() {
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] -z-10" />
       <div className="absolute top-1/4 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-[80px] -z-10" />
 
-      <div className="px-6 pt-12 pb-36 max-w-2xl mx-auto">
+      <div className="px-6 pt-12 pb-16 max-w-2xl mx-auto">
         <motion.header 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex justify-between items-center mb-10"
         >
           <div className="flex items-center gap-4">
-            <div className="relative group">
+            <Link href="/profile" className="relative group" aria-label="Buka profil">
               <div className="w-12 h-12 bg-[#E6F9F3] rounded-full flex items-center justify-center border-4 border-white shadow-lg overflow-hidden transition-transform group-hover:scale-110">
                 <div className="w-full h-full flex items-center justify-center text-primary font-black text-lg">
                   {user?.name?.[0] || "S"}
                 </div>
               </div>
               <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
-            </div>
+            </Link>
             <div>
               <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Sobat Pintar</p>
               <h1 className="text-xl font-black text-neutral-800 leading-tight">
@@ -218,29 +216,6 @@ export default function DashboardPage() {
           })}
         </motion.div>
       </div>
-
-      {/* Floating Mascot Sobi Background */}
-      <motion.div 
-        animate={{ 
-          y: [0, -15, 0],
-          rotate: [0, 5, 0]
-        }}
-        transition={{ 
-          duration: 5, 
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="fixed bottom-24 -right-8 w-48 h-48 pointer-events-none opacity-20 grayscale blur-[2px] z-0"
-      >
-        <Image
-          src={SOBI_ASSETS.DEFAULT}
-          alt="Sobi BG"
-          fill
-          className="object-contain"
-          priority
-          sizes="192px"
-        />
-      </motion.div>
     </div>
   );
 }

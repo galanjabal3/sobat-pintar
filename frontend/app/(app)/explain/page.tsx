@@ -2,7 +2,7 @@
  
  import React, { useState, useRef, useEffect } from "react";
  import { useRouter } from "next/navigation";
- import { Camera, Type, Send, Flame, Image as ImageIcon, Sparkles, X } from "lucide-react";
+ import { Camera, Type, Send, Image as ImageIcon, Sparkles, X, ChevronLeft } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
  import { useAuthStore } from "@/store/authStore";
@@ -96,9 +96,18 @@
          <motion.header 
            initial={{ opacity: 0, y: -20 }}
            animate={{ opacity: 1, y: 0 }}
-           className="flex justify-between items-center mb-10"
+           className="flex items-center mb-10"
          >
            <div className="flex items-center gap-4">
+             <motion.button
+               whileHover={{ scale: 1.1 }}
+               whileTap={{ scale: 0.9 }}
+               onClick={() => router.push("/dashboard")}
+               className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800"
+               aria-label="Kembali ke beranda"
+             >
+               <ChevronLeft size={24} strokeWidth={2.5} />
+             </motion.button>
              <div className="relative">
                <div className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/10 flex items-center justify-center border border-primary/5 overflow-hidden">
                  <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
@@ -112,24 +121,6 @@
                <h1 className="text-xl font-black text-neutral-800 leading-tight">Jelasin Soal</h1>
              </div>
            </div>
-           
-           <div className="flex items-center gap-2">
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="bg-white border-2 border-primary/5 p-1.5 px-4 rounded-2xl flex items-center gap-2 shadow-xl shadow-primary/5"
-              >
-                <Flame size={18} className="text-secondary fill-secondary" />
-                <span className="text-sm font-black text-neutral-800">{user?.streak || 0}</span>
-              </motion.div>
-
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="bg-white border-2 border-primary/5 p-1.5 px-4 rounded-2xl flex items-center gap-2 shadow-xl shadow-primary/5"
-              >
-                <Sparkles size={18} className="text-primary fill-primary" />
-                <span className="text-sm font-black text-neutral-800">{user?.points || 0}</span>
-              </motion.div>
-            </div>
          </motion.header>
  
          {/* Main Feature Card */}
