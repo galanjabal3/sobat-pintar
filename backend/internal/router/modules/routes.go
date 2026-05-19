@@ -7,10 +7,11 @@ import (
 	"sobat-pintar/pkg/jwt"
 )
 
-func RegisterPublicRoutes(rg *gin.RouterGroup, explainH *handler.ExplainHandler) {
+func RegisterPublicRoutes(rg *gin.RouterGroup, explainH *handler.ExplainHandler, summaryH *handler.SummaryHandler) {
 	public := rg.Group("/public")
 	{
 		public.GET("/explain/:id", explainH.GetPublicExplanation)
+		public.GET("/summary/:id", summaryH.GetPublicSummary)
 	}
 }
 
@@ -24,15 +25,15 @@ func RegisterAuthRoutes(rg *gin.RouterGroup, h *handler.AuthHandler) {
 	}
 }
 
-func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService, 
-    authH *handler.AuthHandler,
-    explainH *handler.ExplainHandler,
-    chatH *handler.ChatHandler,
-    practiceH *handler.PracticeHandler,
-    summaryH *handler.SummaryHandler,
-    scheduleH *handler.ScheduleHandler,
-    gamificationH *handler.GamificationHandler,
-    uploadH *handler.UploadHandler,
+func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
+	authH *handler.AuthHandler,
+	explainH *handler.ExplainHandler,
+	chatH *handler.ChatHandler,
+	practiceH *handler.PracticeHandler,
+	summaryH *handler.SummaryHandler,
+	scheduleH *handler.ScheduleHandler,
+	gamificationH *handler.GamificationHandler,
+	uploadH *handler.UploadHandler,
 ) {
 	protected := rg.Group("/")
 	protected.Use(middleware.AuthMiddleware(jwtService))
@@ -54,6 +55,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 		{
 			explain.POST("", explainH.Explain)
 			explain.GET("/history", explainH.GetHistory)
+			explain.GET("/:id", explainH.GetExplanation)
 			explain.POST("/:id/re-explain", explainH.ReExplain)
 		}
 		// Chat routes

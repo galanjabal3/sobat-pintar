@@ -36,7 +36,7 @@ func SetupRouter(
 		modules.RegisterAuthRoutes(api, authHandler)
 
 		// Public routes
-		modules.RegisterPublicRoutes(api, explainHandler)
+		modules.RegisterPublicRoutes(api, explainHandler, summaryHandler)
 
 		// Protected routes
 		modules.RegisterProtectedRoutes(api, jwtService, authHandler, explainHandler, chatHandler, practiceHandler, summaryHandler, scheduleHandler, gamificationHandler, uploadHandler)

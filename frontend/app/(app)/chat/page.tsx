@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, MessageCircle, Plus, Search, Sparkles, Clock, Trash2, ArrowRight, Flame } from "lucide-react";
+import { ChevronLeft, Plus, Sparkles, Clock, Trash2, ArrowRight, Flame } from "lucide-react";
 import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -51,7 +51,8 @@ export default function ChatPage() {
     setIsCreating(true);
     try {
       const response = await api.post("/chat/sessions", {
-        title: "Obrolan Baru dengan Sobi"
+        title: "Obrolan Baru dengan Sobi",
+        level: user?.level || "SD",
       });
       router.push(`/chat/session/${response.data.id}`);
     } catch (err) {

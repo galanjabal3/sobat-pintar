@@ -16,5 +16,6 @@ type Message struct {
 	SessionID string    `json:"session_id"`
 	Role      string    `json:"role"` // "user" or "assistant"
 	Content   string    `json:"content"`
+	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 }

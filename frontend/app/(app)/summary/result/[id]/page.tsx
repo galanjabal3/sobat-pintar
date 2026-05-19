@@ -2,7 +2,7 @@
  
  import React, { useEffect, useState } from "react";
  import { useRouter, useParams } from "next/navigation";
- import { ChevronLeft, FileText, Sparkles, Copy, Share2, Download, Trash2, Clock, ArrowRight } from "lucide-react";
+ import { ChevronLeft, FileText, Sparkles, Copy, Share2, Download, Clock, ArrowRight } from "lucide-react";
  import api from "@/lib/api";
  import { motion } from "framer-motion";
  import { useToastStore } from "@/store/toastStore";
@@ -10,12 +10,90 @@
  import { SOBI_ASSETS } from "@/lib/assets";
  import { format } from "date-fns";
  import { id as idLocale } from "date-fns/locale";
+ import ReactMarkdown from "react-markdown";
+ import remarkGfm from "remark-gfm";
+ import ShareModal from "@/components/ui/ShareModal";
  
  interface SummaryDetail {
    id: string;
    source_type: string;
    summary: string;
    created_at: string;
+ }
+
+ function escapeHtml(value: string) {
+   return value
+     .replace(/&/g, "&amp;")
+     .replace(/</g, "&lt;")
+     .replace(/>/g, "&gt;")
+     .replace(/"/g, "&quot;");
+ }
+
+ function formatInlineMarkdown(value: string) {
+   return escapeHtml(value)
+     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+     .replace(/\*(.+?)\*/g, "<em>$1</em>");
+ }
+
+ function renderSummaryForPrint(markdown: string) {
+   const lines = markdown.split(/\r?\n/);
+   const html: string[] = [];
+   let listOpen = false;
+
+   const closeList = () => {
+     if (listOpen) {
+       html.push("</ul>");
+       listOpen = false;
+     }
+   };
+
+   for (const rawLine of lines) {
+     const line = rawLine.trim();
+
+     if (!line) {
+       closeList();
+       continue;
+     }
+
+     if (/^-{3,}$/.test(line)) {
+       closeList();
+       html.push("<hr />");
+       continue;
+     }
+
+     if (line.startsWith("### ")) {
+       closeList();
+       html.push(`<h3>${formatInlineMarkdown(line.slice(4))}</h3>`);
+       continue;
+     }
+
+     if (line.startsWith("## ")) {
+       closeList();
+       html.push(`<h2>${formatInlineMarkdown(line.slice(3))}</h2>`);
+       continue;
+     }
+
+     if (line.startsWith("# ")) {
+       closeList();
+       html.push(`<h1>${formatInlineMarkdown(line.slice(2))}</h1>`);
+       continue;
+     }
+
+     if (/^(\*|-)\s+/.test(line)) {
+       if (!listOpen) {
+         html.push("<ul>");
+         listOpen = true;
+       }
+       html.push(`<li>${formatInlineMarkdown(line.replace(/^(\*|-)\s+/, ""))}</li>`);
+       continue;
+     }
+
+     closeList();
+     html.push(`<p>${formatInlineMarkdown(line)}</p>`);
+   }
+
+   closeList();
+   return html.join("");
  }
  
  export default function SummaryResultPage() {
@@ -26,6 +104,7 @@
    
    const [detail, setDetail] = useState<SummaryDetail | null>(null);
    const [isLoading, setIsLoading] = useState(true);
+   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
  
    useEffect(() => {
      fetchDetail();
@@ -48,6 +127,90 @@
      if (!detail) return;
      navigator.clipboard.writeText(detail.summary);
      addToast("Rangkuman disalin ke clipboard!", "success");
+   };
+
+   const handleDownloadPdf = () => {
+     if (!detail) return;
+
+     const printWindow = window.open("", "_blank");
+     if (!printWindow) {
+       addToast("Gagal membuka jendela PDF. Izinkan pop-up lalu coba lagi.", "error");
+       return;
+     }
+
+     const formattedSummary = renderSummaryForPrint(detail.summary);
+
+     printWindow.document.write(`
+       <!doctype html>
+       <html lang="id">
+         <head>
+           <meta charset="utf-8" />
+           <title>Rangkuman Sobi</title>
+           <style>
+             body {
+               color: #1f2937;
+               font-family: Arial, sans-serif;
+               line-height: 1.7;
+               padding: 32px;
+             }
+             .brand {
+               color: #02D48F;
+               font-size: 24px;
+               margin-bottom: 8px;
+             }
+             h1, h2, h3 {
+               color: #111827;
+               line-height: 1.35;
+               margin: 22px 0 10px;
+             }
+             h1 { font-size: 20px; }
+             h2 { font-size: 17px; }
+             h3 { font-size: 15px; }
+             .meta {
+               color: #717676;
+               font-size: 12px;
+               font-weight: 700;
+               letter-spacing: 0.08em;
+               margin-bottom: 28px;
+               text-transform: uppercase;
+             }
+             p {
+               font-size: 14px;
+               margin: 0 0 12px;
+             }
+             ul {
+               margin: 0 0 18px 20px;
+               padding: 0;
+             }
+             li {
+               font-size: 14px;
+               margin: 6px 0;
+             }
+             strong {
+               color: #02A66F;
+               font-weight: 800;
+             }
+             hr {
+               border: 0;
+               border-top: 1px solid #d1fae5;
+               margin: 24px 0;
+             }
+           </style>
+         </head>
+         <body>
+           <h1 class="brand">Rangkuman Sobi</h1>
+           <div class="meta">${format(new Date(detail.created_at), "d MMMM yyyy HH:mm", { locale: idLocale })}</div>
+           <main>${formattedSummary}</main>
+         </body>
+       </html>
+     `);
+     printWindow.document.close();
+     printWindow.onload = () => {
+       setTimeout(() => {
+         printWindow.focus();
+         printWindow.print();
+       }, 250);
+     };
    };
  
    if (isLoading) {
@@ -92,11 +255,18 @@
            <button onClick={handleCopy} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors">
              <Copy size={18} />
            </button>
-           <button className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors">
+           <button onClick={() => setIsShareModalOpen(true)} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors">
              <Share2 size={18} />
            </button>
          </div>
        </header>
+       <ShareModal
+         isOpen={isShareModalOpen}
+         onClose={() => setIsShareModalOpen(false)}
+         url={`${typeof window !== "undefined" ? window.location.origin : ""}/share/${id}`}
+         title="Rangkuman dari Sobi"
+         heading="Bagikan Rangkuman"
+       />
  
        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full pb-32">
          <motion.div
@@ -120,11 +290,29 @@
            <div className="bg-white p-8 rounded-[3rem] border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
              
-             {/* Summary Content with better typography */}
-             <div className="prose prose-neutral max-w-none">
-               <div className="text-neutral-800 text-sm font-medium leading-[1.8] whitespace-pre-wrap">
-                 {detail?.summary}
-               </div>
+             <div className="prose prose-sm max-w-none text-neutral-800">
+               <ReactMarkdown
+                 remarkPlugins={[remarkGfm]}
+                 components={{
+                   h1: ({children}) => <h1 className="text-xl font-black text-neutral-800 mt-8 mb-4">{children}</h1>,
+                   h2: ({children}) => <h2 className="text-lg font-black text-neutral-800 mt-6 mb-3">{children}</h2>,
+                   h3: ({children}) => <h3 className="text-base font-black text-neutral-800 mt-5 mb-2">{children}</h3>,
+                   p: ({children}) => <p className="text-neutral-600 mb-4 leading-[1.8] font-medium text-[15px]">{children}</p>,
+                   strong: ({children}) => <strong className="font-black text-primary">{children}</strong>,
+                   ul: ({children}) => <ul className="list-none mb-6 space-y-3">{children}</ul>,
+                   ol: ({children}) => <ol className="list-decimal list-inside mb-6 space-y-3 text-neutral-700">{children}</ol>,
+                   li: ({children}) => (
+                     <li className="flex items-start gap-3 text-neutral-600 font-medium text-[15px] leading-relaxed">
+                       <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2.5 flex-shrink-0" />
+                       <span>{children}</span>
+                     </li>
+                   ),
+                   hr: () => <div className="my-8 h-px bg-primary/10" />,
+                   blockquote: ({children}) => <div className="border-l-4 border-secondary bg-secondary/5 p-4 rounded-r-2xl italic text-neutral-600 mb-6">{children}</div>,
+                 }}
+               >
+                 {detail?.summary || ""}
+               </ReactMarkdown>
              </div>
            </div>
  
@@ -154,7 +342,7 @@
            </motion.div>
  
            <div className="grid grid-cols-2 gap-4 pt-4">
-             <button className="flex items-center justify-center gap-3 py-5 bg-white border-4 border-white shadow-xl shadow-black/5 rounded-[2rem] font-black text-xs text-neutral-600 uppercase tracking-widest hover:shadow-2xl transition-all">
+             <button onClick={handleDownloadPdf} className="flex items-center justify-center gap-3 py-5 bg-white border-4 border-white shadow-xl shadow-black/5 rounded-[2rem] font-black text-xs text-neutral-600 uppercase tracking-widest hover:shadow-2xl transition-all">
                <Download size={18} /> Simpan PDF
              </button>
              <button onClick={() => router.push("/practice")} className="flex items-center justify-center gap-3 py-5 bg-primary text-white shadow-xl shadow-primary/20 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all">

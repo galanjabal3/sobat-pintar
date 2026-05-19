@@ -2,13 +2,12 @@
  
  import React, { useEffect, useState } from "react";
  import { useRouter } from "next/navigation";
- import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight, BookOpen, FileUp, Flame } from "lucide-react";
+ import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight, Flame } from "lucide-react";
  import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToastStore } from "@/store/toastStore";
 import { useAuthStore } from "@/store/authStore";
-import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -59,13 +58,12 @@ export default function SummaryPage() {
      setIsSubmitting(true);
      try {
        const response = await api.post("/summary", {
+         source_type: "text",
          content: text,
-         title: text.slice(0, 30) + (text.length > 30 ? "..." : "")
        });
        addToast("Rangkuman berhasil dibuat!", "success");
        setText("");
-       fetchHistory();
-       // Redirect to result if needed, or just refresh list
+       router.push(`/summary/result/${response.data.id}`);
      } catch (err) {
        console.error(err);
        addToast("Gagal membuat rangkuman.", "error");
@@ -156,11 +154,6 @@ export default function SummaryPage() {
                  placeholder="Tempel teks atau materi di sini..."
                  className="w-full h-40 bg-white/50 border-2 border-primary/5 rounded-3xl p-5 text-sm font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all resize-none placeholder:text-neutral-300"
                />
-               <div className="absolute bottom-4 right-4 flex gap-2">
-                 <button className="p-3 bg-gray-50 text-neutral-400 rounded-2xl hover:bg-primary/10 hover:text-primary transition-all">
-                   <FileUp size={20} />
-                 </button>
-               </div>
              </div>
  
              <Button
@@ -181,7 +174,7 @@ export default function SummaryPage() {
                <Clock size={14} /> Riwayat Rangkuman
              </h2>
              <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1 rounded-full">
-               {history.length} File
+               {history.length} Rangkuman
              </span>
            </div>
  
@@ -222,7 +215,10 @@ export default function SummaryPage() {
                        <p className="text-[10px] text-neutral-400 font-bold mb-4">
                          Dibuat pada {format(new Date(item.created_at), "d MMM yyyy", { locale: idLocale })}
                        </p>
-                       <button className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+                       <button
+                         onClick={() => router.push(`/summary/result/${item.id}`)}
+                         className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest group-hover:translate-x-1 transition-transform"
+                       >
                          Buka Rangkuman <ArrowRight size={12} strokeWidth={3} />
                        </button>
                      </div>

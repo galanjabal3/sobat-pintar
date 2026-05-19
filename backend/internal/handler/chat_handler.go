@@ -27,6 +27,9 @@ func (h *ChatHandler) CreateSession(c *gin.Context) {
 		})
 		return
 	}
+	if req.Level == "" {
+		req.Level = c.GetString("level")
+	}
 
 	res, err := h.chatService.CreateSession(c.Request.Context(), userID, req)
 	if err != nil {

@@ -111,10 +111,44 @@ func (h *ExplainHandler) GetPublicExplanation(c *gin.Context) {
 	})
 }
 
+func (h *ExplainHandler) GetExplanation(c *gin.Context) {
+	id := c.Param("id")
+	userID := c.GetString("user_id")
+
+	explanation, err := h.service.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.ErrorResponse{
+			Success: false,
+			Message: "Penjelasan tidak ditemukan",
+		})
+		return
+	}
+
+	if explanation.UserID != userID {
+		c.JSON(http.StatusForbidden, dto.ErrorResponse{
+			Success: false,
+			Message: "Kamu tidak punya akses ke penjelasan ini",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Penjelasan berhasil diambil",
+		Data: dto.ExplainResponse{
+			ID:       explanation.ID,
+			Question: explanation.QuestionText,
+			ImageURL: explanation.ImageURL,
+			Answer:   explanation.Answer,
+			Level:    explanation.Level,
+		},
+	})
+}
+
 func (h *ExplainHandler) ReExplain(c *gin.Context) {
 	id := c.Param("id")
 	userID := c.GetString("user_id")
-	
+
 	explanation, err := h.service.ReExplain(c.Request.Context(), userID, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{

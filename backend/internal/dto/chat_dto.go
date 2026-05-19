@@ -4,7 +4,7 @@ import "time"
 
 type CreateChatSessionRequest struct {
 	Title string `json:"title" binding:"required"`
-	Level string `json:"level" binding:"required"`
+	Level string `json:"level"`
 }
 
 type ChatSessionResponse struct {
@@ -24,6 +24,7 @@ type MessageResponse struct {
 	Role      string    `json:"role"` // "user" or "assistant"
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
+	Status    string    `json:"status"`
 }
 
 type ChatDetailResponse struct {

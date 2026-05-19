@@ -26,7 +26,7 @@ func NewChatRepository(db *pgxpool.Pool) ChatRepository {
 }
 
 func (r *chatRepository) CreateSession(ctx context.Context, session *model.ChatSession) error {
-	query := `INSERT INTO chat_sessions (id, user_id, title, level, created_at, updated_at) 
+	query := `INSERT INTO chat_sessions (id, user_id, title, level, created_at, updated_at)
 			  VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err := r.db.Exec(ctx, query, session.ID, session.UserID, session.Title, session.Level, session.CreatedAt, session.UpdatedAt)
 	return err
@@ -68,9 +68,13 @@ func (r *chatRepository) DeleteSession(ctx context.Context, id string, userID st
 }
 
 func (r *chatRepository) CreateMessage(ctx context.Context, message *model.Message) error {
-	query := `INSERT INTO chat_messages (id, session_id, role, content, created_at) 
-			  VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.Exec(ctx, query, message.ID, message.SessionID, message.Role, message.Content, message.CreatedAt)
+	if message.Status == "" {
+		message.Status = "sent"
+	}
+
+	query := `INSERT INTO chat_messages (id, session_id, role, content, status, created_at)
+			  VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := r.db.Exec(ctx, query, message.ID, message.SessionID, message.Role, message.Content, message.Status, message.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -81,7 +85,7 @@ func (r *chatRepository) CreateMessage(ctx context.Context, message *model.Messa
 }
 
 func (r *chatRepository) GetMessagesBySessionID(ctx context.Context, sessionID string) ([]*model.Message, error) {
-	query := `SELECT id, session_id, role, content, created_at FROM chat_messages WHERE session_id = $1 ORDER BY created_at ASC`
+	query := `SELECT id, session_id, role, content, status, created_at FROM chat_messages WHERE session_id = $1 ORDER BY created_at ASC`
 	rows, err := r.db.Query(ctx, query, sessionID)
 	if err != nil {
 		return nil, err
@@ -91,7 +95,7 @@ func (r *chatRepository) GetMessagesBySessionID(ctx context.Context, sessionID s
 	var messages []*model.Message
 	for rows.Next() {
 		m := &model.Message{}
-		if err := rows.Scan(&m.ID, &m.SessionID, &m.Role, &m.Content, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.SessionID, &m.Role, &m.Content, &m.Status, &m.CreatedAt); err != nil {
 			return nil, err
 		}
 		messages = append(messages, m)

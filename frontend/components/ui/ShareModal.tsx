@@ -7,9 +7,11 @@ interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   url: string;
+  title?: string;
+  heading?: string;
 }
 
-export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
+export default function ShareModal({ isOpen, onClose, url, title = "Penjelasan dari Sobi", heading = "Bagikan Penjelasan" }: ShareModalProps) {
   const { addToast } = useToastStore();
   const [copied, setCopied] = React.useState(false);
 
@@ -26,7 +28,7 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Penjelasan dari Sobi",
+          title,
           url: url,
         });
         onClose();
@@ -47,7 +49,7 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
           <X size={20} />
         </button>
         
-        <h3 className="text-lg font-black text-neutral-800 mb-6">Bagikan Penjelasan</h3>
+        <h3 className="text-lg font-black text-neutral-800 mb-6">{heading}</h3>
         
         <div className="space-y-3">
           {typeof navigator !== 'undefined' && !!navigator.share && (
