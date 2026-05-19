@@ -12,6 +12,7 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	GetByID(ctx context.Context, id string) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
+	UpdateProfile(ctx context.Context, userID, name, level string, avatarURL, avatarPublicID *string) error
 }
 
 type userRepository struct {
@@ -30,9 +31,9 @@ func (r *userRepository) Create(ctx context.Context, user *model.User) error {
 }
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
-	query := `SELECT id, name, email, password_hash, google_id, level, points, streak, last_activity_at, created_at FROM users WHERE email = $1`
+	query := `SELECT id, name, email, password_hash, google_id, level, avatar_url, avatar_public_id, points, streak, last_activity_at, created_at FROM users WHERE email = $1`
 	user := &model.User{}
-	err := r.db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.GoogleID, &user.Level, &user.Points, &user.Streak, &user.LastActivityAt, &user.CreatedAt)
+	err := r.db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.GoogleID, &user.Level, &user.AvatarURL, &user.AvatarPublicID, &user.Points, &user.Streak, &user.LastActivityAt, &user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -40,9 +41,9 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.U
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, error) {
-	query := `SELECT id, name, email, password_hash, google_id, level, points, streak, last_activity_at, created_at FROM users WHERE id = $1`
+	query := `SELECT id, name, email, password_hash, google_id, level, avatar_url, avatar_public_id, points, streak, last_activity_at, created_at FROM users WHERE id = $1`
 	user := &model.User{}
-	err := r.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.GoogleID, &user.Level, &user.Points, &user.Streak, &user.LastActivityAt, &user.CreatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.Name, &user.Email, &user.PasswordHash, &user.GoogleID, &user.Level, &user.AvatarURL, &user.AvatarPublicID, &user.Points, &user.Streak, &user.LastActivityAt, &user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -52,5 +53,11 @@ func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, e
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 	query := `UPDATE users SET name = $1, level = $2, points = $3, streak = $4, last_activity_at = $5 WHERE id = $6`
 	_, err := r.db.Exec(ctx, query, user.Name, user.Level, user.Points, user.Streak, user.LastActivityAt, user.ID)
+	return err
+}
+
+func (r *userRepository) UpdateProfile(ctx context.Context, userID, name, level string, avatarURL, avatarPublicID *string) error {
+	query := `UPDATE users SET name = $1, level = $2, avatar_url = $3, avatar_public_id = $4 WHERE id = $5`
+	_, err := r.db.Exec(ctx, query, name, level, avatarURL, avatarPublicID, userID)
 	return err
 }

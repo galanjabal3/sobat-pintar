@@ -50,3 +50,17 @@ func (cli *Client) UploadImage(file multipart.File, filename string, folder stri
 
 	return resp.SecureURL, resp.PublicID, nil
 }
+
+func (cli *Client) DeleteImage(publicID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, err := cli.cld.Upload.Destroy(ctx, uploader.DestroyParams{
+		PublicID: publicID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete image from cloudinary: %w", err)
+	}
+
+	return nil
+}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, Sparkles, Trophy, Zap } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
@@ -100,9 +101,19 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             <Link href="/profile" className="relative group" aria-label="Buka profil">
               <div className="w-12 h-12 bg-[#E6F9F3] rounded-full flex items-center justify-center border-4 border-white shadow-lg overflow-hidden transition-transform group-hover:scale-110">
-                <div className="w-full h-full flex items-center justify-center text-primary font-black text-lg">
-                  {user?.name?.[0] || "S"}
-                </div>
+                {user?.avatar_url ? (
+                  <Image
+                    src={user.avatar_url}
+                    alt="Foto profil"
+                    width={48}
+                    height={48}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-primary font-black text-lg">
+                    {user?.name?.[0] || "S"}
+                  </div>
+                )}
               </div>
               <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
             </Link>

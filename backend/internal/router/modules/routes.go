@@ -39,6 +39,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 	protected.Use(middleware.AuthMiddleware(jwtService))
 	{
 		protected.GET("/user/profile", authH.GetProfile)
+		protected.PATCH("/user/profile", authH.UpdateProfile)
 
 		// Upload routes
 		if uploadH != nil {

@@ -1,5 +1,6 @@
 "use client";
 
+ import Image from "next/image";
  import React, { useEffect, useState, useRef } from "react";
  import { useRouter, useParams } from "next/navigation";
  import { ChevronLeft, Send, Sparkles, Bot, User, AlertCircle } from "lucide-react";
@@ -11,6 +12,7 @@
  import { id as idLocale } from "date-fns/locale";
  import ReactMarkdown from "react-markdown";
  import remarkGfm from "remark-gfm";
+ import { useAuthStore } from "@/store/authStore";
 
  interface Message {
    id: string;
@@ -34,6 +36,7 @@
    const params = useParams();
    const sessionId = params.id as string;
    const { addToast } = useToastStore();
+   const { user, fetchProfile } = useAuthStore();
 
    const [chat, setChat] = useState<ChatDetail | null>(null);
    const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +46,7 @@
 
    useEffect(() => {
      fetchChatDetail();
+     fetchProfile();
    }, [sessionId]);
 
    useEffect(() => {
@@ -186,12 +190,26 @@
                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
                )}>
                  <div className={cn(
-                   "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg",
+                   "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg overflow-hidden",
                    msg.status === "failed"
                      ? "bg-error text-white"
                      : msg.role === "user" ? "bg-secondary text-white" : "bg-primary text-white"
                  )}>
-                   {msg.status === "failed" ? <AlertCircle size={16} /> : msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
+                   {msg.status === "failed" ? (
+                     <AlertCircle size={16} />
+                   ) : msg.role === "user" && user?.avatar_url ? (
+                     <Image
+                       src={user.avatar_url}
+                       alt="Foto profil"
+                       width={32}
+                       height={32}
+                       className="h-full w-full object-cover"
+                     />
+                   ) : msg.role === "user" ? (
+                     <User size={16} />
+                   ) : (
+                     <Bot size={16} />
+                   )}
                  </div>
 
                  <div className={cn(

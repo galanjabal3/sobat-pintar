@@ -11,7 +11,9 @@ import (
 	"google.golang.org/api/idtoken"
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
+	"sobat-pintar/pkg/cloudinary"
 	"sobat-pintar/pkg/jwt"
+	"sobat-pintar/pkg/logger"
 )
 
 type AuthService interface {
@@ -19,6 +21,7 @@ type AuthService interface {
 	Login(ctx context.Context, email, password string) (string, string, *model.User, error)
 	GoogleLogin(ctx context.Context, idToken string) (string, string, *model.User, error)
 	GetProfile(ctx context.Context, userID string) (*model.User, error)
+	UpdateProfile(ctx context.Context, userID, name, level string, avatarURL, avatarPublicID *string) (*model.User, error)
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 }
 
@@ -26,13 +29,15 @@ type authService struct {
 	repo           repository.UserRepository
 	jwtService     *jwt.JWTService
 	googleClientID string
+	cloudinary     *cloudinary.Client
 }
 
-func NewAuthService(repo repository.UserRepository, jwtService *jwt.JWTService, googleClientID string) AuthService {
+func NewAuthService(repo repository.UserRepository, jwtService *jwt.JWTService, googleClientID string, cloudinaryClient *cloudinary.Client) AuthService {
 	return &authService{
 		repo:           repo,
 		jwtService:     jwtService,
 		googleClientID: googleClientID,
+		cloudinary:     cloudinaryClient,
 	}
 }
 
@@ -53,10 +58,10 @@ func (s *authService) Register(ctx context.Context, name, email, password, level
 
 	hashedPasswordStr := string(hashedPassword)
 	user := &model.User{
-		ID:           uuid.New().String(),
-		Name:         name,
-		Email:        email,
-		PasswordHash: &hashedPasswordStr,
+		ID:             uuid.New().String(),
+		Name:           name,
+		Email:          email,
+		PasswordHash:   &hashedPasswordStr,
 		Level:          level,
 		LastActivityAt: time.Now(),
 		CreatedAt:      time.Now(),
@@ -173,6 +178,39 @@ func (s *authService) updateStreak(ctx context.Context, user *model.User) {
 
 func (s *authService) GetProfile(ctx context.Context, userID string) (*model.User, error) {
 	return s.repo.GetByID(ctx, userID)
+}
+
+func (s *authService) UpdateProfile(ctx context.Context, userID, name, level string, avatarURL, avatarPublicID *string) (*model.User, error) {
+	currentUser, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if shouldDeleteAvatar(currentUser.AvatarPublicID, avatarPublicID) {
+		if s.cloudinary == nil {
+			logger.Info("Skipping old avatar deletion because Cloudinary client is not initialized", "user_id", userID)
+		} else if err := s.cloudinary.DeleteImage(*currentUser.AvatarPublicID); err != nil {
+			logger.Error(err, "Failed to delete old profile avatar", "user_id", userID, "public_id", *currentUser.AvatarPublicID)
+		}
+	}
+
+	if err := s.repo.UpdateProfile(ctx, userID, name, level, avatarURL, avatarPublicID); err != nil {
+		return nil, err
+	}
+
+	return s.repo.GetByID(ctx, userID)
+}
+
+func shouldDeleteAvatar(currentPublicID, nextPublicID *string) bool {
+	if currentPublicID == nil || *currentPublicID == "" {
+		return false
+	}
+
+	if nextPublicID == nil || *nextPublicID == "" {
+		return true
+	}
+
+	return *currentPublicID != *nextPublicID
 }
 
 func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (string, error) {

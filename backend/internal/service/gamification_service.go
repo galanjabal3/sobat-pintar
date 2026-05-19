@@ -70,8 +70,9 @@ func (s *gamificationService) GetLeaderboard(ctx context.Context) ([]dto.Leaderb
 	var res []dto.LeaderboardResponse
 	for _, e := range entries {
 		res = append(res, dto.LeaderboardResponse{
-			UserName: e.UserName,
-			Points:   e.Points,
+			UserName:  e.UserName,
+			AvatarURL: e.AvatarURL,
+			Points:    e.Points,
 		})
 	}
 	return res, nil

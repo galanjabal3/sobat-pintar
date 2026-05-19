@@ -9,6 +9,7 @@ type BadgeResponse struct {
 }
 
 type LeaderboardResponse struct {
-	UserName string `json:"user_name"`
-	Points   int    `json:"points"`
+	UserName  string  `json:"user_name"`
+	AvatarURL *string `json:"avatar_url"`
+	Points    int     `json:"points"`
 }

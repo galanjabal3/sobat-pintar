@@ -92,7 +92,7 @@ func (r *gamificationRepository) GetUserBadges(ctx context.Context, userID strin
 }
 
 func (r *gamificationRepository) GetLeaderboard(ctx context.Context, limit int) ([]model.LeaderboardEntry, error) {
-	query := `SELECT name, points FROM users ORDER BY points DESC LIMIT $1`
+	query := `SELECT name, avatar_url, points FROM users ORDER BY points DESC LIMIT $1`
 	rows, err := r.db.Query(ctx, query, limit)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (r *gamificationRepository) GetLeaderboard(ctx context.Context, limit int) 
 	var entries []model.LeaderboardEntry
 	for rows.Next() {
 		var e model.LeaderboardEntry
-		err := rows.Scan(&e.UserName, &e.Points)
+		err := rows.Scan(&e.UserName, &e.AvatarURL, &e.Points)
 		if err != nil {
 			return nil, err
 		}

@@ -108,14 +108,6 @@
              >
                <ChevronLeft size={24} strokeWidth={2.5} />
              </motion.button>
-             <div className="relative">
-               <div className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/10 flex items-center justify-center border border-primary/5 overflow-hidden">
-                 <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
-                   {user?.name?.[0] || "S"}
-                 </div>
-               </div>
-               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-4 border-white rounded-full" />
-             </div>
              <div>
                <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Sobat Pintar</p>
                <h1 className="text-xl font-black text-neutral-800 leading-tight">Jelasin Soal</h1>
