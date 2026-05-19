@@ -9,6 +9,8 @@ type User struct {
 	PasswordHash   *string   `json:"-"`
 	GoogleID       *string   `json:"-"`
 	Level          string    `json:"level"` // TK, SD, SMP, SMA
+	AvatarURL      *string   `json:"avatar_url"`
+	AvatarPublicID *string   `json:"avatar_public_id"`
 	Points         int       `json:"points"`
 	Streak         int       `json:"streak"`
 	LastActivityAt time.Time `json:"last_activity_at"`

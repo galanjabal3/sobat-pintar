@@ -12,7 +12,39 @@ import { SOBI_ASSETS } from "@/lib/assets";
 
 interface LeaderboardEntry {
   user_name: string;
+  avatar_url?: string | null;
   points: number;
+}
+
+function LeaderboardAvatar({
+  entry,
+  size,
+  className,
+}: {
+  entry: LeaderboardEntry;
+  size: number;
+  className: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden flex items-center justify-center font-black uppercase",
+        className
+      )}
+    >
+      {entry.avatar_url ? (
+        <Image
+          src={entry.avatar_url}
+          alt={`Foto ${entry.user_name}`}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        entry.user_name[0]
+      )}
+    </div>
+  );
 }
 
 export default function LeaderboardPage() {
@@ -77,9 +109,11 @@ export default function LeaderboardPage() {
               className="flex flex-col items-center flex-1"
             >
               <div className="relative mb-4">
-                <div className="w-14 h-14 bg-gray-100 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-neutral-400 font-black text-xl">
-                  {topThree[1].user_name[0]}
-                </div>
+                <LeaderboardAvatar
+                  entry={topThree[1]}
+                  size={56}
+                  className="w-14 h-14 bg-gray-100 rounded-2xl border-4 border-white shadow-lg text-neutral-400 text-xl"
+                />
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-300 rounded-full flex items-center justify-center text-white border-2 border-white shadow-sm">
                   <Medal size={12} />
                 </div>
@@ -106,9 +140,11 @@ export default function LeaderboardPage() {
                 >
                   <Crown size={32} fill="currentColor" />
                 </motion.div>
-                <div className="w-20 h-20 bg-secondary/10 rounded-[2rem] border-4 border-secondary shadow-2xl shadow-secondary/20 overflow-hidden flex items-center justify-center text-secondary font-black text-3xl">
-                  {topThree[0].user_name[0]}
-                </div>
+                <LeaderboardAvatar
+                  entry={topThree[0]}
+                  size={80}
+                  className="w-20 h-20 bg-secondary/10 rounded-[2rem] border-4 border-secondary shadow-2xl shadow-secondary/20 text-secondary text-3xl"
+                />
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white border-4 border-white shadow-lg">
                   <Medal size={16} />
                 </div>
@@ -129,9 +165,11 @@ export default function LeaderboardPage() {
               className="flex flex-col items-center flex-1"
             >
               <div className="relative mb-4">
-                <div className="w-14 h-14 bg-orange-50 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-orange-400 font-black text-xl">
-                  {topThree[2].user_name[0]}
-                </div>
+                <LeaderboardAvatar
+                  entry={topThree[2]}
+                  size={56}
+                  className="w-14 h-14 bg-orange-50 rounded-2xl border-4 border-white shadow-lg text-orange-400 text-xl"
+                />
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center text-white border-2 border-white shadow-sm">
                   <Medal size={12} />
                 </div>
@@ -170,9 +208,11 @@ export default function LeaderboardPage() {
                   >
                     <div className="flex items-center gap-5">
                       <span className="text-xs font-black text-neutral-300 w-4">{idx + 4}</span>
-                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-neutral-400 font-black text-xs uppercase">
-                        {entry.user_name[0]}
-                      </div>
+                      <LeaderboardAvatar
+                        entry={entry}
+                        size={40}
+                        className="w-10 h-10 bg-gray-50 rounded-xl text-neutral-400 text-xs"
+                      />
                       <div>
                         <p className="text-sm font-black text-neutral-800">{entry.user_name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">

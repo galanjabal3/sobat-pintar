@@ -13,18 +13,28 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	AccessToken  string      `json:"access_token"`
-	RefreshToken string      `json:"refresh_token"`
+	AccessToken  string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
 	User         UserResponse `json:"user"`
 }
 
 type UserResponse struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
-	Level  string `json:"level"`
-	Points int    `json:"points"`
-	Streak int    `json:"streak"`
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	Email     string  `json:"email"`
+	Level     string  `json:"level"`
+	AvatarURL *string `json:"avatar_url"`
+	// Keep this field available for profile update bookkeeping. UI does not need to display it.
+	AvatarPublicID *string `json:"avatar_public_id,omitempty"`
+	Points         int     `json:"points"`
+	Streak         int     `json:"streak"`
+}
+
+type UpdateProfileRequest struct {
+	Name           string  `json:"name" binding:"required,min=2"`
+	Level          string  `json:"level" binding:"required,oneof=TK SD SMP SMA"`
+	AvatarURL      *string `json:"avatar_url"`
+	AvatarPublicID *string `json:"avatar_public_id"`
 }
 
 type RefreshRequest struct {

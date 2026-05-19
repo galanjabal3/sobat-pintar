@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"sobat-pintar/internal/dto"
+	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/service"
 	"sobat-pintar/pkg/logger"
 )
@@ -15,6 +16,19 @@ type AuthHandler struct {
 
 func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
+}
+
+func toUserResponse(user *model.User) dto.UserResponse {
+	return dto.UserResponse{
+		ID:             user.ID,
+		Name:           user.Name,
+		Email:          user.Email,
+		Level:          user.Level,
+		AvatarURL:      user.AvatarURL,
+		AvatarPublicID: user.AvatarPublicID,
+		Points:         user.Points,
+		Streak:         user.Streak,
+	}
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
@@ -44,14 +58,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, dto.BaseResponse{
 		Success: true,
 		Message: "Pendaftaran berhasil",
-		Data: dto.UserResponse{
-			ID:     user.ID,
-			Name:   user.Name,
-			Email:  user.Email,
-			Level:  user.Level,
-			Points: user.Points,
-			Streak: user.Streak,
-		},
+		Data:    toUserResponse(user),
 	})
 }
 
@@ -82,14 +89,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		Data: dto.AuthResponse{
 			AccessToken:  at,
 			RefreshToken: rt,
-			User: dto.UserResponse{
-				ID:     user.ID,
-				Name:   user.Name,
-				Email:  user.Email,
-				Level:  user.Level,
-				Points: user.Points,
-				Streak: user.Streak,
-			},
+			User:         toUserResponse(user),
 		},
 	})
 }
@@ -109,14 +109,36 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Profil berhasil diambil",
-		Data: dto.UserResponse{
-			ID:     user.ID,
-			Name:   user.Name,
-			Email:  user.Email,
-			Level:  user.Level,
-			Points: user.Points,
-			Streak: user.Streak,
-		},
+		Data:    toUserResponse(user),
+	})
+}
+
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	userID := c.GetString("user_id")
+	var req dto.UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Success: false,
+			Message: "Data profil tidak valid",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	user, err := h.authService.UpdateProfile(c.Request.Context(), userID, req.Name, req.Level, req.AvatarURL, req.AvatarPublicID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Success: false,
+			Message: "Gagal memperbarui profil",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Profil berhasil diperbarui",
+		Data:    toUserResponse(user),
 	})
 }
 
@@ -177,14 +199,7 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 		Data: dto.AuthResponse{
 			AccessToken:  at,
 			RefreshToken: rt,
-			User: dto.UserResponse{
-				ID:     user.ID,
-				Name:   user.Name,
-				Email:  user.Email,
-				Level:  user.Level,
-				Points: user.Points,
-				Streak: user.Streak,
-			},
+			User:         toUserResponse(user),
 		},
 	})
 }
