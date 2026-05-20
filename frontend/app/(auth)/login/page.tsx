@@ -17,7 +17,6 @@ import { renderGoogleButton } from "@/lib/googleAuth";
 import { useAuthStore } from "@/store/authStore";
 
 const GOOGLE_LOGIN_BUTTON_ID = "googleLoginBtn";
-const GOOGLE_BUTTON_WIDTH = 340;
 
 const loginSchema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -121,7 +120,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-white px-8 py-12">
+    <div className="relative flex min-h-dvh flex-col bg-[#FDFEFF] px-7 py-10">
       <Script
         src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
@@ -130,20 +129,20 @@ export default function LoginPage() {
 
       <Link
         href="/"
-        className="absolute left-6 top-8 p-2 text-neutral-400 transition-colors hover:text-neutral-800"
+        className="absolute left-5 top-7 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-neutral-800 shadow-xl shadow-primary/5 transition-colors hover:text-primary"
         aria-label="Kembali ke halaman utama"
       >
         <ChevronLeft size={28} />
       </Link>
 
-      <div className="mb-8 flex flex-col items-center">
-        <div className="relative mb-4 h-48 w-48 sm:h-56 sm:w-56">
+      <div className="mb-6 flex flex-col items-center pt-8">
+        <div className="relative mb-3 h-36 w-36">
           <Image
             src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
             fill
             priority
-            sizes="(max-width: 640px) 192px, 224px"
+            sizes="144px"
             className="object-contain drop-shadow-2xl"
           />
         </div>
@@ -152,19 +151,19 @@ export default function LoginPage() {
           Halo, Sobat!
         </h1>
 
-        <p className="text-center font-medium text-neutral-400">
+        <p className="text-center text-sm font-bold text-neutral-400">
           Masuk untuk lanjut belajar bareng Sobi
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5">
         <div>
           <input
             {...register("email")}
             type="email"
             placeholder="Email"
             autoComplete="email"
-            className="w-full rounded-2xl border border-gray-100 bg-gray-50 p-5 text-neutral-700 transition-all focus:border-primary focus:outline-none"
+            className="w-full rounded-2xl border-2 border-transparent bg-gray-50 p-4 font-bold text-neutral-700 transition-all placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white focus:outline-none"
           />
 
           {errors.email && (
@@ -180,7 +179,7 @@ export default function LoginPage() {
             type="password"
             placeholder="Password"
             autoComplete="current-password"
-            className="w-full rounded-2xl border border-gray-100 bg-gray-50 p-5 text-neutral-700 transition-all focus:border-primary focus:outline-none"
+            className="w-full rounded-2xl border-2 border-transparent bg-gray-50 p-4 font-bold text-neutral-700 transition-all placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white focus:outline-none"
           />
 
           {errors.password && (
@@ -198,7 +197,7 @@ export default function LoginPage() {
 
         <Button
           type="submit"
-          className="h-auto w-full rounded-2xl py-6 text-lg shadow-lg shadow-primary/20"
+          className="h-auto w-full rounded-2xl py-5 text-lg font-black shadow-lg shadow-primary/20"
           isLoading={isLoading}
         >
           Masuk
@@ -214,9 +213,9 @@ export default function LoginPage() {
           <div className="h-px flex-1 bg-gray-100" />
         </div>
 
-        <div className="w-full">
+        <div className="w-full rounded-[1.6rem] border-2 border-white bg-white/80 p-2 shadow-xl shadow-primary/5">
           {!isGoogleReady && (
-            <div className="flex h-[44px] items-center justify-center">
+            <div className="flex h-[48px] items-center justify-center">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-primary" />
             </div>
           )}
@@ -224,7 +223,7 @@ export default function LoginPage() {
           <div className={isGoogleReady ? "block w-full" : "invisible h-0 w-full"}>
             <div
               id={GOOGLE_LOGIN_BUTTON_ID}
-              className="flex min-h-[44px] w-full justify-center"
+              className="flex min-h-[48px] w-full justify-center overflow-hidden rounded-full"
             />
           </div>
         </div>

@@ -14,7 +14,10 @@
 body {
   font-family: var(--font-plus-jakarta-sans);
   color: #1A1C1E;
-  background-color: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(45, 212, 143, 0.16), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.12), transparent 28rem),
+    #313a4d;
   -webkit-tap-highlight-color: transparent;
 }
 

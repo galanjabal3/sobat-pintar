@@ -70,7 +70,7 @@ export function renderGoogleButton({
       theme: "outline",
       size: "large",
       type: "standard",
-      shape: "rectangular",
+      shape: "pill",
       text,
       width: buttonWidth,
       logo_alignment: "left",
