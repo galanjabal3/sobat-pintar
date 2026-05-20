@@ -3,6 +3,7 @@ node_modules/
 backend/vendor/
 .gomodcache/
 .go_cache/
+.gocache/
 
 # Next.js
 .next/

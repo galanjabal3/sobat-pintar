@@ -15,7 +15,9 @@ import (
 
 type PracticeService interface {
 	StartSession(ctx context.Context, userID, level string, req dto.StartPracticeRequest) (*dto.StartPracticeResponse, error)
+	GetSession(ctx context.Context, userID, sessionID string) (*dto.PracticeSessionResponse, error)
 	SubmitAnswer(ctx context.Context, userID string, req dto.SubmitAnswerRequest) (*dto.SubmitAnswerResponse, error)
+	FinishSession(ctx context.Context, userID, sessionID string) (*dto.PracticeResultResponse, error)
 	GetResult(ctx context.Context, userID, sessionID string) (*dto.PracticeResultResponse, error)
 	GetHistory(ctx context.Context, userID string) ([]*model.PracticeSession, error)
 	GetDailyProgress(ctx context.Context, userID string) (int, error)
@@ -82,10 +84,61 @@ func (s *practiceService) StartSession(ctx context.Context, userID, level string
 		return nil, err
 	}
 
+	resQuestions := make([]*dto.PracticeQuestionResponse, 0, len(questions))
+	for _, q := range questions {
+		resQuestions = append(resQuestions, toPracticeQuestionResponse(q))
+	}
+
 	return &dto.StartPracticeResponse{
 		SessionID: session.ID,
-		Questions: questions, // Frontend will filter correct answers
+		Questions: resQuestions,
 	}, nil
+}
+
+func (s *practiceService) GetSession(ctx context.Context, userID, sessionID string) (*dto.PracticeSessionResponse, error) {
+	session, err := s.repo.GetSessionByID(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	if session.UserID != userID {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	questions, err := s.repo.GetQuestionsBySessionID(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	resQuestions := make([]*dto.PracticeQuestionResponse, 0, len(questions))
+	for _, q := range questions {
+		resQuestions = append(resQuestions, toPracticeQuestionResponse(q))
+	}
+
+	return &dto.PracticeSessionResponse{
+		SessionID:   session.ID,
+		Subject:     session.Subject,
+		Difficulty:  session.Difficulty,
+		IsCompleted: session.CompletedAt != nil,
+		Questions:   resQuestions,
+	}, nil
+}
+
+func toPracticeQuestionResponse(q *model.Question) *dto.PracticeQuestionResponse {
+	explanation := ""
+	if q.UserAnswer != nil {
+		explanation = q.Explanation
+	}
+
+	return &dto.PracticeQuestionResponse{
+		ID:           q.ID,
+		SessionID:    q.SessionID,
+		QuestionText: q.QuestionText,
+		Options:      q.Options,
+		UserAnswer:   q.UserAnswer,
+		IsCorrect:    q.IsCorrect,
+		Explanation:  explanation,
+	}
 }
 
 func (s *practiceService) SubmitAnswer(ctx context.Context, userID string, req dto.SubmitAnswerRequest) (*dto.SubmitAnswerResponse, error) {
@@ -114,6 +167,14 @@ func (s *practiceService) SubmitAnswer(ctx context.Context, userID string, req d
 }
 
 func (s *practiceService) GetResult(ctx context.Context, userID, sessionID string) (*dto.PracticeResultResponse, error) {
+	return s.buildPracticeResult(ctx, userID, sessionID, false)
+}
+
+func (s *practiceService) FinishSession(ctx context.Context, userID, sessionID string) (*dto.PracticeResultResponse, error) {
+	return s.buildPracticeResult(ctx, userID, sessionID, true)
+}
+
+func (s *practiceService) buildPracticeResult(ctx context.Context, userID, sessionID string, allowIncomplete bool) (*dto.PracticeResultResponse, error) {
 	session, err := s.repo.GetSessionByID(ctx, sessionID)
 	if err != nil {
 		return nil, err
@@ -129,19 +190,26 @@ func (s *practiceService) GetResult(ctx context.Context, userID, sessionID strin
 	}
 
 	correctCount := 0
+	answeredCount := 0
 	for _, q := range questions {
+		if q.UserAnswer != nil {
+			answeredCount++
+		}
 		if q.IsCorrect != nil && *q.IsCorrect {
 			correctCount++
 		}
 	}
-    fmt.Printf("DEBUG: Found %d questions, %d are correct\n", len(questions), correctCount)
+
+	if !allowIncomplete && session.CompletedAt == nil && answeredCount < len(questions) {
+		return nil, fmt.Errorf("practice session is not complete")
+	}
 
 	score := 0
 	if len(questions) > 0 {
 		score = (correctCount * 100) / len(questions)
 	}
-	
-	if session.CompletedAt == nil || !session.Score.Valid || session.Score.Int64 == 0 {
+
+	if session.CompletedAt == nil || !session.Score.Valid {
 		if err := s.repo.CompleteSession(ctx, sessionID, score); err != nil {
 			return nil, err
 		}

@@ -10,6 +10,7 @@ import remarkGfm from "remark-gfm";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import api from "@/lib/api";
+import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
 
 export default function SharePage() {
   const { id } = useParams();
@@ -74,13 +75,16 @@ export default function SharePage() {
                   h3: ({children}) => <h3 className="text-sm font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
                   p: ({children}) => <p className="text-gray-700 mb-2 leading-relaxed">{children}</p>,
                   strong: ({children}) => <strong className="font-bold text-primary">{children}</strong>,
+                  em: ({children}) => <em className="italic font-semibold text-gray-800">{children}</em>,
+                  del: ({children}) => <del className="text-gray-500 decoration-2">{children}</del>,
+                  a: ({href, children}) => renderAIMarkdownLink(href, children),
                   ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
                   ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
                   li: ({children}) => <li className="text-gray-700 text-sm">{children}</li>,
                   hr: () => <div className="my-5 h-px bg-primary/10" />,
                 }}
               >
-                {data.summary || ""}
+                {formatAIMarkdown(data.summary || "")}
               </ReactMarkdown>
             </div>
           </div>
@@ -146,13 +150,16 @@ export default function SharePage() {
                   h3: ({children}) => <h3 className="text-sm font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
                   p: ({children}) => <p className="text-gray-700 mb-2 leading-relaxed">{children}</p>,
                   strong: ({children}) => <strong className="font-bold text-gray-900">{children}</strong>,
+                  em: ({children}) => <em className="italic font-semibold text-gray-800">{children}</em>,
+                  del: ({children}) => <del className="text-gray-500 decoration-2">{children}</del>,
+                  a: ({href, children}) => renderAIMarkdownLink(href, children),
                   ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
                   ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
                   li: ({children}) => <li className="text-gray-700 text-sm">{children}</li>,
                   code: ({children}) => <code className="bg-gray-100 px-1 rounded text-sm font-mono">{children}</code>,
                 }}
               >
-                {data.answer || ""}
+                {formatAIMarkdown(data.answer || "")}
               </ReactMarkdown>
             </div>
           </div>

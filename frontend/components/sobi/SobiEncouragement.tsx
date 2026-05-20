@@ -6,6 +6,9 @@
  import { motion } from "framer-motion";
  import { Sparkles, Heart } from "lucide-react";
  import { SOBI_ASSETS } from "@/lib/assets";
+ import ReactMarkdown from "react-markdown";
+ import remarkGfm from "remark-gfm";
+ import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
  
  interface SobiEncouragementProps {
    message?: string;
@@ -50,9 +53,19 @@
              {isCorrect ? "Yeay, Betul Banget!" : "Yah, Belum Tepat..."}
            </p>
          </div>
-         <p className={cn("text-xs font-black leading-relaxed", isCorrect ? "text-neutral-800" : "text-neutral-800")}>
-           {message}
-         </p>
+         <div className={cn("text-xs font-black leading-relaxed", isCorrect ? "text-neutral-800" : "text-neutral-800")}>
+           <ReactMarkdown
+             remarkPlugins={[remarkGfm]}
+             components={{
+               p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+               em: ({ children }) => <em className="italic font-black">{children}</em>,
+               del: ({ children }) => <del className="text-neutral-500 decoration-2">{children}</del>,
+               a: ({ href, children }) => renderAIMarkdownLink(href, children),
+             }}
+           >
+             {formatAIMarkdown(message)}
+           </ReactMarkdown>
+         </div>
        </div>
      </motion.div>
    );

@@ -9,8 +9,26 @@ type StartPracticeRequest struct {
 }
 
 type StartPracticeResponse struct {
-	SessionID string            `json:"session_id"`
-	Questions []*model.Question `json:"questions"`
+	SessionID string                      `json:"session_id"`
+	Questions []*PracticeQuestionResponse `json:"questions"`
+}
+
+type PracticeQuestionResponse struct {
+	ID           string                `json:"id"`
+	SessionID    string                `json:"session_id"`
+	QuestionText string                `json:"question_text"`
+	Options      model.QuestionOptions `json:"options"`
+	UserAnswer   *string               `json:"user_answer,omitempty"`
+	IsCorrect    *bool                 `json:"is_correct,omitempty"`
+	Explanation  string                `json:"explanation,omitempty"`
+}
+
+type PracticeSessionResponse struct {
+	SessionID   string                      `json:"session_id"`
+	Subject     string                      `json:"subject"`
+	Difficulty  string                      `json:"difficulty"`
+	IsCompleted bool                        `json:"is_completed"`
+	Questions   []*PracticeQuestionResponse `json:"questions"`
 }
 
 type SubmitAnswerRequest struct {
@@ -24,11 +42,11 @@ type SubmitAnswerResponse struct {
 }
 
 type PracticeResultResponse struct {
-	SessionID   string            `json:"session_id"`
-	Subject     string            `json:"subject"`
-	Difficulty  string            `json:"difficulty"`
-	Score       int               `json:"score"`
-	TotalQuestions int             `json:"total_questions"`
-	CorrectAnswers int             `json:"correct_answers"`
-	Questions   []*model.Question `json:"questions"`
+	SessionID      string            `json:"session_id"`
+	Subject        string            `json:"subject"`
+	Difficulty     string            `json:"difficulty"`
+	Score          int               `json:"score"`
+	TotalQuestions int               `json:"total_questions"`
+	CorrectAnswers int               `json:"correct_answers"`
+	Questions      []*model.Question `json:"questions"`
 }

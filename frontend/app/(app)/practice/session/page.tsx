@@ -6,15 +6,47 @@ import { ChevronLeft, CheckCircle2, XCircle, Sparkles, ArrowRight, HelpCircle } 
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { useToastStore } from "@/store/toastStore";
 import SobiEncouragement from "@/components/sobi/SobiEncouragement";
 import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "@/components/ui/Modal";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
 
 interface Question {
   id: string;
   question_text: string;
   options: Record<string, string>;
+  user_answer?: string;
+  is_correct?: boolean;
+  explanation?: string;
+}
+
+function PracticeMarkdown({ children, className }: { children: string; className?: string }) {
+  return (
+    <div className={className}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p className="m-0">{children}</p>,
+          strong: ({ children }) => <strong className="font-black text-neutral-900">{children}</strong>,
+          em: ({ children }) => <em className="italic font-black text-neutral-900">{children}</em>,
+          del: ({ children }) => <del className="text-neutral-500 decoration-2">{children}</del>,
+          code: ({ children }) => (
+            <code className="rounded-lg bg-primary/10 px-1.5 py-0.5 font-black text-primary">{children}</code>
+          ),
+          a: ({ href, children }) => renderAIMarkdownLink(href, children),
+          ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-5 text-left">{children}</ul>,
+          ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-5 text-left">{children}</ol>,
+          li: ({ children }) => <li className="pl-1">{children}</li>,
+        }}
+      >
+        {formatAIMarkdown(children)}
+      </ReactMarkdown>
+    </div>
+  );
 }
 
 function PracticeSessionContent() {
@@ -33,6 +65,7 @@ function PracticeSessionContent() {
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [explanation, setExplanation] = useState<string>("");
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   useEffect(() => {
     if (!sessionID) {
@@ -42,11 +75,24 @@ function PracticeSessionContent() {
 
     const fetchSession = async () => {
       try {
-        const res = await api.get(`/practice/sessions/${sessionID}/result`);
-        setQuestions(res.data.questions || []);
-      } catch (err) {
-        console.error(err);
-        addToast("Gagal memuat sesi latihan.", "error");
+        const res = await api.get(`/practice/sessions/${sessionID}`);
+        const loadedQuestions: Question[] = res.data.questions || [];
+        const firstUnansweredIndex = loadedQuestions.findIndex((question) => !question.user_answer);
+
+        setQuestions(loadedQuestions);
+
+        if (loadedQuestions.length === 0) {
+          return;
+        }
+
+        if (firstUnansweredIndex === -1) {
+          router.push(`/practice/result?id=${sessionID}`);
+          return;
+        }
+
+        setCurrentIndex(firstUnansweredIndex);
+      } catch (err: unknown) {
+        addToast(getApiErrorMessage(err, "Gagal memuat sesi latihan."), "error");
       }
     };
 
@@ -54,8 +100,40 @@ function PracticeSessionContent() {
   }, [sessionID, router, addToast]);
 
   const currentQuestion = questions[currentIndex];
+  const hasUnansweredQuestions = questions.some((question) => !question.user_answer);
+
+  useEffect(() => {
+    if (!currentQuestion) return;
+
+    if (currentQuestion.user_answer) {
+      setSelectedOption(currentQuestion.user_answer);
+      setIsCorrect(Boolean(currentQuestion.is_correct));
+      setExplanation(currentQuestion.explanation || "");
+      setHasSubmitted(true);
+      return;
+    }
+
+    setSelectedOption(null);
+    setIsCorrect(false);
+    setExplanation("");
+    setHasSubmitted(false);
+  }, [currentQuestion]);
+
+  useEffect(() => {
+    if (!sessionID || questions.length === 0 || !hasUnansweredQuestions || isFinishing) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [sessionID, questions.length, hasUnansweredQuestions, isFinishing]);
 
   const handleSubmit = async () => {
+    if (isSubmitting || hasSubmitted) return;
+
     if (!selectedOption || !currentQuestion) return;
     
     setIsSubmitting(true);
@@ -67,9 +145,20 @@ function PracticeSessionContent() {
       setIsCorrect(res.data.is_correct);
       setExplanation(res.data.explanation);
       setHasSubmitted(true);
-    } catch (err) {
-      console.error(err);
-      addToast("Gagal mengirim jawaban. Coba lagi.", "error");
+      setQuestions((prevQuestions) =>
+        prevQuestions.map((question) =>
+          question.id === currentQuestion.id
+            ? {
+                ...question,
+                user_answer: selectedOption,
+                is_correct: res.data.is_correct,
+                explanation: res.data.explanation,
+              }
+            : question
+        )
+      );
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal mengirim jawaban. Coba lagi."), "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -78,11 +167,21 @@ function PracticeSessionContent() {
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
-      setSelectedOption(null);
-      setHasSubmitted(false);
-      setExplanation("");
     } else {
       router.push(`/practice/result?id=${sessionID}`);
+    }
+  };
+
+  const handleFinishSession = async () => {
+    if (!sessionID || isFinishing) return;
+
+    setIsFinishing(true);
+    try {
+      await api.post(`/practice/sessions/${sessionID}/finish`);
+      router.push(`/practice/result?id=${sessionID}`);
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal menyelesaikan latihan."), "error");
+      setIsFinishing(false);
     }
   };
 
@@ -148,7 +247,7 @@ function PracticeSessionContent() {
         </div>
       </motion.header>
 
-      <main className="flex-1 px-6 pt-10 pb-40 max-w-2xl mx-auto w-full">
+      <main className="flex-1 px-6 pt-10 pb-20 max-w-2xl mx-auto w-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -160,9 +259,9 @@ function PracticeSessionContent() {
             {/* Question Card Upgrade */}
             <div className="bg-white p-8 rounded-[3rem] border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
-              <h2 className="text-xl font-black text-neutral-800 leading-relaxed text-center">
+              <PracticeMarkdown className="text-xl font-black text-neutral-800 leading-relaxed text-center">
                 {currentQuestion.question_text}
-              </h2>
+              </PracticeMarkdown>
             </div>
 
             {/* Options Upgrade */}
@@ -210,7 +309,9 @@ function PracticeSessionContent() {
                       )}>
                         {key}
                       </span>
-                      <span className="text-[15px] font-black leading-relaxed">{value as React.ReactNode}</span>
+                      <PracticeMarkdown className="text-[15px] font-black leading-relaxed">
+                        {value}
+                      </PracticeMarkdown>
                     </div>
                     <motion.div
                       initial={{ scale: 0 }}
@@ -262,10 +363,10 @@ function PracticeSessionContent() {
       <Modal 
         isOpen={isExitModalOpen}
         onClose={() => setIsExitModalOpen(false)}
-        onConfirm={() => router.push("/practice")}
-        title="Keluar dari Latihan?"
-        description="Progress latihanmu di sesi ini tidak akan tersimpan jika kamu keluar sekarang."
-        confirmText="Ya, Keluar"
+        onConfirm={handleFinishSession}
+        title="Selesaikan Latihan?"
+        description="Latihan akan langsung selesai dan nilai dihitung dari jawaban yang sudah kamu kirim."
+        confirmText={isFinishing ? "Menyelesaikan..." : "Selesaikan"}
         cancelText="Lanjut Belajar"
         variant="warning"
       />

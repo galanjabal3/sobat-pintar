@@ -4,6 +4,7 @@
  import { useRouter, useParams } from "next/navigation";
  import { ChevronLeft, FileText, Sparkles, Copy, Share2, Download, Clock, ArrowRight } from "lucide-react";
  import api from "@/lib/api";
+ import { getApiErrorMessage } from "@/lib/apiError";
  import { motion } from "framer-motion";
  import { useToastStore } from "@/store/toastStore";
  import Image from "next/image";
@@ -13,6 +14,7 @@
  import ReactMarkdown from "react-markdown";
  import remarkGfm from "remark-gfm";
  import ShareModal from "@/components/ui/ShareModal";
+ import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
  
  interface SummaryDetail {
    id: string;
@@ -32,7 +34,10 @@
  function formatInlineMarkdown(value: string) {
    return escapeHtml(value)
      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-     .replace(/\*(.+?)\*/g, "<em>$1</em>");
+     .replace(/\*(.+?)\*/g, "<em>$1</em>")
+     .replace(/\+\+(.+?)\+\+/g, "<u>$1</u>")
+     .replace(/==(.+?)==/g, "<mark>$1</mark>")
+     .replace(/~~(.+?)~~/g, "<del>$1</del>");
  }
 
  function renderSummaryForPrint(markdown: string) {
@@ -95,6 +100,20 @@
    closeList();
    return html.join("");
  }
+
+function stripSummaryMarkdown(markdown: string) {
+  return markdown
+    .replace(/^#{1,6}\s+/gm, "")
+     .replace(/\*\*(.*?)\*\*/g, "$1")
+     .replace(/\*(.*?)\*/g, "$1")
+     .replace(/\+\+(.*?)\+\+/g, "$1")
+     .replace(/==(.*?)==/g, "$1")
+     .replace(/~~(.*?)~~/g, "$1")
+     .replace(/`([^`]+)`/g, "$1")
+    .replace(/^\s*[-*]\s+/gm, "- ")
+    .replace(/^-{3,}$/gm, "")
+    .trim();
+}
  
  export default function SummaryResultPage() {
    const router = useRouter();
@@ -114,20 +133,43 @@
      try {
        const response = await api.get(`/summary/${id}`);
        setDetail(response.data);
-     } catch (err) {
-       console.error(err);
-       addToast("Gagal mengambil detail rangkuman.", "error");
+     } catch (err: unknown) {
+       addToast(getApiErrorMessage(err, "Gagal mengambil detail rangkuman."), "error");
        router.push("/summary");
      } finally {
        setIsLoading(false);
      }
    };
  
-   const handleCopy = () => {
-     if (!detail) return;
-     navigator.clipboard.writeText(detail.summary);
-     addToast("Rangkuman disalin ke clipboard!", "success");
-   };
+  const handleCopy = async () => {
+    if (!detail) return;
+
+    const html = `<article>${renderSummaryForPrint(detail.summary)}</article>`;
+    const plainText = stripSummaryMarkdown(detail.summary);
+
+    try {
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([plainText], { type: "text/plain" }),
+          }),
+        ]);
+        addToast("Rangkuman berhasil disalin.", "success");
+        return;
+      }
+
+      await navigator.clipboard.writeText(plainText);
+      addToast("Rangkuman berhasil disalin.", "success");
+    } catch {
+      try {
+        await navigator.clipboard.writeText(plainText);
+        addToast("Rangkuman berhasil disalin.", "success");
+      } catch {
+        addToast("Gagal menyalin rangkuman.", "error");
+      }
+    }
+  };
 
    const handleDownloadPdf = () => {
      if (!detail) return;
@@ -189,6 +231,14 @@
              strong {
                color: #02A66F;
                font-weight: 800;
+             }
+             mark {
+               background: #fef3c7;
+               border-radius: 4px;
+               padding: 0 3px;
+             }
+             u {
+               text-underline-offset: 3px;
              }
              hr {
                border: 0;
@@ -268,7 +318,7 @@
          heading="Bagikan Rangkuman"
        />
  
-       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full pb-32">
+       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full pb-20">
          <motion.div
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
@@ -299,19 +349,21 @@
                    h3: ({children}) => <h3 className="text-base font-black text-neutral-800 mt-5 mb-2">{children}</h3>,
                    p: ({children}) => <p className="text-neutral-600 mb-4 leading-[1.8] font-medium text-[15px]">{children}</p>,
                    strong: ({children}) => <strong className="font-black text-primary">{children}</strong>,
-                   ul: ({children}) => <ul className="list-none mb-6 space-y-3">{children}</ul>,
-                   ol: ({children}) => <ol className="list-decimal list-inside mb-6 space-y-3 text-neutral-700">{children}</ol>,
+                   em: ({children}) => <em className="italic font-bold text-neutral-800">{children}</em>,
+                   del: ({children}) => <del className="text-neutral-500 decoration-2">{children}</del>,
+                   a: ({href, children}) => renderAIMarkdownLink(href, children),
+                   ul: ({children}) => <ul className="mb-6 list-disc space-y-3 pl-5 marker:text-primary">{children}</ul>,
+                   ol: ({children}) => <ol className="mb-6 list-decimal space-y-3 pl-5 marker:font-black marker:text-primary">{children}</ol>,
                    li: ({children}) => (
-                     <li className="flex items-start gap-3 text-neutral-600 font-medium text-[15px] leading-relaxed">
-                       <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2.5 flex-shrink-0" />
-                       <span>{children}</span>
+                     <li className="pl-2 text-neutral-600 font-medium text-[15px] leading-relaxed [&>p]:m-0 [&>ol]:mt-3 [&>ul]:mt-3">
+                       {children}
                      </li>
                    ),
                    hr: () => <div className="my-8 h-px bg-primary/10" />,
                    blockquote: ({children}) => <div className="border-l-4 border-secondary bg-secondary/5 p-4 rounded-r-2xl italic text-neutral-600 mb-6">{children}</div>,
                  }}
                >
-                 {detail?.summary || ""}
+                 {formatAIMarkdown(detail?.summary || "")}
                </ReactMarkdown>
              </div>
            </div>

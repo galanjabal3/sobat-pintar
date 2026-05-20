@@ -5,6 +5,7 @@
  import { ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb } from "lucide-react";
  import ReactMarkdown from "react-markdown";
  import remarkGfm from "remark-gfm";
+ import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
  import { useToastStore } from "@/store/toastStore";
@@ -215,6 +216,9 @@
                      h3: ({children}) => <h3 className="text-md font-black text-neutral-800 mt-4 mb-2">{children}</h3>,
                      p: ({children}) => <p className="text-neutral-600 mb-4 leading-[1.8] font-medium text-[15px]">{children}</p>,
                      strong: ({children}) => <strong className="font-black text-primary">{children}</strong>,
+                     em: ({children}) => <em className="italic font-bold text-neutral-800">{children}</em>,
+                     del: ({children}) => <del className="text-neutral-500 decoration-2">{children}</del>,
+                     a: ({href, children}) => renderAIMarkdownLink(href, children),
                      ul: ({children}) => <ul className="mb-6 list-disc space-y-3 pl-5 marker:text-primary">{children}</ul>,
                      ol: ({children}) => <ol className="mb-6 list-decimal space-y-3 pl-5 marker:font-black marker:text-primary">{children}</ol>,
                      li: ({children}) => (
@@ -226,7 +230,7 @@
                      blockquote: ({children}) => <div className="border-l-4 border-secondary bg-secondary/5 p-4 rounded-r-2xl italic text-neutral-600 mb-6">{children}</div>,
                    }}
                  >
-                   {explanation?.answer || ""}
+                   {formatAIMarkdown(explanation?.answer || "")}
                  </ReactMarkdown>
                </div>
              </div>

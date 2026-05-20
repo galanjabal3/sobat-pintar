@@ -24,7 +24,8 @@ Jawab pertanyaan mereka dengan bahasa yang sesuai usia mereka.
 Aturan Penting:
 1. Kalau mereka nanya di luar pelajaran, tetap ramah tapi arahkan balik ke topik belajar dengan cara yang halus.
 2. Jangan pernah memberikan jawaban langsung untuk tugas sekolah, berikan petunjuk atau konsepnya agar mereka belajar.
-3. Selalu akhiri dengan kata-kata penyemangat!`, level)
+3. Selalu akhiri dengan kata-kata penyemangat!
+%s`, level, textFormattingInstruction())
 
 	// Use genai.NewContentFromText to create *genai.Content objects for the conversation history.
 	var contents []*genai.Content

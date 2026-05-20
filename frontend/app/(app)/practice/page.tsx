@@ -7,11 +7,10 @@
  import Link from "next/link";
  import { cn } from "@/lib/utils";
  import api from "@/lib/api";
+ import { getApiErrorMessage } from "@/lib/apiError";
  import { useAuthStore } from "@/store/authStore";
  import { useToastStore } from "@/store/toastStore";
  import { motion } from "framer-motion";
- import Image from "next/image";
- import { SOBI_ASSETS } from "@/lib/assets";
  
  const SUBJECTS = [
    { id: "Matematika", icon: <Calculator size={24} />, color: "bg-blue-100 text-blue-600 border-blue-200", desc: "Berhitung jadi seru!" },
@@ -31,6 +30,8 @@
    const [isLoading, setIsLoading] = useState(false);
  
    const handleStart = async () => {
+     if (isLoading) return;
+
      setIsLoading(true);
      try {
        const userLevel = user?.level || "SD";
@@ -43,9 +44,8 @@
        
        const sessionID = response.data.session_id;
        router.push(`/practice/session?id=${sessionID}`);
-     } catch (err) {
-       console.error("Failed to start session:", err);
-       addToast("Gagal memulai latihan. Coba lagi ya!", "error");
+     } catch (err: unknown) {
+       addToast(getApiErrorMessage(err, "Gagal memulai latihan. Coba lagi ya!"), "error");
        setIsLoading(false);
      }
    };
@@ -159,6 +159,7 @@
              <Button
                onClick={handleStart}
                isLoading={isLoading}
+               disabled={isLoading}
                className="w-full py-7 h-auto text-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black group"
              >
                Mulai Latihan
@@ -176,29 +177,6 @@
          </div>
        </div>
  
-       {/* Floating Mascot Sobi Background */}
-       <div className="fixed -bottom-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none -z-10" />
-       <motion.div 
-         animate={{ 
-           y: [0, -10, 0],
-           x: [0, 5, 0]
-         }}
-         transition={{ 
-           duration: 6, 
-           repeat: Infinity,
-           ease: "easeInOut"
-         }}
-         className="fixed bottom-32 -left-10 w-40 h-40 pointer-events-none opacity-20 grayscale blur-[2px] -z-10"
-       >
-         <Image
-            src={SOBI_ASSETS.DEFAULT}
-           alt="Sobi BG"
-           fill
-           className="object-contain"
-           priority
-           sizes="160px"
-         />
-       </motion.div>
      </div>
    );
  }

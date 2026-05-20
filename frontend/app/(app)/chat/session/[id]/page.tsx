@@ -12,6 +12,7 @@
  import { id as idLocale } from "date-fns/locale";
  import ReactMarkdown from "react-markdown";
  import remarkGfm from "remark-gfm";
+ import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
  import { useAuthStore } from "@/store/authStore";
 
  interface Message {
@@ -222,8 +223,15 @@
                  )}>
                    {msg.role === "assistant" ? (
                      <div className="prose prose-sm max-w-none prose-p:my-2 prose-p:leading-relaxed prose-strong:text-neutral-900 prose-ol:my-2 prose-ul:my-2 prose-li:my-1 prose-li:pl-1 prose-headings:my-2 prose-headings:text-neutral-900">
-                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                         {msg.content}
+                       <ReactMarkdown
+                         remarkPlugins={[remarkGfm]}
+                         components={{
+                           a: ({href, children}) => renderAIMarkdownLink(href, children),
+                           em: ({children}) => <em className="italic font-semibold">{children}</em>,
+                           del: ({children}) => <del className="text-neutral-500 decoration-2">{children}</del>,
+                         }}
+                       >
+                         {formatAIMarkdown(msg.content)}
                        </ReactMarkdown>
                      </div>
                    ) : (

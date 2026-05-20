@@ -23,6 +23,7 @@ type PracticeResponse struct {
 func (c *Client) GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int) ([]PracticeQuestion, error) {
 	prompt := fmt.Sprintf(`Kamu adalah Sobi. Buatkan %d soal latihan mata pelajaran %s untuk siswa tingkat %s.
 Tingkat kesulitan: %s (mudah/sedang/sulit).
+%s
 Format response HANYA JSON seperti ini, tanpa teks lain:
 {
   "questions": [
@@ -33,7 +34,7 @@ Format response HANYA JSON seperti ini, tanpa teks lain:
       "explanation": "kenapa jawabannya A"
     }
   ]
-}`, count, subject, level, difficulty)
+}`, count, subject, level, difficulty, textFormattingInstruction())
 
 	// Call GenerateContent with the content object.
 	resp, err := c.GenAI.Models.GenerateContent(ctx, c.ModelName, genai.Text(prompt), nil)
