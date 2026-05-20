@@ -85,7 +85,12 @@ func (r *practiceRepository) CreateQuestions(ctx context.Context, questions []*m
 }
 
 func (r *practiceRepository) GetQuestionsBySessionID(ctx context.Context, sessionID string) ([]*model.Question, error) {
-	query := `SELECT id, session_id, question_text, options, correct_answer, user_answer, is_correct, explanation FROM questions WHERE session_id = $1`
+	query := `
+		SELECT id, session_id, question_text, options, correct_answer, user_answer, is_correct, explanation
+		FROM questions
+		WHERE session_id = $1
+		ORDER BY id ASC
+	`
 	rows, err := r.db.Query(ctx, query, sessionID)
 	if err != nil {
 		return nil, err

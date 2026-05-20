@@ -83,12 +83,42 @@ func (h *PracticeHandler) SubmitAnswer(c *gin.Context) {
 	})
 }
 
+func (h *PracticeHandler) GetSession(c *gin.Context) {
+	userID := c.GetString("user_id")
+	sessionID := c.Param("id")
+
+	res, err := h.service.GetSession(c.Request.Context(), userID, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Success: false,
+			Message: "Gagal mengambil sesi latihan",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Sesi latihan berhasil diambil",
+		Data:    res,
+	})
+}
+
 func (h *PracticeHandler) GetResult(c *gin.Context) {
 	userID := c.GetString("user_id")
 	sessionID := c.Param("id")
 
 	res, err := h.service.GetResult(c.Request.Context(), userID, sessionID)
 	if err != nil {
+		if err.Error() == "practice session is not complete" {
+			c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+				Success: false,
+				Message: "Selesaikan semua soal dulu ya.",
+				Error:   err.Error(),
+			})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Success: false,
 			Message: "Gagal mengambil hasil latihan",
@@ -100,6 +130,27 @@ func (h *PracticeHandler) GetResult(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Hasil latihan berhasil diambil",
+		Data:    res,
+	})
+}
+
+func (h *PracticeHandler) FinishSession(c *gin.Context) {
+	userID := c.GetString("user_id")
+	sessionID := c.Param("id")
+
+	res, err := h.service.FinishSession(c.Request.Context(), userID, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Success: false,
+			Message: "Gagal menyelesaikan latihan",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Latihan berhasil diselesaikan",
 		Data:    res,
 	})
 }

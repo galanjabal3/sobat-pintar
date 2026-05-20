@@ -13,8 +13,9 @@ Format rangkuman:
 1. Poin-poin penting (bullet points, max 10)
 2. Kesimpulan singkat (2-3 kalimat)
 3. Tips untuk mengingat materi ini
+%s
 
-Materi: %s`, level, content)
+Materi: %s`, level, textFormattingInstruction(), content)
 
 	// Call GenerateContent with the content object.
 	resp, err := c.GenAI.Models.GenerateContent(ctx, c.ModelName, genai.Text(prompt), nil)

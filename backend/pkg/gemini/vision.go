@@ -11,7 +11,8 @@ func (c *Client) ExplainImage(ctx context.Context, level string, imageData []byt
 	prompt := fmt.Sprintf(`Kamu adalah Sobi, teman belajar AI yang friendly dan sabar.
 Jelaskan soal dalam gambar berikut kepada siswa tingkat %s dengan bahasa yang mudah dipahami.
 Gunakan analogi yang sederhana jika perlu.
-Jangan langsung kasih jawaban — jelaskan konsepnya dulu step by step.`, level)
+Jangan langsung kasih jawaban — jelaskan konsepnya dulu step by step.
+%s`, level, textFormattingInstruction())
 
 	// Create parts for text and image data as pointers.
 	parts := []*genai.Part{

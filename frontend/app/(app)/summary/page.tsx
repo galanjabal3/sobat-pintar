@@ -2,12 +2,12 @@
  
  import React, { useEffect, useState } from "react";
  import { useRouter } from "next/navigation";
- import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight } from "lucide-react";
- import api from "@/lib/api";
+import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight } from "lucide-react";
+import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToastStore } from "@/store/toastStore";
-import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -16,24 +16,26 @@ import { SOBI_ASSETS } from "@/lib/assets";
 
 interface SummaryHistory {
   id: string;
-  title: string;
-  content: string;
-  result: string;
+  title?: string;
+  summary?: string;
   created_at: string;
+}
+
+function getSummaryPreview(item: SummaryHistory) {
+  return item.title || item.summary?.split(/\r?\n/).find((line) => line.trim()) || "Materi Tanpa Judul";
 }
 
 export default function SummaryPage() {
   const router = useRouter();
   const { addToast } = useToastStore();
-  const { user, fetchProfile } = useAuthStore();
   const [history, setHistory] = useState<SummaryHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [text, setText] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const canSubmit = Boolean(text.trim());
 
   useEffect(() => {
-    fetchProfile();
     fetchHistory();
   }, []);
 
@@ -41,15 +43,16 @@ export default function SummaryPage() {
     try {
       const response = await api.get("/summary/history");
       setHistory(response.data || []);
-    } catch (err) {
-      console.error(err);
-      addToast("Gagal mengambil riwayat rangkuman.", "error");
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal mengambil riwayat rangkuman."), "error");
     } finally {
       setIsLoading(false);
     }
   };
  
    const handleSummarize = async () => {
+     if (isSubmitting) return;
+
      if (!text.trim()) {
        addToast("Masukkan teks yang ingin dirangkum ya!", "error");
        return;
@@ -64,9 +67,8 @@ export default function SummaryPage() {
        addToast("Rangkuman berhasil dibuat!", "success");
        setText("");
        router.push(`/summary/result/${response.data.id}`);
-     } catch (err) {
-       console.error(err);
-       addToast("Gagal membuat rangkuman.", "error");
+     } catch (err: unknown) {
+       addToast(getApiErrorMessage(err, "Gagal membuat rangkuman."), "error");
      } finally {
        setIsSubmitting(false);
      }
@@ -84,9 +86,8 @@ export default function SummaryPage() {
       await api.delete(`/summary/${deleteId}`);
       setHistory(history.filter(h => h.id !== deleteId));
       addToast("Rangkuman berhasil dihapus.", "success");
-    } catch (err) {
-      console.error(err);
-      addToast("Gagal menghapus rangkuman.", "error");
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal menghapus rangkuman."), "error");
     } finally {
       setDeleteId(null);
     }
@@ -149,6 +150,7 @@ export default function SummaryPage() {
              <Button
                onClick={handleSummarize}
                isLoading={isSubmitting}
+               disabled={!canSubmit || isSubmitting}
                className="w-full mt-6 py-6 h-auto text-lg rounded-[2rem] shadow-2xl shadow-primary/20 font-black group"
              >
                Buat Rangkuman
@@ -191,9 +193,9 @@ export default function SummaryPage() {
                        <FileText size={24} strokeWidth={2.5} />
                      </div>
                      <div className="flex-1 min-w-0">
-                       <div className="flex justify-between items-start">
-                         <h4 className="font-black text-neutral-800 text-sm line-clamp-1 mb-1">
-                           {item.title || "Materi Tanpa Judul"}
+                       <div className="flex justify-between items-start gap-3">
+                         <h4 className="font-black text-neutral-800 text-sm leading-snug line-clamp-2 break-words mb-1">
+                           {getSummaryPreview(item)}
                          </h4>
                          <button
                            onClick={(e) => handleDelete(e, item.id)}

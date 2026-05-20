@@ -74,6 +74,8 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 		{
 			practice.POST("/start", practiceH.StartSession)
 			practice.POST("/questions/:id/answer", practiceH.SubmitAnswer)
+			practice.GET("/sessions/:id", practiceH.GetSession)
+			practice.POST("/sessions/:id/finish", practiceH.FinishSession)
 			practice.GET("/sessions/:id/result", practiceH.GetResult)
 			practice.GET("/history", practiceH.GetHistory)
 			practice.GET("/progress", practiceH.GetDailyProgress)

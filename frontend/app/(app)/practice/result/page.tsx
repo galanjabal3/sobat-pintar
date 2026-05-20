@@ -5,6 +5,7 @@
  import { Trophy, ArrowRight, Star, Sparkles, Home, RotateCcw, CheckCircle2, XCircle } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
+ import { getApiErrorMessage } from "@/lib/apiError";
  import { useToastStore } from "@/store/toastStore";
  import Image from "next/image";
  import { motion } from "framer-motion";
@@ -38,9 +39,9 @@
        try {
          const response = await api.get(`/practice/sessions/${id}/result`);
          setResult(response.data);
-       } catch (err) {
-         console.error(err);
-         addToast("Gagal memuat hasil latihan.", "error");
+       } catch (err: unknown) {
+         addToast(getApiErrorMessage(err, "Selesaikan semua soal dulu ya."), "error");
+         router.push("/practice");
        } finally {
          setIsLoading(false);
        }
