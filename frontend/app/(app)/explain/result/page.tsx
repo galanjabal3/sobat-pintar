@@ -66,7 +66,8 @@
    }, [id, router]);
  
    const handleReExplain = async () => {
-     if (!explanation?.id) return;
+     if (!explanation?.id || isReExplaining) return;
+
      setIsReExplaining(true);
      try {
        const response = await api.post(`/explain/${explanation.id}/re-explain`);
@@ -115,7 +116,7 @@
        <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary/5 to-transparent -z-10" />
        <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -z-10" />
  
-       <div className="px-6 pt-12 pb-40 max-w-2xl mx-auto">
+       <div className="px-6 pt-12 pb-20 max-w-2xl mx-auto">
          <motion.header 
            initial={{ opacity: 0, y: -10 }}
            animate={{ opacity: 1, y: 0 }}
@@ -214,12 +215,11 @@
                      h3: ({children}) => <h3 className="text-md font-black text-neutral-800 mt-4 mb-2">{children}</h3>,
                      p: ({children}) => <p className="text-neutral-600 mb-4 leading-[1.8] font-medium text-[15px]">{children}</p>,
                      strong: ({children}) => <strong className="font-black text-primary">{children}</strong>,
-                     ul: ({children}) => <ul className="list-none mb-6 space-y-3">{children}</ul>,
-                     ol: ({children}) => <ol className="list-decimal list-inside mb-6 space-y-3 font-bold text-neutral-800">{children}</ol>,
+                     ul: ({children}) => <ul className="mb-6 list-disc space-y-3 pl-5 marker:text-primary">{children}</ul>,
+                     ol: ({children}) => <ol className="mb-6 list-decimal space-y-3 pl-5 marker:font-black marker:text-primary">{children}</ol>,
                      li: ({children}) => (
-                       <li className="flex items-start gap-3 text-neutral-600 font-medium text-[15px] leading-relaxed">
-                         <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2.5 flex-shrink-0" />
-                         <span>{children}</span>
+                       <li className="pl-2 text-neutral-600 font-medium text-[15px] leading-relaxed [&>p]:m-0 [&>ol]:mt-3 [&>ul]:mt-3">
+                         {children}
                        </li>
                      ),
                      code: ({children}) => <code className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-sm font-black font-mono border border-primary/10">{children}</code>,
@@ -242,6 +242,7 @@
              <Button 
                onClick={handleReExplain}
                isLoading={isReExplaining}
+               disabled={isReExplaining}
                variant="outline" 
                className="w-full py-6 h-auto text-sm rounded-[2rem] border-2 border-gray-100 font-black text-neutral-500 hover:bg-gray-50 hover:text-primary hover:border-primary/20 transition-all shadow-xl shadow-black/5"
              >

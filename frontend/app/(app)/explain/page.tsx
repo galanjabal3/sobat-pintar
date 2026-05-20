@@ -2,12 +2,12 @@
  
  import React, { useState, useRef, useEffect } from "react";
  import { useRouter } from "next/navigation";
- import { Camera, Type, Send, Image as ImageIcon, Sparkles, X, ChevronLeft } from "lucide-react";
+ import { Camera, Type, Send, Sparkles, X, ChevronLeft, School } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
+ import { getApiErrorMessage } from "@/lib/apiError";
  import { useAuthStore } from "@/store/authStore";
  import { useToastStore } from "@/store/toastStore";
- import { cn } from "@/lib/utils";
  import Link from "next/link";
  import Image from "next/image";
  import { motion, AnimatePresence } from "framer-motion";
@@ -23,17 +23,35 @@
    const [isLoading, setIsLoading] = useState(false);
    const fileInputRef = useRef<HTMLInputElement>(null);
    const [history, setHistory] = useState<any[]>([]);
-   const [selectedLevel, setSelectedLevel] = useState(user?.level || "SD");
+   const userLevel = user?.level || "SD";
+   const canSubmit = Boolean(question.trim() || imageFile);
  
    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      if (e.target.files && e.target.files[0]) {
        const file = e.target.files[0];
        setImageFile(file);
-       setPreviewUrl(URL.createObjectURL(file));
+       setPreviewUrl((currentUrl) => {
+         if (currentUrl) URL.revokeObjectURL(currentUrl);
+         return URL.createObjectURL(file);
+       });
+     }
+   };
+
+   const clearImage = () => {
+     setImageFile(null);
+     setPreviewUrl((currentUrl) => {
+       if (currentUrl) URL.revokeObjectURL(currentUrl);
+       return null;
+     });
+
+     if (fileInputRef.current) {
+       fileInputRef.current.value = "";
      }
    };
  
    const handleExplain = async () => {
+     if (isLoading) return;
+
      if (!question.trim() && !imageFile) {
        addToast("Harap ketik soal atau pilih gambar!", "error");
        return;
@@ -57,16 +75,15 @@
  
        const response = await api.post("/explain", {
          question: question,
-         level: selectedLevel,
+         level: userLevel,
          image_url: imageUrl,
        });
        router.push(`/explain/result?id=${response.data.id}`);
-     } catch (err) {
-       console.error(err);
-       addToast("Maaf, Sobi gagal memproses pertanyaanmu. Coba lagi ya!", "error");
-     } finally {
-       setIsLoading(false);
-     }
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Maaf, Sobi gagal memproses pertanyaanmu. Coba lagi ya!"), "error");
+    } finally {
+      setIsLoading(false);
+    }
    };
  
    useEffect(() => {
@@ -78,12 +95,18 @@
          if (response?.data && Array.isArray(response.data)) {
            setHistory(response.data.slice(0, 3));
          }
-       } catch (err) {
-         console.error("Failed to fetch history preview", err);
-       }
+      } catch {
+        // History preview is optional on this screen.
+      }
      };
      fetchHistory();
-   }, []);
+   }, [fetchProfile]);
+
+   useEffect(() => {
+     return () => {
+       if (previewUrl) URL.revokeObjectURL(previewUrl);
+     };
+   }, [previewUrl]);
  
    return (
      <div className="min-h-screen bg-[#FDFEFF] relative overflow-hidden">
@@ -173,8 +196,9 @@
                  <motion.button 
                    whileHover={{ scale: 1.1 }}
                    whileTap={{ scale: 0.9 }}
-                   onClick={() => { setImageFile(null); setPreviewUrl(null); }}
+                   onClick={clearImage}
                    className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-2xl text-red-500 shadow-xl"
+                   aria-label="Hapus foto soal"
                  >
                    <X size={20} strokeWidth={3} />
                  </motion.button>
@@ -195,31 +219,20 @@
              />
            </div>
  
-           {/* Level Selector Upgrade */}
-           <div className="flex flex-col gap-4 mb-10">
-             <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">Tingkat Sekolah</p>
-             <div className="flex justify-center p-1.5 bg-gray-100/50 rounded-full w-full max-w-[300px] mx-auto border border-gray-100">
-               {["SD", "SMP", "SMA"].map((lvl) => (
-                 <button
-                   key={lvl}
-                   onClick={() => setSelectedLevel(lvl)}
-                   className={cn(
-                     "flex-1 py-2.5 rounded-full text-xs font-black transition-all duration-300",
-                     selectedLevel === lvl
-                       ? "bg-white text-primary shadow-xl shadow-primary/10"
-                       : "text-neutral-400 hover:text-neutral-600"
-                   )}
-                 >
-                   {lvl}
-                 </button>
-               ))}
+           <div className="mb-10 flex justify-center">
+             <div className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-5 py-3 text-primary">
+               <School size={16} strokeWidth={2.5} />
+               <span className="text-[10px] font-black uppercase tracking-widest">
+                 Jenjang {userLevel}
+               </span>
              </div>
            </div>
  
            {/* Action Button Upgrade */}
            <Button
              onClick={handleExplain}
-             className="w-full py-8 h-auto text-xl font-black rounded-[2rem] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-primary/90"
+             disabled={!canSubmit}
+             className="w-full py-8 h-auto text-xl font-black rounded-[2rem] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-primary/90 disabled:shadow-none"
              isLoading={isLoading}
            >
              <Send size={24} strokeWidth={3} className="mr-3" />
@@ -266,11 +279,11 @@
                        href={`/explain/result?id=${item.id}`}
                        className="group flex items-center p-5 bg-white border-2 border-white rounded-[2rem] shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all duration-300"
                      >
-                       <div className="w-12 h-12 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mr-5 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                       <div className="w-12 h-12 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mr-4 group-hover:bg-primary group-hover:text-white transition-all duration-300 shrink-0">
                          <Type size={20} strokeWidth={2.5} />
                        </div>
                        <div className="flex-1 min-w-0">
-                         <p className="text-sm text-neutral-800 font-black truncate pr-4">
+                         <p className="text-sm text-neutral-800 font-black leading-snug line-clamp-2 break-words">
                            {item.question_text || "Soal Gambar"}
                          </p>
                          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-1">Selesai Dianalisis</p>
