@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${poppins.variable} ${plusJakartaSans.variable}`}>
       <body>
-        <main className="min-h-screen max-w-md mx-auto bg-white relative">
+        <main className="relative mx-auto min-h-dvh w-full max-w-[430px] overflow-hidden bg-white shadow-2xl shadow-black/20 md:border-x md:border-white/10">
           {children}
           <ToastContainer />
         </main>
