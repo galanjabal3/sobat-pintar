@@ -5,13 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/Button";
 import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
 import { SOBI_ASSETS } from "@/lib/assets";
 import { renderGoogleButton } from "@/lib/googleAuth";
@@ -33,11 +34,13 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const user = useAuthStore((state) => state.user);
 
+  const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -54,11 +57,28 @@ export default function RegisterPage() {
 
   const selectedLevel = watch("level");
 
+  useEffect(() => {
+    const unsub = useAuthStore.persist.onFinishHydration(() => {
+      setIsHydrated(true);
+    });
+
+    if (useAuthStore.persist.hasHydrated()) {
+      setIsHydrated(true);
+    }
+
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated && user) {
+      router.push("/dashboard");
+    }
+  }, [isHydrated, user, router]);
+
   const handleGoogleResponse = useCallback(
     async (response: any) => {
       setIsLoading(true);
       setError(null);
-      setSuccess(null);
 
       try {
         const res = await api.post("/auth/google", {
@@ -69,11 +89,8 @@ export default function RegisterPage() {
 
         setAuth(user, access_token, refresh_token);
         router.push("/dashboard");
-      } catch (err: any) {
-        setError(
-          err.response?.data?.error ||
-            "Google register gagal. Silakan coba lagi."
-        );
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, "Google register gagal. Silakan coba lagi."));
       } finally {
         setIsLoading(false);
       }
@@ -99,20 +116,27 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     setError(null);
-    setSuccess(null);
 
     try {
       await api.post("/auth/register", data);
 
-      setSuccess("Pendaftaran berhasil! Mengalihkan ke halaman masuk...");
+      let response;
 
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
-    } catch (err: any) {
-      setError(
-        err.response?.data?.error || "Pendaftaran gagal. Silakan coba lagi."
-      );
+      try {
+        response = await api.post("/auth/login", {
+          email: data.email,
+          password: data.password,
+        });
+      } catch {
+        throw new Error("Akun berhasil dibuat, tapi belum bisa masuk otomatis. Silakan coba masuk manual.");
+      }
+
+      const { access_token, refresh_token, user } = response.data;
+
+      setAuth(user, access_token, refresh_token);
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Pendaftaran gagal. Silakan coba lagi."));
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +179,10 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-4 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5"
+      >
         <div>
           <input
             {...register("name")}
@@ -189,13 +216,23 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <input
-            {...register("password")}
-            type="password"
-            placeholder="Password"
-            autoComplete="new-password"
-            className="w-full rounded-2xl border-2 border-transparent bg-gray-50 p-4 font-bold text-neutral-700 transition-all placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white focus:outline-none"
-          />
+          <div className="relative">
+            <input
+              {...register("password")}
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              autoComplete="new-password"
+              className="w-full rounded-2xl border-2 border-transparent bg-gray-50 p-4 pr-14 font-bold text-neutral-700 transition-all placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 transition-colors hover:text-primary"
+              aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
           {errors.password && (
             <p className="ml-2 mt-1.5 text-[10px] font-bold text-error">
@@ -242,12 +279,6 @@ export default function RegisterPage() {
         {error && (
           <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-xs font-bold text-error">
             {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4 text-xs font-bold text-primary">
-            {success}
           </div>
         )}
 

@@ -5,13 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/Button";
 import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { SOBI_ASSETS } from "@/lib/assets";
 import { renderGoogleButton } from "@/lib/googleAuth";
 import { useAuthStore } from "@/store/authStore";
@@ -35,6 +36,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -76,10 +78,8 @@ export default function LoginPage() {
 
         setAuth(user, access_token, refresh_token);
         router.push("/dashboard");
-      } catch (err: any) {
-        setError(
-          err.response?.data?.error || "Google login gagal. Silakan coba lagi."
-        );
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, "Google login gagal. Silakan coba lagi."));
       } finally {
         setIsLoading(false);
       }
@@ -112,8 +112,8 @@ export default function LoginPage() {
 
       setAuth(user, access_token, refresh_token);
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Login gagal. Silakan coba lagi.");
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Login gagal. Silakan coba lagi."));
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +156,10 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-5 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5"
+      >
         <div>
           <input
             {...register("email")}
@@ -174,13 +177,23 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <input
-            {...register("password")}
-            type="password"
-            placeholder="Password"
-            autoComplete="current-password"
-            className="w-full rounded-2xl border-2 border-transparent bg-gray-50 p-4 font-bold text-neutral-700 transition-all placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white focus:outline-none"
-          />
+          <div className="relative">
+            <input
+              {...register("password")}
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              autoComplete="current-password"
+              className="w-full rounded-2xl border-2 border-transparent bg-gray-50 p-4 pr-14 font-bold text-neutral-700 transition-all placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 transition-colors hover:text-primary"
+              aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
           {errors.password && (
             <p className="ml-2 mt-1.5 text-[10px] font-bold text-error">

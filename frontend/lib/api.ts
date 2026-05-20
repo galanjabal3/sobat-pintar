@@ -9,6 +9,12 @@ const api = axios.create({
   },
 });
 
+function isAuthRequest(url?: string): boolean {
+  if (!url) return false;
+
+  return url.startsWith("/auth/");
+}
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -34,7 +40,13 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const shouldSkipRefresh = isAuthRequest(originalRequest?.url);
+
+    if (error.response?.status === 401 && !shouldSkipRefresh && !originalRequest._retry) {
       originalRequest._retry = true;
       const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
 
