@@ -275,7 +275,7 @@ The migration runner applies all `.sql` files in sorted order. It does not track
 
 ## Current Product Decision
 
-Groups/Kolaborasi should be treated as a future feature for now. The existing database migrations, models, DTOs, handler, and frontend components can stay as scaffolding, but the active product should not present collaboration as a completed feature until backend repository/service logic and route registration are implemented.
+Groups/Kolaborasi should be treated as a future feature for now. The existing database migrations, models, DTOs, handler, and `/groups` placeholder page can stay as scaffolding, but the active product should not present collaboration as a completed feature until backend repository/service logic and route registration are implemented.
 
 ## Next Recommended Work
 
