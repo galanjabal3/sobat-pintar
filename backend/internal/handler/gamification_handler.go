@@ -31,7 +31,7 @@ func (h *GamificationHandler) GetPoints(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Poin berhasil diambil",
-		Data:    gin.H{"points": points},
+		Data:    map[string]int{"points": points},
 	})
 }
 

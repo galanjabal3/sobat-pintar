@@ -191,6 +191,6 @@ func (h *PracticeHandler) GetDailyProgress(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Progress harian berhasil diambil",
-		Data:    gin.H{"count": count},
+		Data:    map[string]int{"count": count},
 	})
 }
