@@ -73,7 +73,6 @@ Frontend layout:
 - `frontend/lib`: API client, utility functions, Sobi assets, Google auth helper, AI markdown formatting
 - `frontend/store`: Zustand stores
 - `frontend/services/api`: small API wrappers for auth and chat
-- `frontend/hooks` and `frontend/constants`: currently empty placeholder files
 
 ## Active Backend API
 
@@ -272,7 +271,6 @@ The migration runner applies all `.sql` files in sorted order. It does not track
 - Summary file upload/extraction is not implemented despite older docs claiming PDF support.
 - Cloudflare R2 and FCM are placeholder packages.
 - Rate limiting middleware is a no-op.
-- Some empty placeholder files remain in `frontend/hooks`, `frontend/constants`, `frontend/components/sobi/SobiMascot.tsx`, and `frontend/components/layout`.
 - The frontend `upload-test` page posts to `/api/v1/upload/profile` relative to the Next.js app, which may not hit the backend unless a proxy is configured.
 - Backend migrations do not use a migration tracking table.
 - Some handlers return raw `gin.H{"error": ...}` while others return `BaseResponse`; the frontend API client partially normalizes only the `BaseResponse` success shape.
@@ -287,12 +285,11 @@ Recommended order:
 
 1. Standardize backend API response and error shapes so frontend handling is predictable across all features.
 2. Keep Summary positioned as text-based summarization, or implement PDF/image text extraction before advertising file-based summaries.
-3. Clean up or implement empty frontend placeholder files.
-4. Add focused backend tests for auth, practice scoring, summary validation, and gamification point mutations.
+3. Add focused backend tests for auth, practice scoring, summary validation, and gamification point mutations.
 
 Near-term priority:
 
-- API response consistency and automatic badge unlock are now implemented.
+- API response consistency, automatic badge unlock, and empty frontend placeholder cleanup are now implemented.
 - Keep Groups/Kolaborasi documented as scaffolded/future work until the team intentionally starts that feature.
 
 ## Local Development
