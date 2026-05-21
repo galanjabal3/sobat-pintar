@@ -10,6 +10,7 @@ import (
 type GamificationRepository interface {
 	GetUserPoints(ctx context.Context, userID string) (int, error)
 	AddPoints(ctx context.Context, userID string, points int, activityType string) error
+	CountActivity(ctx context.Context, userID, activityType string) (int, error)
 	ListBadges(ctx context.Context) ([]model.Badge, error)
 	GetUserBadges(ctx context.Context, userID string) ([]model.Badge, error)
 	GetLeaderboard(ctx context.Context, limit int) ([]model.LeaderboardEntry, error)
@@ -46,6 +47,16 @@ func (r *gamificationRepository) AddPoints(ctx context.Context, userID string, p
 	queryLog := `INSERT INTO points_log (user_id, points, activity_type) VALUES ($1, $2, $3)`
 	_, err = r.db.Exec(ctx, queryLog, userID, points, activityType)
 	return err
+}
+
+func (r *gamificationRepository) CountActivity(ctx context.Context, userID, activityType string) (int, error) {
+	query := `SELECT COUNT(*) FROM points_log WHERE user_id = $1 AND activity_type = $2`
+	var count int
+	err := r.db.QueryRow(ctx, query, userID, activityType).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (r *gamificationRepository) ListBadges(ctx context.Context) ([]model.Badge, error) {

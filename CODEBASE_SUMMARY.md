@@ -64,7 +64,7 @@ Backend layout:
 - `backend/pkg/cloudinary`: active Cloudinary upload client
 - `backend/pkg/storage`: Cloudflare R2 placeholder
 - `backend/pkg/fcm`: Firebase notification placeholder
-- `backend/migrations`: SQL migrations `001` through `020`
+- `backend/migrations`: SQL migrations `001` through `021`
 
 Frontend layout:
 
@@ -174,7 +174,8 @@ Gamification:
 
 - Active points lookup, points logging, badge listing, owned badge mapping, manual award method, and leaderboard.
 - Points are added from explain, chat, practice, and summary flows.
-- Badge unlock criteria exist in the schema, but automatic criteria evaluation is not implemented in the service.
+- Default badges are seeded by migration `021_seed_default_badges.sql`.
+- Badge unlock is evaluated automatically after points are added.
 
 Profile and Auth:
 
@@ -271,7 +272,6 @@ The migration runner applies all `.sql` files in sorted order. It does not track
 - Summary file upload/extraction is not implemented despite older docs claiming PDF support.
 - Cloudflare R2 and FCM are placeholder packages.
 - Rate limiting middleware is a no-op.
-- Badge criteria are not automatically evaluated.
 - Some empty placeholder files remain in `frontend/hooks`, `frontend/constants`, `frontend/components/sobi/SobiMascot.tsx`, and `frontend/components/layout`.
 - The frontend `upload-test` page posts to `/api/v1/upload/profile` relative to the Next.js app, which may not hit the backend unless a proxy is configured.
 - Backend migrations do not use a migration tracking table.
@@ -287,13 +287,12 @@ Recommended order:
 
 1. Standardize backend API response and error shapes so frontend handling is predictable across all features.
 2. Keep Summary positioned as text-based summarization, or implement PDF/image text extraction before advertising file-based summaries.
-3. Add automatic badge unlock logic on top of the existing points and badge tables.
-4. Clean up or implement empty frontend placeholder files.
-5. Add focused backend tests for auth, practice scoring, summary validation, and gamification point mutations.
+3. Clean up or implement empty frontend placeholder files.
+4. Add focused backend tests for auth, practice scoring, summary validation, and gamification point mutations.
 
 Near-term priority:
 
-- Start with API response consistency because it improves reliability across the whole app without changing product scope.
+- API response consistency and automatic badge unlock are now implemented.
 - Keep Groups/Kolaborasi documented as scaffolded/future work until the team intentionally starts that feature.
 
 ## Local Development

@@ -124,7 +124,7 @@ sobat-pintar/
 │   │   ├── storage/                   # Cloudflare R2 wrapper
 │   │   ├── cloudinary/                # Cloudinary wrapper
 │   │   └── logger/                    # Structured logger (zerolog)
-│   └── migrations/                    # SQL files (001–020)
+│   └── migrations/                    # SQL files (001–021)
 │
 ├── frontend/
 │   ├── app/
