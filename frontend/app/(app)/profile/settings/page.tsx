@@ -11,7 +11,6 @@ import { ProfileShell } from "@/components/profile/ProfileShell";
 import { SettingsToggle } from "@/components/profile/SettingsToggle";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
-import { useToastStore } from "@/store/toastStore";
 
 const SETTINGS_STORAGE_KEY = "sobat-pintar-settings";
 
@@ -30,7 +29,6 @@ const DEFAULT_SETTINGS: LocalSettings = {
 export default function AppSettingsPage() {
   const router = useRouter();
   const { logout } = useAuthStore();
-  const { addToast } = useToastStore();
   const [settings, setSettings] = React.useState<LocalSettings>(DEFAULT_SETTINGS);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
 
@@ -57,10 +55,6 @@ export default function AppSettingsPage() {
   const handleLogout = () => {
     logout();
     router.push("/login");
-  };
-
-  const showComingSoon = () => {
-    addToast("Halaman dokumen segera tersedia.", "info");
   };
 
   return (
@@ -194,15 +188,15 @@ export default function AppSettingsPage() {
                 <button
                   key={item.label}
                   type="button"
-                  onClick={showComingSoon}
-                  className="flex w-full items-center justify-between rounded-2xl p-4 text-left transition-colors hover:bg-gray-50"
+                  disabled
+                  className="flex w-full items-center justify-between rounded-2xl p-4 text-left opacity-70"
                 >
                   <span className="flex items-center gap-3 text-sm font-black text-neutral-700">
                     <Icon size={18} className="text-neutral-300" />
                     {item.label}
                   </span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                    Buka
+                  <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                    Segera
                   </span>
                 </button>
               );

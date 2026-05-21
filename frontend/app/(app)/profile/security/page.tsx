@@ -3,10 +3,8 @@
 import React from "react";
 import { Laptop, Lock, ShieldCheck, Smartphone, Tablet, Verified } from "lucide-react";
 
-import { Button } from "@/components/ui/Button";
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { ProfileShell } from "@/components/profile/ProfileShell";
-import { useToastStore } from "@/store/toastStore";
 
 const DEVICES = [
   {
@@ -30,12 +28,6 @@ const DEVICES = [
 ];
 
 export default function SecurityPage() {
-  const { addToast } = useToastStore();
-
-  const showComingSoon = () => {
-    addToast("Fitur keamanan ini segera hadir.", "info");
-  };
-
   return (
     <ProfileShell
       title="Keamanan"
@@ -57,14 +49,13 @@ export default function SecurityPage() {
               Ganti kata sandi secara berkala untuk menjaga akun dari akses
               yang tidak diinginkan.
             </p>
-            <Button
+            <button
               type="button"
-              variant="outline"
-              onClick={showComingSoon}
-              className="w-full rounded-2xl text-sm font-black"
+              disabled
+              className="w-full rounded-2xl border-2 border-neutral-100 bg-gray-50 px-4 py-3 text-sm font-black text-neutral-400"
             >
-              Ganti Kata Sandi
-            </Button>
+              Segera Hadir
+            </button>
           </ProfileCard>
 
           <ProfileCard className="flex flex-col">
@@ -84,14 +75,13 @@ export default function SecurityPage() {
             <p className="mb-5 flex-1 text-xs font-bold leading-relaxed text-neutral-500">
               Tambahkan lapisan keamanan ekstra setiap kali kamu masuk.
             </p>
-            <Button
+            <button
               type="button"
-              variant="outline"
-              onClick={showComingSoon}
-              className="w-full rounded-2xl text-sm font-black"
+              disabled
+              className="w-full rounded-2xl border-2 border-neutral-100 bg-gray-50 px-4 py-3 text-sm font-black text-neutral-400"
             >
-              Atur Verifikasi
-            </Button>
+              Segera Hadir
+            </button>
           </ProfileCard>
         </div>
 

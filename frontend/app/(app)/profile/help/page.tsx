@@ -5,7 +5,6 @@ import { BookOpen, ChevronDown, Mail, MessageCircle, Search, Video } from "lucid
 
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { ProfileShell } from "@/components/profile/ProfileShell";
-import { useToastStore } from "@/store/toastStore";
 
 const FAQS = [
   {
@@ -52,7 +51,6 @@ const EDUCATION_ITEMS = [
 ];
 
 export default function HelpPage() {
-  const { addToast } = useToastStore();
   const [query, setQuery] = React.useState("");
 
   const filteredFaqs = FAQS.filter((item) => {
@@ -62,10 +60,6 @@ export default function HelpPage() {
       item.answer.toLowerCase().includes(normalizedQuery)
     );
   });
-
-  const showComingSoon = () => {
-    addToast("Kontak dukungan segera tersedia.", "info");
-  };
 
   return (
     <ProfileShell
@@ -129,25 +123,25 @@ export default function HelpPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <button
             type="button"
-            onClick={showComingSoon}
-            className="rounded-[2rem] bg-primary p-5 text-left text-white shadow-xl shadow-primary/20 transition-transform active:scale-95"
+            disabled
+            className="rounded-[2rem] bg-primary/60 p-5 text-left text-white shadow-xl shadow-primary/10"
           >
             <MessageCircle size={24} strokeWidth={2.5} />
             <p className="mt-4 text-base font-black">WhatsApp Support</p>
             <p className="mt-1 text-xs font-bold text-white/75">
-              Bantuan langsung dari tim Sobi.
+              Segera hadir untuk bantuan langsung dari tim Sobi.
             </p>
           </button>
 
           <button
             type="button"
-            onClick={showComingSoon}
-            className="rounded-[2rem] bg-secondary p-5 text-left text-neutral-900 shadow-xl shadow-secondary/20 transition-transform active:scale-95"
+            disabled
+            className="rounded-[2rem] bg-secondary/70 p-5 text-left text-neutral-900 shadow-xl shadow-secondary/10"
           >
             <Mail size={24} strokeWidth={2.5} />
             <p className="mt-4 text-base font-black">Email Dukungan</p>
             <p className="mt-1 text-xs font-bold text-neutral-700">
-              Kirim detail masalahmu ke tim kami.
+              Segera hadir untuk kirim detail masalahmu ke tim kami.
             </p>
           </button>
         </div>
@@ -197,7 +191,7 @@ export default function HelpPage() {
           <div className="mt-2 flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-green-500" />
             <p className="text-xs font-bold text-neutral-600">
-              Semua sistem lancar.
+              Status detail segera tersedia.
             </p>
           </div>
         </div>
