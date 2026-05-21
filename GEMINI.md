@@ -45,7 +45,7 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 ### Phase 4 — Rangkum Materi ✅ DONE FOR TEXT
 - Text summary service + Gemini — done
 - History and detailed view — done
-- Frontend: Summary upload & result pages — done
+- Frontend: Summary text input & result pages — done
 - PDF/image text extraction — not implemented yet
 
 ### Phase 5 — Jadwal Belajar ✅ DONE
