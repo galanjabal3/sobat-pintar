@@ -208,7 +208,6 @@ Public/auth:
 - `/login`: email/password and Google login
 - `/register`: registration and Google signup
 - `/share/[id]`: public explain/summary share page
-- `/upload-test`: upload test page
 
 Protected app:
 
@@ -271,7 +270,6 @@ The migration runner applies all `.sql` files in sorted order. It does not track
 - Summary file upload/extraction is not implemented despite older docs claiming PDF support.
 - Cloudflare R2 and FCM are placeholder packages.
 - Rate limiting middleware is a no-op.
-- The frontend `upload-test` page posts to `/api/v1/upload/profile` relative to the Next.js app, which may not hit the backend unless a proxy is configured.
 - Backend migrations do not use a migration tracking table.
 - Some handlers return raw `gin.H{"error": ...}` while others return `BaseResponse`; the frontend API client partially normalizes only the `BaseResponse` success shape.
 
