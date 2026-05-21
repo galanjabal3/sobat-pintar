@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,8 @@ import (
 	"sobat-pintar/pkg/gemini"
 )
 
+const defaultChatSessionTitle = "Obrolan Baru dengan Sobi"
+
 type ChatService interface {
 	CreateSession(ctx context.Context, userID string, req dto.CreateChatSessionRequest) (*dto.ChatSessionResponse, error)
 	ListSessions(ctx context.Context, userID string) ([]dto.ChatSessionResponse, error)
@@ -20,13 +23,17 @@ type ChatService interface {
 	DeleteSession(ctx context.Context, userID string, sessionID string) error
 }
 
+type chatGenerator interface {
+	SendChatMessage(ctx context.Context, level string, history []gemini.HistoryMessage, message string) (string, error)
+}
+
 type chatService struct {
 	repo         repository.ChatRepository
-	geminiClient *gemini.Client
+	geminiClient chatGenerator
 	gamify       GamificationService
 }
 
-func NewChatService(repo repository.ChatRepository, geminiClient *gemini.Client, gamify GamificationService) ChatService {
+func NewChatService(repo repository.ChatRepository, geminiClient chatGenerator, gamify GamificationService) ChatService {
 	return &chatService{
 		repo:         repo,
 		geminiClient: geminiClient,
@@ -70,11 +77,12 @@ func (s *chatService) ListSessions(ctx context.Context, userID string) ([]dto.Ch
 	var res []dto.ChatSessionResponse
 	for _, s := range sessions {
 		res = append(res, dto.ChatSessionResponse{
-			ID:        s.ID,
-			Title:     s.Title,
-			Level:     s.Level,
-			CreatedAt: s.CreatedAt,
-			UpdatedAt: s.UpdatedAt,
+			ID:          s.ID,
+			Title:       s.Title,
+			Level:       s.Level,
+			LastMessage: s.LastMessage,
+			CreatedAt:   s.CreatedAt,
+			UpdatedAt:   s.UpdatedAt,
 		})
 	}
 	return res, nil
@@ -141,6 +149,15 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		return nil, err
 	}
 
+	if shouldAutoTitleChatSession(session.Title) {
+		nextTitle := buildChatSessionTitle(req.Message)
+		if nextTitle != session.Title {
+			if err := s.repo.UpdateSessionTitle(ctx, sessionID, nextTitle); err == nil {
+				session.Title = nextTitle
+			}
+		}
+	}
+
 	// 2. Get history for Gemini
 	messages, err := s.repo.GetMessagesBySessionID(ctx, sessionID)
 	if err != nil {
@@ -199,7 +216,9 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 	_ = s.repo.UpdateSessionTimestamp(ctx, sessionID)
 
 	// Award points for chatting
-	_ = s.gamify.AddPoints(ctx, userID, 5, "chat_message")
+	if s.gamify != nil {
+		_ = s.gamify.AddPoints(ctx, userID, 5, "chat_message")
+	}
 
 	return &dto.MessageResponse{
 		ID:        aiMsg.ID,
@@ -212,4 +231,24 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 
 func (s *chatService) DeleteSession(ctx context.Context, userID string, sessionID string) error {
 	return s.repo.DeleteSession(ctx, sessionID, userID)
+}
+
+func shouldAutoTitleChatSession(title string) bool {
+	normalized := strings.TrimSpace(title)
+	return normalized == "" || normalized == defaultChatSessionTitle
+}
+
+func buildChatSessionTitle(message string) string {
+	cleaned := strings.Join(strings.Fields(message), " ")
+	if cleaned == "" {
+		return defaultChatSessionTitle
+	}
+
+	const maxTitleLength = 48
+	runes := []rune(cleaned)
+	if len(runes) <= maxTitleLength {
+		return cleaned
+	}
+
+	return strings.TrimSpace(string(runes[:maxTitleLength])) + "..."
 }

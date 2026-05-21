@@ -8,11 +8,12 @@ type CreateChatSessionRequest struct {
 }
 
 type ChatSessionResponse struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Level     string    `json:"level"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID          string    `json:"id"`
+	Title       string    `json:"title"`
+	Level       string    `json:"level"`
+	LastMessage *string   `json:"last_message,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type SendMessageRequest struct {

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"sobat-pintar/internal/model"
@@ -12,6 +13,7 @@ type ChatRepository interface {
 	GetSessionByID(ctx context.Context, id string) (*model.ChatSession, error)
 	ListSessions(ctx context.Context, userID string) ([]model.ChatSession, error)
 	DeleteSession(ctx context.Context, id string, userID string) error
+	UpdateSessionTitle(ctx context.Context, id, title string) error
 	CreateMessage(ctx context.Context, message *model.Message) error
 	GetMessagesBySessionID(ctx context.Context, sessionID string) ([]*model.Message, error)
 	UpdateSessionTimestamp(ctx context.Context, id string) error
@@ -43,7 +45,25 @@ func (r *chatRepository) GetSessionByID(ctx context.Context, id string) (*model.
 }
 
 func (r *chatRepository) ListSessions(ctx context.Context, userID string) ([]model.ChatSession, error) {
-	query := `SELECT id, user_id, title, level, created_at, updated_at FROM chat_sessions WHERE user_id = $1 ORDER BY updated_at DESC`
+	query := `
+		SELECT
+			s.id,
+			s.user_id,
+			s.title,
+			s.level,
+			m.content AS last_message,
+			s.created_at,
+			s.updated_at
+		FROM chat_sessions s
+		LEFT JOIN LATERAL (
+			SELECT content
+			FROM chat_messages
+			WHERE session_id = s.id
+			ORDER BY created_at DESC
+			LIMIT 1
+		) m ON TRUE
+		WHERE s.user_id = $1
+		ORDER BY s.updated_at DESC`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -53,8 +73,12 @@ func (r *chatRepository) ListSessions(ctx context.Context, userID string) ([]mod
 	var sessions []model.ChatSession
 	for rows.Next() {
 		var s model.ChatSession
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Title, &s.Level, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		var lastMessage sql.NullString
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Title, &s.Level, &lastMessage, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, err
+		}
+		if lastMessage.Valid {
+			s.LastMessage = &lastMessage.String
 		}
 		sessions = append(sessions, s)
 	}
@@ -64,6 +88,12 @@ func (r *chatRepository) ListSessions(ctx context.Context, userID string) ([]mod
 func (r *chatRepository) DeleteSession(ctx context.Context, id string, userID string) error {
 	query := `DELETE FROM chat_sessions WHERE id = $1 AND user_id = $2`
 	_, err := r.db.Exec(ctx, query, id, userID)
+	return err
+}
+
+func (r *chatRepository) UpdateSessionTitle(ctx context.Context, id, title string) error {
+	query := `UPDATE chat_sessions SET title = $1, updated_at = NOW() WHERE id = $2`
+	_, err := r.db.Exec(ctx, query, title, id)
 	return err
 }
 
