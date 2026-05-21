@@ -1,7 +1,7 @@
 "use client";
 
  import Image from "next/image";
- import React, { useEffect, useState, useRef } from "react";
+ import React, { useCallback, useEffect, useState, useRef } from "react";
  import { useRouter, useParams } from "next/navigation";
  import { ChevronLeft, Send, Sparkles, Bot, User, AlertCircle } from "lucide-react";
  import api from "@/lib/api";
@@ -46,17 +46,12 @@
    const scrollRef = useRef<HTMLDivElement>(null);
 
    useEffect(() => {
-     fetchChatDetail();
-     fetchProfile();
-   }, [sessionId]);
-
-   useEffect(() => {
      if (scrollRef.current) {
        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
      }
    }, [chat?.messages, isSending]);
 
-   const fetchChatDetail = async () => {
+   const fetchChatDetail = useCallback(async () => {
      try {
        const response = await api.get(`/chat/sessions/${sessionId}`);
        setChat({
@@ -70,7 +65,12 @@
      } finally {
        setIsLoading(false);
      }
-   };
+   }, [addToast, router, sessionId]);
+
+   useEffect(() => {
+     fetchChatDetail();
+     fetchProfile();
+   }, [fetchChatDetail, fetchProfile]);
 
    const handleSendMessage = async (e?: React.FormEvent) => {
      e?.preventDefault();

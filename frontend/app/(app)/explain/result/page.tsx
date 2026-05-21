@@ -1,6 +1,6 @@
 "use client";
- 
- import React, { useEffect, useState } from "react";
+
+import React, { useCallback, useEffect, useState } from "react";
  import { useRouter, useSearchParams } from "next/navigation";
  import { ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb } from "lucide-react";
  import ReactMarkdown from "react-markdown";
@@ -30,41 +30,41 @@
    
    const [explanation, setExplanation] = useState<Explanation | null>(null);
    const [isLoading, setIsLoading] = useState(true);
-   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-   const [isReExplaining, setIsReExplaining] = useState(false);
- 
-   useEffect(() => {
-     if (!id) {
-       router.push("/explain");
-       return;
-     }
- 
-     const fetchExplanation = async () => {
-       try {
-         const response = await api.get(`/explain/history`);
-         const item = response.data.find((e: any) => e.id === id);
-         if (item) {
-           setExplanation(item);
-         } else {
-           // Try fetch by ID if not found in recent history
-           try {
-             const resById = await api.get(`/explain/${id}`);
-             if (resById.data) setExplanation(resById.data);
-             else router.push("/explain");
-           } catch {
-             router.push("/explain");
-           }
-         }
-       } catch (err) {
-         console.error(err);
-         addToast("Gagal memuat hasil Jelasin AI.", "error");
-       } finally {
-         setIsLoading(false);
-       }
-     };
- 
-     fetchExplanation();
-   }, [id, router]);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isReExplaining, setIsReExplaining] = useState(false);
+
+  const fetchExplanation = useCallback(async () => {
+    if (!id) {
+      router.push("/explain");
+      return;
+    }
+
+    try {
+      const response = await api.get(`/explain/history`);
+      const item = response.data.find((e: any) => e.id === id);
+      if (item) {
+        setExplanation(item);
+      } else {
+        // Try fetch by ID if not found in recent history
+        try {
+          const resById = await api.get(`/explain/${id}`);
+          if (resById.data) setExplanation(resById.data);
+          else router.push("/explain");
+        } catch {
+          router.push("/explain");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Gagal memuat hasil Jelasin AI.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addToast, id, router]);
+
+  useEffect(() => {
+    fetchExplanation();
+  }, [fetchExplanation]);
  
    const handleReExplain = async () => {
      if (!explanation?.id || isReExplaining) return;

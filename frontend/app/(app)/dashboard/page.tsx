@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap } from "lucide-react";
@@ -17,12 +17,7 @@ export default function DashboardPage() {
     ? "Wah, hebat! Teruskan belajarnya ya!"
     : "Mulai satu soal dulu hari ini, yuk!";
 
-  React.useEffect(() => {
-    fetchProfile();
-    fetchDailyProgress();
-  }, []);
-
-  const fetchDailyProgress = async () => {
+  const fetchDailyProgress = useCallback(async () => {
     try {
       const res = await api.get("/practice/progress");
       if (res.data?.count !== undefined) {
@@ -31,7 +26,12 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Failed to fetch daily progress", error);
     }
-  };
+  }, []);
+
+  React.useEffect(() => {
+    fetchProfile();
+    fetchDailyProgress();
+  }, [fetchDailyProgress, fetchProfile]);
 
   const showAll = process.env.NEXT_PUBLIC_DEBUG_MODE === "true";
 

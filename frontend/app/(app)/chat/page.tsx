@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Plus, Sparkles, Clock, Trash2, ArrowRight } from "lucide-react";
 import api from "@/lib/api";
@@ -30,12 +30,7 @@ export default function ChatPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchProfile();
-    fetchSessions();
-  }, []);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       const response = await api.get("/chat/sessions");
       setSessions(response.data || []);
@@ -45,7 +40,12 @@ export default function ChatPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [addToast]);
+
+  useEffect(() => {
+    fetchProfile();
+    fetchSessions();
+  }, [fetchProfile, fetchSessions]);
 
   const handleCreateSession = async () => {
     setIsCreating(true);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ChevronLeft, MessageSquare } from "lucide-react";
@@ -21,21 +21,21 @@ export default function ExplainHistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const response = await api.get("/explain/history");
-        setHistory(response.data || []);
-      } catch (err) {
-        console.error(err);
-        addToast("Gagal memuat riwayat penjelasan.", "error");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchHistory = useCallback(async () => {
+    try {
+      const response = await api.get("/explain/history");
+      setHistory(response.data || []);
+    } catch (err) {
+      console.error(err);
+      addToast("Gagal memuat riwayat penjelasan.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addToast]);
 
+  useEffect(() => {
     fetchHistory();
-  }, []);
+  }, [fetchHistory]);
 
   return (
     <div className="px-6 pt-12 pb-24">

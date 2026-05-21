@@ -1,6 +1,6 @@
 "use client";
- 
- import React, { useEffect, useState } from "react";
+
+import React, { useCallback, useEffect, useState } from "react";
  import { useRouter } from "next/navigation";
 import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight } from "lucide-react";
 import api from "@/lib/api";
@@ -35,11 +35,7 @@ export default function SummaryPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const canSubmit = Boolean(text.trim());
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       const response = await api.get("/summary/history");
       setHistory(response.data || []);
@@ -48,7 +44,11 @@ export default function SummaryPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [addToast]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
  
    const handleSummarize = async () => {
      if (isSubmitting) return;

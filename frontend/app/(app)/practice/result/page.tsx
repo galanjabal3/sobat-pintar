@@ -1,6 +1,6 @@
 "use client";
- 
- import React, { useEffect, useState } from "react";
+
+import React, { useCallback, useEffect, useState } from "react";
  import { useRouter, useSearchParams } from "next/navigation";
  import { Trophy, ArrowRight, Star, Sparkles, Home, RotateCcw, CheckCircle2, XCircle } from "lucide-react";
  import { Button } from "@/components/ui/Button";
@@ -26,29 +26,29 @@
    const id = searchParams.get("id");
    const { addToast } = useToastStore();
    
-   const [result, setResult] = useState<PracticeResult | null>(null);
-   const [isLoading, setIsLoading] = useState(true);
- 
-   useEffect(() => {
-     if (!id) {
-       router.push("/practice");
-       return;
-     }
- 
-     const fetchResult = async () => {
-       try {
-         const response = await api.get(`/practice/sessions/${id}/result`);
-         setResult(response.data);
-       } catch (err: unknown) {
-         addToast(getApiErrorMessage(err, "Selesaikan semua soal dulu ya."), "error");
-         router.push("/practice");
-       } finally {
-         setIsLoading(false);
-       }
-     };
- 
-     fetchResult();
-   }, [id, router]);
+  const [result, setResult] = useState<PracticeResult | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchResult = useCallback(async () => {
+    if (!id) {
+      router.push("/practice");
+      return;
+    }
+
+    try {
+      const response = await api.get(`/practice/sessions/${id}/result`);
+      setResult(response.data);
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Selesaikan semua soal dulu ya."), "error");
+      router.push("/practice");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addToast, id, router]);
+
+  useEffect(() => {
+    fetchResult();
+  }, [fetchResult]);
  
    if (isLoading) {
      return (

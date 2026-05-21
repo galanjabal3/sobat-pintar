@@ -15,7 +15,7 @@ export default function ProfilePage() {
 
   React.useEffect(() => {
     fetchProfile();
-  }, []);
+  }, [fetchProfile]);
 
   return (
     <div className="min-h-screen bg-[#FDFEFF] relative overflow-hidden">

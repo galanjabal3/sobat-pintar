@@ -1,6 +1,6 @@
 "use client";
  
- import React, { useEffect, useState } from "react";
+ import React, { useCallback, useEffect, useState } from "react";
  import { useRouter, useParams } from "next/navigation";
  import { ChevronLeft, FileText, Sparkles, Copy, Share2, Download, Clock, ArrowRight } from "lucide-react";
  import api from "@/lib/api";
@@ -125,11 +125,7 @@ function stripSummaryMarkdown(markdown: string) {
    const [isLoading, setIsLoading] = useState(true);
    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
  
-   useEffect(() => {
-     fetchDetail();
-   }, [id]);
- 
-   const fetchDetail = async () => {
+   const fetchDetail = useCallback(async () => {
      try {
        const response = await api.get(`/summary/${id}`);
        setDetail(response.data);
@@ -139,7 +135,11 @@ function stripSummaryMarkdown(markdown: string) {
      } finally {
        setIsLoading(false);
      }
-   };
+   }, [addToast, id, router]);
+
+   useEffect(() => {
+     fetchDetail();
+   }, [fetchDetail]);
  
   const handleCopy = async () => {
     if (!detail) return;

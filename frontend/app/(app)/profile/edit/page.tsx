@@ -33,7 +33,7 @@ export default function EditProfilePage() {
 
   React.useEffect(() => {
     fetchProfile();
-  }, []);
+  }, [fetchProfile]);
 
   React.useEffect(() => {
     if (user) {
