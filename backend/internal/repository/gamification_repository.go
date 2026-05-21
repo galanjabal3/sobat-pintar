@@ -103,7 +103,7 @@ func (r *gamificationRepository) GetUserBadges(ctx context.Context, userID strin
 }
 
 func (r *gamificationRepository) GetLeaderboard(ctx context.Context, limit int) ([]model.LeaderboardEntry, error) {
-	query := `SELECT name, avatar_url, points FROM users ORDER BY points DESC LIMIT $1`
+	query := `SELECT name, avatar_url, points FROM users ORDER BY points DESC, created_at ASC, id ASC LIMIT $1`
 	rows, err := r.db.Query(ctx, query, limit)
 	if err != nil {
 		return nil, err
@@ -121,6 +121,7 @@ func (r *gamificationRepository) GetLeaderboard(ctx context.Context, limit int) 
 	}
 	return entries, nil
 }
+
 func (r *gamificationRepository) AwardBadge(ctx context.Context, userID, badgeID string) error {
 	query := `INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`
 	_, err := r.db.Exec(ctx, query, userID, badgeID)

@@ -56,7 +56,11 @@ func (r *fakeGamificationRepo) GetUserBadges(ctx context.Context, userID string)
 }
 
 func (r *fakeGamificationRepo) GetLeaderboard(ctx context.Context, limit int) ([]model.LeaderboardEntry, error) {
-	return nil, nil
+	return []model.LeaderboardEntry{
+		{UserName: "A", Points: 100},
+		{UserName: "B", Points: 80},
+		{UserName: "C", Points: 60},
+	}, nil
 }
 
 func (r *fakeGamificationRepo) AwardBadge(ctx context.Context, userID, badgeID string) error {
@@ -98,5 +102,22 @@ func TestGamificationAddPointsUnlocksPointThresholdBadge(t *testing.T) {
 	}
 	if !repo.awarded["sobi-friend"] {
 		t.Fatal("expected sobi-friend badge to be awarded")
+	}
+}
+
+func TestGamificationGetLeaderboardReturnsEntries(t *testing.T) {
+	repo := newFakeGamificationRepo()
+	service := NewGamificationService(repo)
+
+	board, err := service.GetLeaderboard(context.Background())
+	if err != nil {
+		t.Fatalf("GetLeaderboard returned error: %v", err)
+	}
+
+	if len(board) != 3 {
+		t.Fatalf("expected 3 leaderboard entries, got %d", len(board))
+	}
+	if board[0].UserName != "A" {
+		t.Fatalf("unexpected first leaderboard entry: %s", board[0].UserName)
 	}
 }

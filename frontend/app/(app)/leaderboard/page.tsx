@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Trophy, Medal, Flame, Crown, Star, ArrowUpRight } from "lucide-react";
+import { ChevronLeft, Trophy, Medal, Crown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/ui/EmptyState";
 import api from "@/lib/api";
@@ -14,6 +14,10 @@ interface LeaderboardEntry {
   user_name: string;
   avatar_url?: string | null;
   points: number;
+}
+
+interface LeaderboardPayload {
+  entries: LeaderboardEntry[];
 }
 
 function LeaderboardAvatar({
@@ -47,6 +51,10 @@ function LeaderboardAvatar({
   );
 }
 
+function rankLabel(rank: number) {
+  return `${rank}#`;
+}
+
 export default function LeaderboardPage() {
   const router = useRouter();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -56,7 +64,13 @@ export default function LeaderboardPage() {
     const fetchLeaderboard = async () => {
       try {
         const response = await api.get("/gamification/leaderboard");
-        setEntries(response.data || []);
+        const payload = response.data as LeaderboardEntry[] | LeaderboardPayload;
+
+        if (Array.isArray(payload)) {
+          setEntries(payload);
+        } else {
+          setEntries(payload.entries || []);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -95,91 +109,93 @@ export default function LeaderboardPage() {
         </motion.header>
 
         {/* Podium Section */}
-        <div className="flex items-end justify-center gap-2 mb-12 h-[220px] relative">
+        <div className="relative mb-10">
           <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-primary opacity-10 pointer-events-none">
             <Trophy size={120} />
           </div>
 
-          {/* Rank 2 */}
-          {topThree[1] && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-col items-center flex-1"
-            >
-              <div className="relative mb-4">
-                <LeaderboardAvatar
-                  entry={topThree[1]}
-                  size={56}
-                  className="w-14 h-14 bg-gray-100 rounded-2xl border-4 border-white shadow-lg text-neutral-400 text-xl"
-                />
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-300 rounded-full flex items-center justify-center text-white border-2 border-white shadow-sm">
-                  <Medal size={12} />
+          <div className="grid grid-cols-3 items-end gap-2 sm:gap-3 pt-16">
+            {/* Rank 2 */}
+            {topThree[1] && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="flex flex-col items-center"
+              >
+                <div className="mb-3 flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                  {rankLabel(2)} <Medal size={11} />
                 </div>
-              </div>
-              <div className="w-full bg-white/50 backdrop-blur-md border-2 border-white h-24 rounded-t-3xl shadow-xl flex flex-col items-center justify-center p-2">
-                <p className="text-[10px] font-black text-neutral-800 truncate w-full text-center">{topThree[1].user_name}</p>
-                <p className="text-[9px] font-black text-primary mt-1">{topThree[1].points} XP</p>
-              </div>
-            </motion.div>
-          )}
+                <div className="relative mb-3">
+                  <LeaderboardAvatar
+                    entry={topThree[1]}
+                    size={56}
+                    className="w-14 h-14 bg-gray-100 rounded-2xl border-4 border-white shadow-lg text-neutral-400 text-xl"
+                  />
+                </div>
+                <div className="w-full bg-white/80 backdrop-blur-md border-2 border-white min-h-28 rounded-t-[1.8rem] shadow-xl flex flex-col items-center justify-center px-2 py-4">
+                  <p className="text-[10px] font-black text-neutral-800 truncate w-full text-center">{topThree[1].user_name}</p>
+                  <p className="text-[10px] font-black text-slate-400 mt-1">{topThree[1].points} XP</p>
+                </div>
+              </motion.div>
+            )}
 
-          {/* Rank 1 */}
-          {topThree[0] && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="flex flex-col items-center flex-1 z-10"
-            >
-              <div className="relative mb-4">
+            {/* Rank 1 */}
+            {topThree[0] && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="flex flex-col items-center z-10"
+              >
                 <motion.div 
                   animate={{ y: [0, -5, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 text-secondary"
+                  className="mb-2 text-secondary"
                 >
                   <Crown size={32} fill="currentColor" />
                 </motion.div>
-                <LeaderboardAvatar
-                  entry={topThree[0]}
-                  size={80}
-                  className="w-20 h-20 bg-secondary/10 rounded-[2rem] border-4 border-secondary shadow-2xl shadow-secondary/20 text-secondary text-3xl"
-                />
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white border-4 border-white shadow-lg">
-                  <Medal size={16} />
+                <div className="mb-3 flex items-center gap-1 rounded-full bg-secondary/10 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-secondary">
+                  {rankLabel(1)} <Medal size={11} />
                 </div>
-              </div>
-              <div className="w-full bg-white backdrop-blur-md border-4 border-white h-36 rounded-t-[2.5rem] shadow-2xl flex flex-col items-center justify-center p-2">
-                <p className="text-xs font-black text-neutral-800 truncate w-full text-center">{topThree[0].user_name}</p>
-                <p className="text-[10px] font-black text-secondary mt-1">{topThree[0].points} XP</p>
-              </div>
-            </motion.div>
-          )}
+                <div className="relative mb-3">
+                  <LeaderboardAvatar
+                    entry={topThree[0]}
+                    size={80}
+                    className="w-20 h-20 bg-secondary/10 rounded-[2rem] border-4 border-secondary shadow-2xl shadow-secondary/20 text-secondary text-3xl"
+                  />
+                </div>
+                <div className="w-full bg-white backdrop-blur-md border-4 border-white min-h-36 rounded-t-[2rem] shadow-2xl flex flex-col items-center justify-center px-3 py-5">
+                  <p className="text-sm font-black text-neutral-800 truncate w-full text-center">{topThree[0].user_name}</p>
+                  <p className="text-[10px] font-black text-secondary mt-1">{topThree[0].points} XP</p>
+                </div>
+              </motion.div>
+            )}
 
-          {/* Rank 3 */}
-          {topThree[2] && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              className="flex flex-col items-center flex-1"
-            >
-              <div className="relative mb-4">
-                <LeaderboardAvatar
-                  entry={topThree[2]}
-                  size={56}
-                  className="w-14 h-14 bg-orange-50 rounded-2xl border-4 border-white shadow-lg text-orange-400 text-xl"
-                />
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center text-white border-2 border-white shadow-sm">
-                  <Medal size={12} />
+            {/* Rank 3 */}
+            {topThree[2] && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4 }}
+                className="flex flex-col items-center"
+              >
+                <div className="mb-3 flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-orange-400">
+                  {rankLabel(3)} <Medal size={11} />
                 </div>
-              </div>
-              <div className="w-full bg-white/50 backdrop-blur-md border-2 border-white h-20 rounded-t-3xl shadow-xl flex flex-col items-center justify-center p-2">
-                <p className="text-[10px] font-black text-neutral-800 truncate w-full text-center">{topThree[2].user_name}</p>
-                <p className="text-[9px] font-black text-primary mt-1">{topThree[2].points} XP</p>
-              </div>
-            </motion.div>
-          )}
+                <div className="relative mb-3">
+                  <LeaderboardAvatar
+                    entry={topThree[2]}
+                    size={56}
+                    className="w-14 h-14 bg-orange-50 rounded-2xl border-4 border-white shadow-lg text-orange-400 text-xl"
+                  />
+                </div>
+                <div className="w-full bg-white/80 backdrop-blur-md border-2 border-white min-h-28 rounded-t-[1.8rem] shadow-xl flex flex-col items-center justify-center px-2 py-4">
+                  <p className="text-[10px] font-black text-neutral-800 truncate w-full text-center">{topThree[2].user_name}</p>
+                  <p className="text-[10px] font-black text-primary mt-1">{topThree[2].points} XP</p>
+                </div>
+              </motion.div>
+            )}
+          </div>
         </div>
 
         {/* List Section */}
@@ -215,10 +231,6 @@ export default function LeaderboardPage() {
                       />
                       <div>
                         <p className="text-sm font-black text-neutral-800">{entry.user_name}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Flame size={10} className="text-orange-500 fill-orange-500" />
-                          <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Daily Streak</span>
-                        </div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -243,26 +255,26 @@ export default function LeaderboardPage() {
       {/* Background Decoration */}
       <div className="fixed -bottom-20 -left-20 w-80 h-80 bg-secondary/5 rounded-full blur-[100px] pointer-events-none z-0" />
 
-      {/* Floating Mascot Sobi Background */}
+      {/* Floating Trophy Sobi Background */}
       <motion.div 
         animate={{ 
           y: [0, -15, 0],
-          rotate: [0, 5, 0]
+          rotate: [0, 4, 0]
         }}
         transition={{ 
           duration: 5, 
           repeat: Infinity,
           ease: "easeInOut"
         }}
-        className="fixed bottom-24 -right-8 w-48 h-48 pointer-events-none opacity-20 grayscale blur-[2px] z-0"
+        className="fixed bottom-4 right-1 w-24 h-24 pointer-events-none opacity-24 z-0 sm:bottom-2 sm:right-0 sm:w-32 sm:h-32"
       >
         <Image
-          src={SOBI_ASSETS.DEFAULT}
-          alt="Sobi BG"
+          src={SOBI_ASSETS.TROPHY}
+          alt="Sobi leaderboard background"
           fill
-          className="object-contain"
+          className="object-contain drop-shadow-2xl"
           priority
-          sizes="192px"
+          sizes="128px"
         />
       </motion.div>
     </div>
