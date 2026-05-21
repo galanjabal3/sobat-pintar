@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import Image from "next/image";
 import { Camera, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,14 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect }) => {
     <div className="w-full">
       {preview ? (
         <div className="relative rounded-3xl overflow-hidden border-2 border-primary/20 bg-gray-50 h-64">
-          <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+          <Image
+            src={preview}
+            alt="Preview"
+            fill
+            unoptimized
+            className="object-contain"
+            sizes="100vw"
+          />
           <button
             onClick={removePhoto}
             className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full shadow-lg"

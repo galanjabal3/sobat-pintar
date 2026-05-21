@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ChevronLeft, MessageSquare } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import api from "@/lib/api";
@@ -73,7 +74,14 @@ export default function ExplainHistoryPage() {
             >
               <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm overflow-hidden border border-primary/10">
                 {item.image_url ? (
-                  <img src={item.image_url} alt="Soal" className="w-full h-full object-cover" />
+                  <Image
+                    src={item.image_url}
+                    alt="Soal"
+                    width={48}
+                    height={48}
+                    className="h-full w-full object-cover"
+                    sizes="48px"
+                  />
                 ) : (
                   <MessageSquare size={20} className="text-primary" />
                 )}
