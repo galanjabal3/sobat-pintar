@@ -72,7 +72,7 @@ Read CLAUDE.md first.
 Current status:
 - Local development active
 - Supabase PostgreSQL configured through DATABASE_URL
-- Redis optional for local testing
+- Redis helper package exists but is not wired into the current active runtime
 - Backend on :8080
 - Frontend on :3000
 

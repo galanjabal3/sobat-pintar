@@ -18,7 +18,7 @@ sobat-pintar/
 └── .gitignore
 ```
 
-Development runs locally. The backend connects to Supabase PostgreSQL through `DATABASE_URL`; Redis is optional for local testing.
+Development runs locally. The backend connects to Supabase PostgreSQL through `DATABASE_URL`; Redis exists as a helper package but is not wired into the current active runtime.
 
 ---
 
@@ -46,7 +46,7 @@ backend/
 │   ├── jwt/                  # JWT generation and validation
 │   ├── logger/               # zerolog setup
 │   ├── redis/                # Optional Redis helpers
-│   ├── storage/              # Storage helpers
+│   ├── storage/              # Placeholder storage helpers
 │   └── validator/            # Request validation helpers
 ├── .env.example              # Backend env template
 ├── go.mod
@@ -70,8 +70,6 @@ REDIS_PORT=6379
 frontend/
 ├── app/                      # Next.js App Router pages/layouts
 ├── components/               # UI and feature components
-├── constants/                # Static route/level/subject constants
-├── hooks/                    # Feature hooks
 ├── lib/                      # API client and utilities
 ├── services/                 # API service wrappers
 ├── store/                    # Zustand stores
@@ -119,4 +117,4 @@ Current implementation notes:
 
 - Collaboration/group files and database tables exist, but the group service/repository methods are placeholders and the group routes are not registered in the active router.
 - Summary currently supports text input. PDF/image text extraction is not implemented yet.
-- Cloudflare R2 and Firebase Cloud Messaging packages are placeholders. Active image upload uses Cloudinary when credentials are configured.
+- Redis, Cloudflare R2, and Firebase Cloud Messaging packages are placeholders/helpers. Active image upload uses Cloudinary when credentials are configured.

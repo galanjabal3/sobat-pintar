@@ -70,7 +70,7 @@ Codex / Antigravity
 Read AGENTS.md first.
 
 Current status:
-- Dev Container active
+- Local development active
 - Backend on :8080
 - Frontend on :3000
 

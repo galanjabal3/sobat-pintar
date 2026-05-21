@@ -11,7 +11,7 @@
 - Node.js 20+
 - Supabase project
 - Gemini API key
-- Redis 7 only if `REDIS_ENABLED=true`
+- Redis 7 is not required for the current active runtime
 
 ---
 
@@ -43,6 +43,12 @@ GEMINI_MODEL=gemini-2.5-flash
 JWT_SECRET=replace_with_a_long_random_secret
 JWT_ACCESS_TTL=15m
 JWT_REFRESH_TTL=168h
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+GOOGLE_CLIENT_ID=
 ```
 
 Notes:
@@ -116,11 +122,11 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=
 
 ---
 
-## Optional Redis
+## Redis
 
-Redis is disabled by default.
+Redis is disabled by default and is not wired into the current active runtime.
 
-To test Redis-backed features later:
+Keep Redis disabled locally unless you intentionally start wiring Redis-backed features:
 
 ```env
 REDIS_ENABLED=true
@@ -129,7 +135,7 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 ```
 
-Start Redis locally with your preferred package manager. On macOS with Homebrew:
+If Redis-backed features are added later, start Redis locally with your preferred package manager. On macOS with Homebrew:
 
 ```bash
 brew services start redis

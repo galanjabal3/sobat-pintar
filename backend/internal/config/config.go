@@ -65,7 +65,7 @@ func LoadConfig() *Config {
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 
 		GeminiAPIKey: getEnv("GEMINI_API_KEY", ""),
-		GeminiModel:  getEnv("GEMINI_MODEL", "gemini-1.5-flash"),
+		GeminiModel:  getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
 
 		JWTSecret:     getEnv("JWT_SECRET", ""),
 		JWTAccessTTL:  getDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),

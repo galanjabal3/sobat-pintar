@@ -33,7 +33,7 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 ### Backend
 - **Go 1.26.3** with **Gin** framework
 - **Supabase PostgreSQL** — primary database
-- **Redis 7** — optional local cache/session backend
+- **Redis 7** — optional helper package, not wired into active runtime
 - **Google Gemini** — AI engine
 - **Cloudinary** — active image upload storage
 - **Cloudflare R2** — placeholder storage package
@@ -56,7 +56,7 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 - Go 1.26.3
 - Node.js 20+
 - Supabase project with PostgreSQL connection string
-- Redis 7 (optional for local testing)
+- Redis 7 is not required for the current active runtime
 - Gemini API Key ([get free at Google AI Studio](https://aistudio.google.com))
 
 ### 1. Clone Repository
@@ -121,8 +121,8 @@ sobat-pintar/
 │   │   └── model/          # Structs & models
 │   ├── pkg/
 │   │   ├── gemini/         # Gemini API wrapper
-│   │   ├── redis/          # Redis wrapper
-│   │   └── storage/        # R2 file storage
+│   │   ├── redis/          # Optional Redis helpers
+│   │   └── storage/        # R2 placeholder storage helpers
 │   └── migrations/         # SQL migrations
 │
 ├── frontend/

@@ -73,7 +73,7 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 | Frontend    | Next.js 14 (App Router) + TailwindCSS   |
 | AI          | Google Gemini API                        |
 | Database    | Supabase PostgreSQL                     |
-| Cache       | Redis 7 (optional local testing)        |
+| Cache       | Redis helper package, not wired into active runtime |
 | Auth        | JWT (access + refresh token)            |
 | Storage     | Cloudinary active for images; R2 scaffolded |
 | Deploy      | Railway (backend) + Vercel (frontend)   |
@@ -86,7 +86,7 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - Frontend: http://localhost:3000
 - Backend: Go server running directly on the local machine
 - DB: Supabase PostgreSQL through `DATABASE_URL`
-- Cache: Redis 7 is optional, default disabled with `REDIS_ENABLED=false`
+- Cache: Redis helper package exists, default disabled with `REDIS_ENABLED=false`
 
 ### How to Run
 ```bash
@@ -120,8 +120,8 @@ sobat-pintar/
 │   ├── pkg/
 │   │   ├── gemini/                    # Gemini SDK wrapper
 │   │   ├── jwt/                       # JWT logic
-│   │   ├── redis/                     # Redis wrapper
-│   │   ├── storage/                   # Cloudflare R2 wrapper
+│   │   ├── redis/                     # Redis helper package
+│   │   ├── storage/                   # Cloudflare R2 placeholder
 │   │   ├── cloudinary/                # Cloudinary wrapper
 │   │   └── logger/                    # Structured logger (zerolog)
 │   └── migrations/                    # SQL files (001–021)
