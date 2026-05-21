@@ -13,10 +13,10 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 | 📸 **Jelasin Soal** | Foto atau ketik soal, AI jelaskan sesuai level | ✅ Done |
 | 💬 **Tanya Sobi** | Chat bebas dengan AI tutor | ✅ Done |
 | 📝 **Latihan Soal** | Soal adaptif yang makin susah sesuai kemampuan | ✅ Done |
-| 📄 **Rangkum Materi** | Upload buku/PDF, AI buat rangkuman otomatis | ✅ Done |
+| 📄 **Rangkum Materi** | Teks materi dirangkum otomatis oleh AI | ✅ Done |
 | 🗓️ **Jadwal Belajar** | AI bantu buat jadwal belajar yang realistis | ✅ Done |
 | 🏆 **Gamification** | Poin, streak harian, badge, leaderboard | ✅ Done |
-| 👥 **Kolaborasi** | Grup belajar, shared notes, diskusi soal | ✅ Done |
+| 👥 **Kolaborasi** | Grup belajar, shared notes, diskusi soal | 🚧 Scaffolded |
 
 ---
 
@@ -31,11 +31,12 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Go 1.22+** with **Gin** framework
+- **Go 1.26.3** with **Gin** framework
 - **Supabase PostgreSQL** — primary database
 - **Redis 7** — optional local cache/session backend
 - **Google Gemini** — AI engine
-- **Cloudflare R2 + Cloudinary** — file storage (images, PDFs)
+- **Cloudinary** — active image upload storage
+- **Cloudflare R2** — placeholder storage package
 
 ### Frontend
 - **Next.js 14** (App Router)
@@ -52,7 +53,7 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Go 1.22+
+- Go 1.26.3
 - Node.js 20+
 - Supabase project with PostgreSQL connection string
 - Redis 7 (optional for local testing)
@@ -160,6 +161,7 @@ Base URL: `http://localhost:8080/api/v1`
 ```
 POST /auth/register    Register new user
 POST /auth/login       Login
+POST /auth/google      Login/register with Google ID token
 POST /auth/refresh     Refresh access token
 ```
 
@@ -167,13 +169,56 @@ POST /auth/refresh     Refresh access token
 ```
 POST   /explain           Explain a question (text or image)
 GET    /explain/history   Get explanation history
-DELETE /explain/:id       Delete an explanation
+GET    /explain/:id       Get explanation detail
+POST   /explain/:id/re-explain
+GET    /public/explain/:id
 ```
 
 ### User
 ```
 GET  /user/profile    Get profile
-PUT  /user/profile    Update profile
+PATCH /user/profile   Update profile
+```
+
+### Tanya Sobi
+```
+POST   /chat/sessions
+GET    /chat/sessions
+GET    /chat/sessions/:id
+POST   /chat/sessions/:id/messages
+DELETE /chat/sessions/:id
+```
+
+### Latihan Soal
+```
+POST /practice/start
+GET  /practice/sessions/:id
+POST /practice/questions/:id/answer
+POST /practice/sessions/:id/finish
+GET  /practice/sessions/:id/result
+GET  /practice/history
+GET  /practice/progress
+```
+
+### Rangkum Materi
+```
+POST   /summary
+GET    /summary/history
+GET    /summary/:id
+DELETE /summary/:id
+GET    /public/summary/:id
+```
+
+### Jadwal, Upload, dan Gamification
+```
+POST /schedule/generate
+GET  /schedule
+POST /upload/profile
+POST /upload/posts
+POST /upload/attachments
+GET  /gamification/points
+GET  /gamification/badges
+GET  /gamification/leaderboard
 ```
 
 ---
@@ -181,7 +226,8 @@ PUT  /user/profile    Update profile
 ## 🗺️ Roadmap
 
 ```
-Q2 2026   Phase 1-7 — Core Features ✅ Complete
+Q2 2026   Phase 1-6 — Core Features ✅ Complete
+Q2 2026   Phase 7 — Collaboration 🚧 Scaffolded
 Q3 2026   Phase 8 — Advanced Analytics & Teacher Dashboard
 Q4 2026   Phase 9 — Interactive Live Quiz
 ```

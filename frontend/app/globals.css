@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --primary: #2DD48F;
+  --primary: #02D48F;
   --secondary: #FACC15;
   --tertiary: #FFAC5A;
   --neutral: #717676;

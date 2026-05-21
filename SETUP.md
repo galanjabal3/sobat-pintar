@@ -7,7 +7,7 @@
 
 ## Prerequisites
 
-- Go 1.22+
+- Go 1.26.3
 - Node.js 20+
 - Supabase project
 - Gemini API key

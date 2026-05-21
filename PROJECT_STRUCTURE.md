@@ -38,7 +38,7 @@ backend/
 │   ├── repository/           # PostgreSQL queries
 │   ├── router/               # Route registration
 │   └── service/              # Business logic
-├── migrations/               # SQL migrations
+├── migrations/               # SQL migrations 001-020
 ├── pkg/
 │   ├── cloudinary/           # Cloudinary upload client
 │   ├── fcm/                  # Firebase Cloud Messaging helpers
@@ -114,3 +114,9 @@ Checks:
 cd backend && go test ./...
 cd frontend && npx tsc --noEmit
 ```
+
+Current implementation notes:
+
+- Collaboration/group files and database tables exist, but the group service/repository methods are placeholders and the group routes are not registered in the active router.
+- Summary currently supports text input. PDF/image text extraction is not implemented yet.
+- Cloudflare R2 and Firebase Cloud Messaging packages are placeholders. Active image upload uses Cloudinary when credentials are configured.

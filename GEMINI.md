@@ -42,10 +42,11 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - Frontend: Chat page + messages UI — done
 - Chat history management — done
 
-### Phase 4 — Rangkum Materi ✅ DONE
-- PDF/Text summary service + Gemini — done
+### Phase 4 — Rangkum Materi ✅ DONE FOR TEXT
+- Text summary service + Gemini — done
 - History and detailed view — done
 - Frontend: Summary upload & result pages — done
+- PDF/image text extraction — not implemented yet
 
 ### Phase 5 — Jadwal Belajar ✅ DONE
 - AI-generated study schedule logic — done
@@ -57,9 +58,10 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - Badge unlock logic and leaderboard — done
 - Frontend: Points display, badges, leaderboard UI — done
 
-### Phase 7 — Kolaborasi ✅ DONE
-- Study group CRUD and member management — done
-- Shared notes and discussion (initial version) — done
+### Phase 7 — Kolaborasi 🚧 SCAFFOLDED
+- Study group models, DTOs, migrations, and UI placeholder/components — scaffolded
+- Backend group service/repository methods currently return placeholders
+- Group routes are not registered in the active server router
 
 ---
 
@@ -67,13 +69,13 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 
 | Layer       | Technology                              |
 |-------------|-----------------------------------------|
-| Backend     | Go 1.22+ with Gin framework             |
+| Backend     | Go 1.26.3 with Gin framework            |
 | Frontend    | Next.js 14 (App Router) + TailwindCSS   |
 | AI          | Google Gemini API                        |
 | Database    | Supabase PostgreSQL                     |
 | Cache       | Redis 7 (optional local testing)        |
 | Auth        | JWT (access + refresh token)            |
-| Storage     | Cloudflare R2 + Cloudinary (images)     |
+| Storage     | Cloudinary active for images; R2 scaffolded |
 | Deploy      | Railway (backend) + Vercel (frontend)   |
 
 ---
@@ -122,7 +124,7 @@ sobat-pintar/
 │   │   ├── storage/                   # Cloudflare R2 wrapper
 │   │   ├── cloudinary/                # Cloudinary wrapper
 │   │   └── logger/                    # Structured logger (zerolog)
-│   └── migrations/                    # SQL files (001–017)
+│   └── migrations/                    # SQL files (001–020)
 │
 ├── frontend/
 │   ├── app/
@@ -141,22 +143,30 @@ sobat-pintar/
 ```
 POST /api/v1/auth/register
 POST /api/v1/auth/login
+POST /api/v1/auth/google
+POST /api/v1/auth/refresh
 GET  /api/v1/user/profile
+PATCH /api/v1/user/profile
 ```
 
 ### Jelasin Soal
 ```
 POST   /api/v1/explain
 GET    /api/v1/explain/history
+GET    /api/v1/explain/:id
 POST   /api/v1/explain/:id/re-explain
+GET    /api/v1/public/explain/:id
 ```
 
 ### Latihan Soal
 ```
 POST   /api/v1/practice/start
+GET    /api/v1/practice/sessions/:id
 POST   /api/v1/practice/questions/:id/answer
+POST   /api/v1/practice/sessions/:id/finish
 GET    /api/v1/practice/sessions/:id/result
 GET    /api/v1/practice/history
+GET    /api/v1/practice/progress
 ```
 
 ### Tanya Sobi (Chat)
@@ -173,6 +183,8 @@ DELETE /api/v1/chat/sessions/:id
 POST   /api/v1/summary
 GET    /api/v1/summary/:id
 GET    /api/v1/summary/history
+DELETE /api/v1/summary/:id
+GET    /api/v1/public/summary/:id
 ```
 
 ### Jadwal Belajar (Schedule)
@@ -188,7 +200,14 @@ GET    /api/v1/gamification/badges
 GET    /api/v1/gamification/leaderboard
 ```
 
-### Collaboration (Groups)
+### Upload
+```
+POST   /api/v1/upload/profile
+POST   /api/v1/upload/posts
+POST   /api/v1/upload/attachments
+```
+
+### Collaboration (Groups, not registered yet)
 ```
 POST   /api/v1/groups
 GET    /api/v1/groups
