@@ -9,6 +9,8 @@ interface SettingsToggleProps {
   onChange: (checked: boolean) => void;
   label: string;
   description?: string;
+  disabled?: boolean;
+  badge?: string;
 }
 
 export function SettingsToggle({
@@ -16,13 +18,27 @@ export function SettingsToggle({
   onChange,
   label,
   description,
+  disabled = false,
+  badge,
 }: SettingsToggleProps) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl bg-gray-50/70 p-4">
-      <div>
-        <p className="text-sm font-black text-neutral-800">{label}</p>
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 rounded-[1.35rem] bg-gray-50/70 px-4 py-3.5 sm:gap-4 sm:p-4",
+        disabled && "opacity-70"
+      )}
+    >
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[13px] font-black text-neutral-800 sm:text-sm">{label}</p>
+          {badge ? (
+            <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-secondary">
+              {badge}
+            </span>
+          ) : null}
+        </div>
         {description ? (
-          <p className="mt-1 text-[11px] font-bold text-neutral-400 leading-relaxed">
+          <p className="mt-1 text-[10px] font-bold leading-relaxed text-neutral-400 sm:text-[11px]">
             {description}
           </p>
         ) : null}
@@ -31,10 +47,12 @@ export function SettingsToggle({
         type="button"
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-          checked ? "bg-primary" : "bg-neutral-200"
+          "relative h-7 w-12 shrink-0 rounded-full transition-colors shadow-inner",
+          checked ? "bg-primary" : "bg-neutral-200",
+          disabled && "cursor-not-allowed"
         )}
       >
         <span

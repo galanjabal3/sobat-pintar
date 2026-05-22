@@ -36,11 +36,11 @@ export function ProfileShell({
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] -z-10" />
       <div className="absolute top-1/2 -left-28 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -z-10" />
 
-      <main className={cn("px-6 pt-12 pb-16 max-w-2xl mx-auto", className)}>
+      <main className={cn("px-5 pt-10 pb-14 max-w-2xl mx-auto sm:px-6 sm:pt-12 sm:pb-16", className)}>
         <motion.header
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 mb-8"
+          className="mb-7 flex items-center gap-3 sm:mb-8 sm:gap-4"
         >
           <button
             onClick={() => router.push(backHref)}
@@ -53,7 +53,7 @@ export function ProfileShell({
             <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">
               {eyebrow}
             </p>
-            <h1 className="text-2xl font-black text-neutral-800 leading-tight">
+            <h1 className="text-[1.6rem] font-black leading-tight text-neutral-800 sm:text-2xl">
               {title}
             </h1>
             {description ? (
@@ -69,9 +69,9 @@ export function ProfileShell({
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.05 }}
-            className="mb-8 bg-secondary/10 border-2 border-white rounded-[2rem] p-5 flex items-center gap-4 shadow-xl shadow-secondary/5 overflow-hidden relative"
+            className="relative mb-7 flex items-center gap-4 overflow-hidden rounded-[1.75rem] border-2 border-white bg-secondary/10 p-4 shadow-xl shadow-secondary/5 sm:mb-8 sm:rounded-[2rem] sm:p-5"
           >
-            <div className="relative w-20 h-20 shrink-0">
+            <div className="relative h-16 w-16 shrink-0 sm:h-20 sm:w-20">
               <Image
                 src={SOBI_ASSETS.WAVING}
                 alt="Sobi"
@@ -80,7 +80,7 @@ export function ProfileShell({
                 sizes="80px"
               />
             </div>
-            <p className="relative z-10 text-sm font-bold text-neutral-700 leading-relaxed">
+            <p className="relative z-10 text-[13px] font-bold leading-relaxed text-neutral-700 sm:text-sm">
               {mascotMessage}
             </p>
             <div className="absolute -right-8 -bottom-8 w-28 h-28 rounded-full bg-secondary/10" />

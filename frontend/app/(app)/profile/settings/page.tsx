@@ -15,14 +15,10 @@ import { useAuthStore } from "@/store/authStore";
 const SETTINGS_STORAGE_KEY = "sobat-pintar-settings";
 
 type LocalSettings = {
-  studyReminder: boolean;
-  leaderboardUpdates: boolean;
   theme: "light" | "dark";
 };
 
 const DEFAULT_SETTINGS: LocalSettings = {
-  studyReminder: true,
-  leaderboardUpdates: false,
   theme: "light",
 };
 
@@ -62,106 +58,132 @@ export default function AppSettingsPage() {
       title="Pengaturan App"
       description="Atur pengalaman belajar di Sobat Pintar."
       mascotMessage="Sesuaikan aplikasi supaya belajar terasa makin nyaman untukmu."
+      className="pt-10 sm:pt-12"
     >
-      <div className="space-y-6">
-        <ProfileCard>
+      <div className="space-y-5 sm:space-y-6">
+        <ProfileCard className="p-4 sm:p-5">
           <div className="mb-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-10 sm:w-10">
               <Bell size={20} strokeWidth={2.5} />
             </div>
             <div>
-              <h2 className="text-base font-black text-neutral-800">
+              <h2 className="text-[15px] font-black text-neutral-800 sm:text-base">
                 Preferensi Notifikasi
               </h2>
               <p className="text-[11px] font-bold text-neutral-400">
-                Tersimpan di perangkat ini.
+                Fitur ini belum aktif.
               </p>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5 sm:space-y-3">
             <SettingsToggle
-              checked={settings.studyReminder}
-              onChange={(checked) => updateSetting("studyReminder", checked)}
+              checked={false}
+              onChange={() => undefined}
               label="Pengingat Belajar"
-              description="Dapatkan pengingat dari Sobi untuk belajar tepat waktu."
+              description="Nanti Sobi bisa mengingatkan jadwal belajarmu."
+              disabled
+              badge="Segera"
             />
             <SettingsToggle
-              checked={settings.leaderboardUpdates}
-              onChange={(checked) => updateSetting("leaderboardUpdates", checked)}
+              checked={false}
+              onChange={() => undefined}
               label="Papan Skor & Tantangan"
-              description="Tampilkan update peringkat dan tantangan belajar."
+              description="Nanti kamu bisa mendapat update peringkat dan tantangan."
+              disabled
+              badge="Segera"
             />
           </div>
         </ProfileCard>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <ProfileCard>
-            <div className="mb-4 flex items-center gap-3">
-              <Languages size={20} className="text-primary" strokeWidth={2.5} />
-              <h2 className="text-base font-black text-neutral-800">Bahasa</h2>
+        <ProfileCard>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+              <Palette size={20} strokeWidth={2.5} />
             </div>
-            <div className="space-y-3">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between rounded-2xl border-2 border-primary bg-primary/10 p-4 text-left"
-              >
-                <span className="text-sm font-black text-primary">
-                  Bahasa Indonesia
-                </span>
-                <CheckCircle2 size={20} className="text-primary fill-primary/10" />
-              </button>
-              <button
-                type="button"
-                disabled
-                className="flex w-full items-center justify-between rounded-2xl border-2 border-primary/5 bg-gray-50/70 p-4 text-left opacity-60"
-              >
-                <span className="text-sm font-black text-neutral-500">
-                  English
-                </span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+            <div>
+              <h2 className="text-base font-black text-neutral-800">
+                Tampilan Aplikasi
+              </h2>
+              <p className="text-[11px] font-bold text-neutral-400">
+                Bahasa dan tema yang kamu gunakan.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-[1.5rem] bg-gray-50/70 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Languages size={18} className="text-primary" strokeWidth={2.5} />
+                <h3 className="text-sm font-black text-neutral-800">Bahasa</h3>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  className="flex min-h-[64px] w-full items-center justify-between rounded-2xl border-2 border-primary bg-primary/10 px-4 py-3 text-left"
+                >
+                  <span className="text-sm font-black text-primary">
+                    Bahasa Indonesia
+                  </span>
+                  <CheckCircle2 size={20} className="text-primary fill-primary/10" />
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  className="flex min-h-[64px] w-full items-center justify-between gap-3 rounded-2xl border-2 border-primary/5 bg-white/70 px-4 py-3 text-left opacity-60"
+                >
+                  <span className="text-sm font-black text-neutral-500">
+                    English
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                    Segera
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] bg-gray-50/70 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Palette size={18} className="text-primary" strokeWidth={2.5} />
+                  <h3 className="text-sm font-black text-neutral-800">
+                    Tema Aplikasi
+                  </h3>
+                </div>
+                <span className="shrink-0 rounded-full bg-secondary/15 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-secondary">
                   Segera
                 </span>
-              </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white/70 p-2">
+                {[
+                  { value: "light", label: "Terang" },
+                  { value: "dark", label: "Gelap" },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    disabled={item.value === "dark"}
+                    onClick={() =>
+                      updateSetting("theme", item.value as LocalSettings["theme"])
+                    }
+                    className={cn(
+                      "min-h-[48px] rounded-xl px-3 text-xs font-black transition-all",
+                      settings.theme === item.value
+                        ? "bg-white text-primary shadow-md"
+                        : "text-neutral-400",
+                      item.value === "dark" && "opacity-50"
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] font-bold leading-relaxed text-neutral-400">
+                Mode gelap akan diaktifkan setelah tema global siap.
+              </p>
             </div>
-          </ProfileCard>
-
-          <ProfileCard>
-            <div className="mb-4 flex items-center gap-3">
-              <Palette size={20} className="text-primary" strokeWidth={2.5} />
-              <h2 className="text-base font-black text-neutral-800">
-                Tema Aplikasi
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 gap-3 rounded-2xl bg-gray-50 p-2">
-              {[
-                { value: "light", label: "Terang" },
-                { value: "dark", label: "Gelap" },
-              ].map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  disabled={item.value === "dark"}
-                  onClick={() =>
-                    updateSetting("theme", item.value as LocalSettings["theme"])
-                  }
-                  className={cn(
-                    "rounded-xl p-3 text-xs font-black transition-all",
-                    settings.theme === item.value
-                      ? "bg-white text-primary shadow-md"
-                      : "text-neutral-400",
-                    item.value === "dark" && "opacity-50"
-                  )}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-3 text-[11px] font-bold text-neutral-400">
-              Mode gelap akan diaktifkan setelah tema global siap.
-            </p>
-          </ProfileCard>
-        </div>
+          </div>
+        </ProfileCard>
 
         <ProfileCard>
           <div className="mb-4 flex items-center gap-3">
