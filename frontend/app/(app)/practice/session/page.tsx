@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, CheckCircle2, XCircle, Sparkles, ArrowRight, HelpCircle } from "lucide-react";
+import { ChevronLeft, CheckCircle2, XCircle, Sparkles, ArrowRight, HelpCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
@@ -27,6 +27,13 @@ function PracticeMarkdown({ children, className }: { children: string; className
   return <AIMarkdown className={className}>{children}</AIMarkdown>;
 }
 
+function formatTimer(milliseconds: number) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 function PracticeSessionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,8 +53,42 @@ function PracticeSessionContent() {
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isHintModalOpen, setIsHintModalOpen] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [timerDeadlineMs, setTimerDeadlineMs] = useState<number | null>(null);
+  const [timeRemainingMs, setTimeRemainingMs] = useState<number | null>(null);
+  const timerFinishedRef = useRef(false);
   const contentTopRef = React.useRef<HTMLDivElement>(null);
   const feedbackRef = React.useRef<HTMLDivElement>(null);
+  const timerStorageKey = useMemo(
+    () => (sessionID ? `sobat-pintar-practice-timer:${sessionID}` : null),
+    [sessionID]
+  );
+
+  const clearPracticeTimer = useCallback(() => {
+    if (!timerStorageKey) return;
+    sessionStorage.removeItem(timerStorageKey);
+    setTimerDeadlineMs(null);
+    setTimeRemainingMs(null);
+  }, [timerStorageKey]);
+
+  const finishSession = useCallback(
+    async (successMessage?: string) => {
+      if (!sessionID || isFinishing) return;
+
+      setIsFinishing(true);
+      try {
+        await api.post(`/practice/sessions/${sessionID}/finish`);
+        clearPracticeTimer();
+        if (successMessage) {
+          addToast(successMessage, "success");
+        }
+        router.push(`/practice/result?id=${sessionID}`);
+      } catch (err: unknown) {
+        addToast(getApiErrorMessage(err, "Gagal menyelesaikan latihan."), "error");
+        setIsFinishing(false);
+      }
+    },
+    [addToast, clearPracticeTimer, isFinishing, router, sessionID]
+  );
 
   useEffect(() => {
     if (!sessionID) {
@@ -68,6 +109,7 @@ function PracticeSessionContent() {
         }
 
         if (firstUnansweredIndex === -1) {
+          clearPracticeTimer();
           router.push(`/practice/result?id=${sessionID}`);
           return;
         }
@@ -79,7 +121,7 @@ function PracticeSessionContent() {
     };
 
     fetchSession();
-  }, [sessionID, router, addToast]);
+  }, [addToast, clearPracticeTimer, router, sessionID]);
 
   const currentQuestion = questions[currentIndex];
   const hasUnansweredQuestions = questions.some((question) => !question.user_answer);
@@ -124,6 +166,44 @@ function PracticeSessionContent() {
     feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [hasSubmitted]);
 
+  useEffect(() => {
+    if (!timerStorageKey) return;
+
+    const rawTimer = sessionStorage.getItem(timerStorageKey);
+    if (!rawTimer) return;
+
+    try {
+      const parsedTimer = JSON.parse(rawTimer) as { deadline_ms?: number };
+      if (!parsedTimer.deadline_ms || parsedTimer.deadline_ms <= Date.now()) {
+        timerFinishedRef.current = true;
+        finishSession("Waktu habis. Sobi menghitung hasil latihanmu.");
+        return;
+      }
+      setTimerDeadlineMs(parsedTimer.deadline_ms);
+      setTimeRemainingMs(parsedTimer.deadline_ms - Date.now());
+    } catch {
+      sessionStorage.removeItem(timerStorageKey);
+    }
+  }, [finishSession, timerStorageKey]);
+
+  useEffect(() => {
+    if (!timerDeadlineMs || isFinishing) return;
+
+    const tick = () => {
+      const remaining = timerDeadlineMs - Date.now();
+      setTimeRemainingMs(Math.max(0, remaining));
+
+      if (remaining <= 0 && !timerFinishedRef.current) {
+        timerFinishedRef.current = true;
+        finishSession("Waktu habis. Sobi menghitung hasil latihanmu.");
+      }
+    };
+
+    tick();
+    const intervalID = window.setInterval(tick, 1000);
+    return () => window.clearInterval(intervalID);
+  }, [finishSession, isFinishing, timerDeadlineMs]);
+
   const handleSubmit = async () => {
     if (isSubmitting || hasSubmitted) return;
 
@@ -163,21 +243,13 @@ function PracticeSessionContent() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
+      clearPracticeTimer();
       router.push(`/practice/result?id=${sessionID}`);
     }
   };
 
   const handleFinishSession = async () => {
-    if (!sessionID || isFinishing) return;
-
-    setIsFinishing(true);
-    try {
-      await api.post(`/practice/sessions/${sessionID}/finish`);
-      router.push(`/practice/result?id=${sessionID}`);
-    } catch (err: unknown) {
-      addToast(getApiErrorMessage(err, "Gagal menyelesaikan latihan."), "error");
-      setIsFinishing(false);
-    }
+    await finishSession();
   };
 
   if (!currentQuestion) {
@@ -197,6 +269,8 @@ function PracticeSessionContent() {
 
   const isLastQuestion = currentIndex === questions.length - 1;
   const progress = ((currentIndex) / questions.length) * 100;
+  const hasTimer = timeRemainingMs !== null;
+  const isTimerLow = hasTimer && timeRemainingMs <= 60 * 1000;
 
   return (
     <div className="min-h-screen bg-[#FDFEFF] relative overflow-hidden flex flex-col">
@@ -209,7 +283,7 @@ function PracticeSessionContent() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white/70 backdrop-blur-xl px-6 pt-12 pb-6 border-b-4 border-white sticky top-0 z-20 shadow-xl shadow-primary/5"
       >
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-5">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -219,12 +293,25 @@ function PracticeSessionContent() {
             <ChevronLeft size={20} strokeWidth={3} />
           </motion.button>
           
-          <div className="flex flex-col items-center">
+          <div className="flex min-w-0 flex-col items-center gap-2">
             <div className="bg-primary/10 px-4 py-1.5 rounded-full border border-primary/10">
               <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
                 Soal {currentIndex + 1} / {questions.length}
               </span>
             </div>
+            {hasTimer && (
+              <div
+                className={cn(
+                  "flex min-w-[92px] items-center justify-center gap-2 rounded-full border-2 px-4 py-1.5 text-xs font-black uppercase tracking-widest",
+                  isTimerLow
+                    ? "border-red-100 bg-red-50 text-red-500"
+                    : "border-secondary/15 bg-secondary/10 text-secondary"
+                )}
+              >
+                <Clock size={14} strokeWidth={3} />
+                {formatTimer(timeRemainingMs)}
+              </div>
+            )}
           </div>
           
           <button

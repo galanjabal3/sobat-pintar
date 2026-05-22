@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, BookOpen, Calculator, Globe, Beaker, Sparkles, Trophy, ArrowRight, FileText } from "lucide-react";
+import { ChevronLeft, BookOpen, Calculator, Globe, Beaker, Sparkles, Trophy, ArrowRight, FileText, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,13 @@ const PRACTICE_MODES = [
   { id: "general", label: "Topik umum" },
   { id: "source", label: "Materi sendiri" },
 ] as const;
-// Future practice roadmap: timed challenge mode, image-based source material, and short essay questions.
+const TIMER_OPTIONS = [
+  { minutes: 0, label: "Bebas", helper: "Tanpa timer" },
+  { minutes: 5, label: "5", helper: "Menit" },
+  { minutes: 10, label: "10", helper: "Menit" },
+  { minutes: 15, label: "15", helper: "Menit" },
+];
+// Future practice roadmap: image-based source material and short essay questions.
 type PracticeMode = (typeof PRACTICE_MODES)[number]["id"];
 
 export default function PracticePage() {
@@ -43,6 +49,7 @@ export default function PracticePage() {
    const [selectedSubject, setSelectedSubject] = useState<string>("Matematika");
    const [selectedDifficulty, setSelectedDifficulty] = useState<string>("sedang");
    const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(5);
+   const [selectedTimerMinutes, setSelectedTimerMinutes] = useState<number>(0);
    const [sourceContent, setSourceContent] = useState("");
    const [isLoading, setIsLoading] = useState(false);
  
@@ -68,6 +75,18 @@ export default function PracticePage() {
        });
        
        const sessionID = response.data.session_id;
+       const timerStorageKey = `sobat-pintar-practice-timer:${sessionID}`;
+       if (selectedTimerMinutes > 0) {
+         sessionStorage.setItem(
+           timerStorageKey,
+           JSON.stringify({
+             duration_minutes: selectedTimerMinutes,
+             deadline_ms: Date.now() + selectedTimerMinutes * 60 * 1000,
+           })
+         );
+       } else {
+         sessionStorage.removeItem(timerStorageKey);
+       }
        notifyAIQuotaUpdated();
        router.push(`/practice/session?id=${sessionID}`);
      } catch (err: unknown) {
@@ -245,7 +264,7 @@ export default function PracticePage() {
              </div>
            </motion.section>
 
-           {/* Question Count Selection */}
+           {/* Practice Settings */}
            <motion.section
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
@@ -254,30 +273,65 @@ export default function PracticePage() {
              <div className="flex items-center gap-2 mb-6">
                <Sparkles size={16} className="text-primary" />
                <div>
-                 <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest">Jumlah Soal</h2>
+                 <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest">Pengaturan Latihan</h2>
                  <p className="mt-1 text-[10px] font-bold text-neutral-300">
-                   Pilih yang pas dengan waktu belajarmu.
+                   Atur jumlah soal dan timer.
                  </p>
                </div>
              </div>
 
-             <div className="grid grid-cols-3 gap-3">
-               {PRACTICE_QUESTION_COUNTS.map((count) => (
-                 <button
-                   key={count}
-                   type="button"
-                   onClick={() => setSelectedQuestionCount(count)}
-                   className={cn(
-                     "rounded-[2rem] border-4 py-4 text-center transition-all",
-                     selectedQuestionCount === count
-                       ? "border-primary bg-white text-primary shadow-xl shadow-primary/10"
-                       : "border-white bg-white/50 text-neutral-400 shadow-xl shadow-primary/5 hover:border-primary/20"
-                   )}
-                 >
-                   <span className="block text-xl font-black leading-none">{count}</span>
-                   <span className="mt-1 block text-[9px] font-black uppercase tracking-widest">Soal</span>
-                 </button>
-               ))}
+             <div className="space-y-3 rounded-[2rem] border-4 border-white bg-white/60 p-3 shadow-xl shadow-primary/5">
+               <div className="rounded-[1.5rem] bg-primary/5 p-2">
+                 <div className="mb-2 flex items-center gap-2 px-2">
+                   <Sparkles size={14} className="text-primary" />
+                   <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Jumlah Soal</p>
+                 </div>
+                 <div className="grid grid-cols-3 gap-2">
+                   {PRACTICE_QUESTION_COUNTS.map((count) => (
+                     <button
+                       key={count}
+                       type="button"
+                       onClick={() => setSelectedQuestionCount(count)}
+                       className={cn(
+                         "min-h-[54px] rounded-[1.25rem] px-2 text-center transition-all",
+                         selectedQuestionCount === count
+                           ? "bg-white text-primary shadow-lg shadow-primary/10"
+                           : "text-neutral-400 hover:bg-white/60"
+                       )}
+                     >
+                       <span className="text-base font-black leading-none">{count}</span>
+                       <span className="ml-1 text-[8px] font-black uppercase tracking-widest">Soal</span>
+                     </button>
+                   ))}
+                 </div>
+               </div>
+
+               <div className="rounded-[1.5rem] bg-secondary/5 p-2">
+                 <div className="mb-2 flex items-center gap-2 px-2">
+                   <Clock size={14} className="text-secondary" />
+                   <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Timer</p>
+                 </div>
+                 <div className="grid grid-cols-4 gap-1.5">
+                   {TIMER_OPTIONS.map((option) => (
+                     <button
+                       key={option.minutes}
+                       type="button"
+                       onClick={() => setSelectedTimerMinutes(option.minutes)}
+                       className={cn(
+                         "min-h-[54px] rounded-[1.25rem] px-1 text-center transition-all",
+                         selectedTimerMinutes === option.minutes
+                           ? "bg-white text-secondary shadow-lg shadow-secondary/10"
+                           : "text-neutral-400 hover:bg-white/60"
+                       )}
+                     >
+                       <span className="block text-sm font-black leading-none">{option.label}</span>
+                       <span className="mt-1 block text-[7px] font-black uppercase tracking-widest">
+                         {option.minutes === 0 ? "Timer" : "Menit"}
+                       </span>
+                     </button>
+                   ))}
+                 </div>
+               </div>
              </div>
            </motion.section>
  
