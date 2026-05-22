@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Calendar, ChevronLeft, Zap } from "lucide-react";
+import { ArrowRight, Calendar, ChevronLeft, Trash2, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -13,6 +13,7 @@ import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { SOBI_ASSETS } from "@/lib/assets";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { useToastStore } from "@/store/toastStore";
 import { MAX_SCHEDULE_SUBJECT_CHARS, MAX_SCHEDULE_SUBJECT_COUNT } from "@/lib/aiLimits";
@@ -52,6 +53,7 @@ export default function SchedulePage() {
   const [history, setHistory] = useState<ScheduleResult[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const minExamDate = useMemo(() => todayInputValue(), []);
 
   const parsedHoursPerDay = Number(hoursPerDay);
@@ -118,6 +120,25 @@ export default function SchedulePage() {
 
   const removeSubject = (subject: string) => {
     setSubjects((current) => current.filter((item) => item !== subject));
+  };
+
+  const handleDelete = (event: React.MouseEvent, id: string) => {
+    event.stopPropagation();
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      await api.delete(`/schedule/${deleteId}`);
+      setHistory((current) => current.filter((item) => item.id !== deleteId));
+      addToast("Jadwal belajar berhasil dihapus.", "success");
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal menghapus jadwal belajar."), "error");
+    } finally {
+      setDeleteId(null);
+    }
   };
 
   const handleGenerate = async () => {
@@ -358,12 +379,20 @@ export default function SchedulePage() {
           ) : history.length > 0 ? (
             <div className="space-y-3">
               {history.slice(0, 3).map((item) => (
-                <button
+                <div
                   key={item.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => router.push(`/schedule/result/${item.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      router.push(`/schedule/result/${item.id}`);
+                    }
+                  }}
                   className="w-full rounded-[2rem] border-2 border-primary/5 bg-white p-5 text-left shadow-xl shadow-primary/5 transition-all hover:border-primary/20"
                 >
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-black text-neutral-800">
                         Ujian {formatScheduleDate(item.exam_date)}
@@ -375,9 +404,19 @@ export default function SchedulePage() {
                         Buka Jadwal <ArrowRight size={12} strokeWidth={3} />
                       </p>
                     </div>
-                    <Calendar size={20} className="text-primary" />
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(event) => handleDelete(event, item.id)}
+                        className="rounded-xl p-2 text-neutral-300 transition-all hover:bg-red-50 hover:text-red-500"
+                        aria-label="Hapus jadwal belajar"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <Calendar size={20} className="text-primary" />
+                    </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           ) : (
@@ -394,6 +433,17 @@ export default function SchedulePage() {
       </div>
 
       <div className="fixed -bottom-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none -z-10" />
+
+      <Modal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="Hapus Jadwal?"
+        description="Jadwal belajar yang dihapus tidak bisa dikembalikan lagi. Kamu yakin?"
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        variant="danger"
+      />
     </div>
   );
 }

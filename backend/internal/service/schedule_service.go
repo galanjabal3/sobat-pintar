@@ -17,6 +17,7 @@ type ScheduleService interface {
 	GenerateSchedule(ctx context.Context, userID, level string, req dto.GenerateScheduleRequest) (*dto.ScheduleResponse, error)
 	GetSchedules(ctx context.Context, userID string) ([]dto.ScheduleResponse, error)
 	GetScheduleByID(ctx context.Context, userID, id string) (*dto.ScheduleResponse, error)
+	DeleteSchedule(ctx context.Context, userID, id string) error
 }
 
 type scheduleService struct {
@@ -178,6 +179,10 @@ func (s *scheduleService) GetScheduleByID(ctx context.Context, userID, id string
 	}
 
 	return &res, nil
+}
+
+func (s *scheduleService) DeleteSchedule(ctx context.Context, userID, id string) error {
+	return s.repo.DeleteSchedule(ctx, id, userID)
 }
 
 func (s *scheduleService) consumeAIQuota(ctx context.Context, userID, feature string, limit int) error {

@@ -98,6 +98,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 			schedule.POST("/generate", scheduleH.GenerateSchedule)
 			schedule.GET("", scheduleH.GetSchedules)
 			schedule.GET("/:id", scheduleH.GetSchedule)
+			schedule.DELETE("/:id", scheduleH.DeleteSchedule)
 		}
 
 		// Gamification routes

@@ -92,3 +92,22 @@ func (h *ScheduleHandler) GetSchedule(c *gin.Context) {
 		Data:    res,
 	})
 }
+
+func (h *ScheduleHandler) DeleteSchedule(c *gin.Context) {
+	userID := c.GetString("user_id")
+	id := c.Param("id")
+
+	if err := h.service.DeleteSchedule(c.Request.Context(), userID, id); err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Success: false,
+			Message: "Gagal menghapus jadwal belajar",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Jadwal belajar berhasil dihapus",
+	})
+}

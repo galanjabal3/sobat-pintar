@@ -63,9 +63,20 @@ func (r *scheduleRepository) GetScheduleByID(ctx context.Context, id string) (*m
 }
 
 func (r *scheduleRepository) DeleteSchedule(ctx context.Context, id, userID string) error {
-	query := `DELETE FROM study_schedules WHERE id = $1 AND user_id = $2`
-	_, err := r.db.Exec(ctx, query, id, userID)
-	return err
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `DELETE FROM reminders WHERE schedule_id = $1 AND user_id = $2`, id, userID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM study_schedules WHERE id = $1 AND user_id = $2`, id, userID); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (r *scheduleRepository) CreateReminder(ctx context.Context, reminder *model.Reminder) error {
