@@ -11,6 +11,7 @@ import (
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
 	"sobat-pintar/pkg/gemini"
+	"sobat-pintar/pkg/logger"
 )
 
 const defaultChatSessionTitle = "Obrolan Baru dengan Sobi"
@@ -192,6 +193,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 	// 3. Call Gemini
 	aiResponse, err := s.geminiClient.SendChatMessage(ctx, session.Level, history, req.Message)
 	if err != nil {
+		logger.Error(err, "Failed to generate chat response", "user_id", userID, "session_id", sessionID, "level", session.Level)
 		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
 		failedMsg := &model.Message{
 			ID:        uuid.New().String(),

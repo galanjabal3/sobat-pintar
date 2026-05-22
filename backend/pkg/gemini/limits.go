@@ -3,7 +3,7 @@ package gemini
 import "google.golang.org/genai"
 
 const (
-	chatMaxOutputTokens     int32 = 640
+	chatMaxOutputTokens     int32 = 1000
 	explainMaxOutputTokens  int32 = 2400
 	summaryMaxOutputTokens  int32 = 2000
 	practiceMaxOutputTokens int32 = 3200

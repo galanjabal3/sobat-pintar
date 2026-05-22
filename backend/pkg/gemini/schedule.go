@@ -41,7 +41,11 @@ Hari yang tersedia: %s
 Jam belajar per hari: %d jam
 Buat maksimal 7 hari jadwal. Tanggal jadwal HARUS mulai dari hari ini atau setelahnya, tidak boleh tanggal lampau, dan tidak boleh melewati tanggal ujian terdekat.
 Gunakan hanya hari yang tersedia. Untuk setiap hari, buat sesi belajar yang ringkas dan realistis sesuai jam per hari.
+Total durasi belajar per hari tidak boleh melebihi %d menit.
+Gunakan durasi realistis seperti 30, 45, 60, atau 90 menit.
 Tips maksimal 3 item.
+Jadwal harus membantu belajar sehat dan jujur, bukan strategi mencontek, begadang ekstrem, atau menghindari belajar.
+%s
 
 Format response HANYA JSON, tanpa markdown dan tanpa code fence:
 {
@@ -54,7 +58,7 @@ Format response HANYA JSON, tanpa markdown dan tanpa code fence:
     }
   ],
   "tips": ["tip belajar 1", "tip belajar 2"]
-}`, level, today.Format("2006-01-02"), strings.Join(subjects, ", "), strings.Join(examDatesStr, ", "), strings.Join(availableDays, ", "), hoursPerDay)
+}`, level, today.Format("2006-01-02"), strings.Join(subjects, ", "), strings.Join(examDatesStr, ", "), strings.Join(availableDays, ", "), hoursPerDay, hoursPerDay*60, learningSafetyInstruction())
 
 	var lastErr error
 	for attempt := 0; attempt < 2; attempt++ {
@@ -80,6 +84,10 @@ Format response HANYA JSON, tanpa markdown dan tanpa code fence:
 				lastErr = err
 				continue
 			}
+			if err := validateScheduleResponse(scheduleRes, subjects, availableDays, hoursPerDay); err != nil {
+				lastErr = err
+				continue
+			}
 			return &scheduleRes, nil
 		} else {
 			lastErr = err
@@ -87,6 +95,76 @@ Format response HANYA JSON, tanpa markdown dan tanpa code fence:
 	}
 
 	return nil, fmt.Errorf("failed to parse Gemini response after retry: %w", lastErr)
+}
+
+func validateScheduleResponse(response ScheduleResponse, subjects, availableDays []string, hoursPerDay int) error {
+	if len(response.Schedule) == 0 || len(response.Schedule) > 7 || len(response.Tips) > 3 {
+		return errInvalidScheduleResponse
+	}
+
+	allowedSubjects := make(map[string]struct{}, len(subjects))
+	for _, subject := range subjects {
+		allowedSubjects[strings.ToLower(strings.TrimSpace(subject))] = struct{}{}
+	}
+	allowedDays := make(map[string]struct{}, len(availableDays))
+	for _, day := range availableDays {
+		allowedDays[strings.ToLower(strings.TrimSpace(day))] = struct{}{}
+	}
+
+	maxMinutesPerDay := hoursPerDay * 60
+	for _, day := range response.Schedule {
+		if strings.TrimSpace(day.Date) == "" || len(day.Sessions) == 0 {
+			return errInvalidScheduleResponse
+		}
+
+		scheduleDate, err := time.Parse("2006-01-02", day.Date)
+		if err != nil {
+			return err
+		}
+		dayName := strings.ToLower(indonesianWeekday(scheduleDate.Weekday()))
+		if _, ok := allowedDays[dayName]; !ok {
+			return errInvalidScheduleResponse
+		}
+
+		totalMinutes := 0
+		for _, session := range day.Sessions {
+			subject := strings.ToLower(strings.TrimSpace(session.Subject))
+			if _, ok := allowedSubjects[subject]; !ok {
+				return errInvalidScheduleResponse
+			}
+			if strings.TrimSpace(session.Topic) == "" || session.DurationMinutes <= 0 {
+				return errInvalidScheduleResponse
+			}
+			totalMinutes += session.DurationMinutes
+		}
+
+		if totalMinutes > maxMinutesPerDay {
+			return errInvalidScheduleResponse
+		}
+	}
+
+	return nil
+}
+
+func indonesianWeekday(day time.Weekday) string {
+	switch day {
+	case time.Monday:
+		return "Senin"
+	case time.Tuesday:
+		return "Selasa"
+	case time.Wednesday:
+		return "Rabu"
+	case time.Thursday:
+		return "Kamis"
+	case time.Friday:
+		return "Jumat"
+	case time.Saturday:
+		return "Sabtu"
+	case time.Sunday:
+		return "Minggu"
+	default:
+		return ""
+	}
 }
 
 func todayInJakarta() time.Time {

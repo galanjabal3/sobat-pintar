@@ -35,3 +35,53 @@ func TestValidateScheduleDateBoundsAllowsDateInRange(t *testing.T) {
 		t.Fatalf("expected schedule date to be valid, got %v", err)
 	}
 }
+
+func TestValidateScheduleResponseRejectsDurationOverDailyLimit(t *testing.T) {
+	response := validScheduleResponse()
+	response.Schedule[0].Sessions[0].DurationMinutes = 90
+
+	err := validateScheduleResponse(response, []string{"Matematika"}, []string{"Jumat"}, 1)
+	if !errors.Is(err, errInvalidScheduleResponse) {
+		t.Fatalf("expected invalid schedule response error, got %v", err)
+	}
+}
+
+func TestValidateScheduleResponseRejectsUnavailableDay(t *testing.T) {
+	response := validScheduleResponse()
+
+	err := validateScheduleResponse(response, []string{"Matematika"}, []string{"Senin"}, 2)
+	if !errors.Is(err, errInvalidScheduleResponse) {
+		t.Fatalf("expected invalid schedule response error, got %v", err)
+	}
+}
+
+func TestValidateScheduleResponseRejectsUnknownSubject(t *testing.T) {
+	response := validScheduleResponse()
+	response.Schedule[0].Sessions[0].Subject = "Fisika"
+
+	err := validateScheduleResponse(response, []string{"Matematika"}, []string{"Jumat"}, 2)
+	if !errors.Is(err, errInvalidScheduleResponse) {
+		t.Fatalf("expected invalid schedule response error, got %v", err)
+	}
+}
+
+func TestValidateScheduleResponseAllowsValidSchedule(t *testing.T) {
+	err := validateScheduleResponse(validScheduleResponse(), []string{"Matematika"}, []string{"Jumat"}, 2)
+	if err != nil {
+		t.Fatalf("expected valid schedule response, got %v", err)
+	}
+}
+
+func validScheduleResponse() ScheduleResponse {
+	return ScheduleResponse{
+		Schedule: []DailySchedule{
+			{
+				Date: "2026-05-22",
+				Sessions: []StudySession{
+					{Subject: "Matematika", DurationMinutes: 60, Topic: "Aljabar"},
+				},
+			},
+		},
+		Tips: []string{"Belajar bertahap."},
+	}
+}

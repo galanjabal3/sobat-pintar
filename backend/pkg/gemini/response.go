@@ -12,6 +12,8 @@ import (
 
 var errMaxTokens = errors.New("Gemini response reached max output tokens")
 var errInvalidScheduleDates = errors.New("Gemini schedule contains dates outside the allowed range")
+var errInvalidPracticeResponse = errors.New("Gemini practice response is invalid")
+var errInvalidScheduleResponse = errors.New("Gemini schedule response is invalid")
 
 func extractJSONDocument(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
