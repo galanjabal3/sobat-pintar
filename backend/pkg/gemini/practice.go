@@ -19,9 +19,18 @@ type PracticeResponse struct {
 	Questions []PracticeQuestion `json:"questions"`
 }
 
-func (c *Client) GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int) ([]PracticeQuestion, error) {
+func (c *Client) GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int, sourceContent string) ([]PracticeQuestion, error) {
+	sourceInstruction := "Buat soal berdasarkan cakupan umum mata pelajaran dan jenjang siswa."
+	if strings.TrimSpace(sourceContent) != "" {
+		sourceInstruction = fmt.Sprintf(`Buat soal HANYA berdasarkan materi berikut. Jangan menambahkan konsep di luar materi jika tidak diperlukan.
+
+Materi siswa:
+%s`, strings.TrimSpace(sourceContent))
+	}
+
 	prompt := fmt.Sprintf(`Kamu adalah Sobi. Buatkan %d soal latihan mata pelajaran %s untuk siswa tingkat %s.
 Tingkat kesulitan: %s (mudah/sedang/sulit).
+%s
 Soal harus bertujuan untuk latihan belajar, bukan meniru ujian aktif atau membocorkan jawaban ujian.
 Buat tepat %d soal. Setiap soal harus punya tepat 4 opsi A, B, C, D.
 correct_answer harus salah satu dari A, B, C, atau D, dan hanya boleh ada satu jawaban benar.
@@ -38,7 +47,7 @@ Format response HANYA JSON seperti ini, tanpa teks lain:
       "explanation": "kenapa jawabannya A"
     }
   ]
-}`, count, subject, level, difficulty, count, learningSafetyInstruction(), textFormattingInstruction())
+}`, count, subject, level, difficulty, sourceInstruction, count, learningSafetyInstruction(), textFormattingInstruction())
 
 	var lastErr error
 	for attempt := 0; attempt < 2; attempt++ {

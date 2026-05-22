@@ -3,9 +3,10 @@ package dto
 import "sobat-pintar/internal/model"
 
 type StartPracticeRequest struct {
-	Subject    string `json:"subject" binding:"required"`
-	Difficulty string `json:"difficulty" binding:"required"`
-	Level      string `json:"level" binding:"required"` // TK, SD, SMP, SMA
+	Subject       string `json:"subject" binding:"required"`
+	Difficulty    string `json:"difficulty" binding:"required"`
+	Level         string `json:"level" binding:"required"` // TK, SD, SMP, SMA
+	SourceContent string `json:"source_content,omitempty"`
 }
 
 type StartPracticeResponse struct {
@@ -14,13 +15,14 @@ type StartPracticeResponse struct {
 }
 
 type PracticeQuestionResponse struct {
-	ID           string                `json:"id"`
-	SessionID    string                `json:"session_id"`
-	QuestionText string                `json:"question_text"`
-	Options      model.QuestionOptions `json:"options"`
-	UserAnswer   *string               `json:"user_answer,omitempty"`
-	IsCorrect    *bool                 `json:"is_correct,omitempty"`
-	Explanation  string                `json:"explanation,omitempty"`
+	ID            string                `json:"id"`
+	SessionID     string                `json:"session_id"`
+	QuestionText  string                `json:"question_text"`
+	Options       model.QuestionOptions `json:"options"`
+	UserAnswer    *string               `json:"user_answer,omitempty"`
+	IsCorrect     *bool                 `json:"is_correct,omitempty"`
+	Explanation   string                `json:"explanation,omitempty"`
+	CorrectAnswer string                `json:"correct_answer,omitempty"`
 }
 
 type PracticeSessionResponse struct {
@@ -37,8 +39,9 @@ type SubmitAnswerRequest struct {
 }
 
 type SubmitAnswerResponse struct {
-	IsCorrect   bool   `json:"is_correct"`
-	Explanation string `json:"explanation"`
+	IsCorrect     bool   `json:"is_correct"`
+	Explanation   string `json:"explanation"`
+	CorrectAnswer string `json:"correct_answer"`
 }
 
 type PracticeResultResponse struct {

@@ -20,6 +20,7 @@ interface Question {
   user_answer?: string;
   is_correct?: boolean;
   explanation?: string;
+  correct_answer?: string;
 }
 
 function PracticeMarkdown({ children, className }: { children: string; className?: string }) {
@@ -41,8 +42,12 @@ function PracticeSessionContent() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [explanation, setExplanation] = useState<string>("");
+  const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isHintModalOpen, setIsHintModalOpen] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const contentTopRef = React.useRef<HTMLDivElement>(null);
+  const feedbackRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!sessionID) {
@@ -86,6 +91,7 @@ function PracticeSessionContent() {
       setSelectedOption(currentQuestion.user_answer);
       setIsCorrect(Boolean(currentQuestion.is_correct));
       setExplanation(currentQuestion.explanation || "");
+      setCorrectAnswer(currentQuestion.correct_answer || null);
       setHasSubmitted(true);
       return;
     }
@@ -93,6 +99,7 @@ function PracticeSessionContent() {
     setSelectedOption(null);
     setIsCorrect(false);
     setExplanation("");
+    setCorrectAnswer(null);
     setHasSubmitted(false);
   }, [currentQuestion]);
 
@@ -108,6 +115,15 @@ function PracticeSessionContent() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [sessionID, questions.length, hasUnansweredQuestions, isFinishing]);
 
+  useEffect(() => {
+    contentTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [currentIndex]);
+
+  useEffect(() => {
+    if (!hasSubmitted) return;
+    feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [hasSubmitted]);
+
   const handleSubmit = async () => {
     if (isSubmitting || hasSubmitted) return;
 
@@ -121,6 +137,7 @@ function PracticeSessionContent() {
       });
       setIsCorrect(res.data.is_correct);
       setExplanation(res.data.explanation);
+      setCorrectAnswer(res.data.correct_answer);
       setHasSubmitted(true);
       setQuestions((prevQuestions) =>
         prevQuestions.map((question) =>
@@ -130,6 +147,7 @@ function PracticeSessionContent() {
                 user_answer: selectedOption,
                 is_correct: res.data.is_correct,
                 explanation: res.data.explanation,
+                correct_answer: res.data.correct_answer,
               }
             : question
         )
@@ -209,9 +227,14 @@ function PracticeSessionContent() {
             </div>
           </div>
           
-          <div className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-secondary">
+          <button
+            type="button"
+            onClick={() => setIsHintModalOpen(true)}
+            className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-secondary"
+            aria-label="Lihat petunjuk latihan"
+          >
             <HelpCircle size={20} strokeWidth={3} />
-          </div>
+          </button>
         </div>
 
         {/* Progress Bar Upgrade */}
@@ -225,6 +248,7 @@ function PracticeSessionContent() {
       </motion.header>
 
       <main className="flex-1 px-6 pt-10 pb-20 max-w-2xl mx-auto w-full">
+        <div ref={contentTopRef} />
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -245,6 +269,7 @@ function PracticeSessionContent() {
             <div className="space-y-4">
               {Object.entries(currentQuestion.options).map(([key, value]) => {
                 const isSelected = selectedOption === key;
+                const isCorrectOption = hasSubmitted && correctAnswer === key;
                 
                 let optionStyle = "bg-white border-white text-neutral-600 shadow-xl shadow-black/5";
                 let icon = null;
@@ -260,6 +285,9 @@ function PracticeSessionContent() {
                       optionStyle = "bg-red-50 border-red-500 text-red-700 font-bold scale-[1.02] shadow-2xl shadow-red-500/10";
                       icon = <XCircle size={24} className="text-red-500" />;
                     }
+                  } else if (isCorrectOption) {
+                    optionStyle = "bg-green-50 border-green-500 text-green-700 font-bold shadow-2xl shadow-green-500/10";
+                    icon = <CheckCircle2 size={24} className="text-green-500" />;
                   } else {
                     optionStyle = "bg-white border-white text-neutral-300 opacity-50";
                   }
@@ -280,7 +308,9 @@ function PracticeSessionContent() {
                     <div className="flex items-center gap-5">
                       <span className={cn(
                         "w-10 h-10 flex items-center justify-center rounded-2xl text-sm font-black transition-colors",
-                        (isSelected || hasSubmitted) && isSelected 
+                        isCorrectOption
+                          ? "bg-green-100 text-green-600"
+                          : (isSelected || hasSubmitted) && isSelected 
                           ? (hasSubmitted ? (isCorrect ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600") : "bg-primary text-white") 
                           : "bg-gray-50 text-neutral-400"
                       )}>
@@ -313,6 +343,7 @@ function PracticeSessionContent() {
               </Button>
             ) : (
               <motion.div 
+                ref={feedbackRef}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="pt-4 space-y-8"
@@ -321,6 +352,17 @@ function PracticeSessionContent() {
                   isCorrect={isCorrect}
                   message={explanation}
                 />
+                {!isCorrect && correctAnswer && currentQuestion.options[correctAnswer] && (
+                  <div className="rounded-[2rem] border-2 border-green-100 bg-green-50 p-5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-green-600">Jawaban Benar</p>
+                    <div className="mt-2 flex items-start gap-3 text-sm font-bold leading-relaxed text-green-800">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-green-100 text-xs font-black text-green-700">
+                        {correctAnswer}
+                      </span>
+                      <PracticeMarkdown>{currentQuestion.options[correctAnswer]}</PracticeMarkdown>
+                    </div>
+                  </div>
+                )}
                 <Button
                   onClick={handleNext}
                   className="w-full py-7 h-auto text-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black group"
@@ -346,6 +388,16 @@ function PracticeSessionContent() {
         confirmText={isFinishing ? "Menyelesaikan..." : "Selesaikan"}
         cancelText="Lanjut Belajar"
         variant="warning"
+      />
+      <Modal
+        isOpen={isHintModalOpen}
+        onClose={() => setIsHintModalOpen(false)}
+        onConfirm={() => undefined}
+        title="Petunjuk Latihan"
+        description="Pilih jawaban terbaik dulu, lalu tekan Cek Jawaban. Setelah itu Sobi akan menampilkan pembahasan dan jawaban benar kalau pilihanmu belum tepat."
+        confirmText="Mengerti"
+        cancelText="Tutup"
+        variant="info"
       />
     </div>
   );

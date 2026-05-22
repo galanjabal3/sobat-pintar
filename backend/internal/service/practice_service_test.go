@@ -201,10 +201,67 @@ func TestPracticeStartSessionRejectsLongSubject(t *testing.T) {
 	}
 }
 
+func TestPracticeStartSessionRejectsShortSourceContent(t *testing.T) {
+	service := NewPracticeService(nil, nil, nil, nil, nil)
+
+	_, err := service.StartSession(context.Background(), "user-1", "SD", dto.StartPracticeRequest{
+		Subject:       "Matematika",
+		Difficulty:    "mudah",
+		Level:         "SD",
+		SourceContent: "terlalu pendek",
+	})
+	if err == nil {
+		t.Fatal("expected short source content error")
+	}
+	if !errors.Is(err, ErrPracticeSourceTooShort) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 type failingPracticeGemini struct{}
 
-func (f *failingPracticeGemini) GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int) ([]gemini.PracticeQuestion, error) {
+func (f *failingPracticeGemini) GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int, sourceContent string) ([]gemini.PracticeQuestion, error) {
 	return nil, errors.New("gemini failed")
+}
+
+type sourcePracticeGemini struct {
+	sourceContent string
+}
+
+func (g *sourcePracticeGemini) GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int, sourceContent string) ([]gemini.PracticeQuestion, error) {
+	g.sourceContent = sourceContent
+	return []gemini.PracticeQuestion{
+		{
+			Question:      "Apa ide utama materi ini?",
+			Options:       map[string]string{"A": "A", "B": "B", "C": "C", "D": "D"},
+			CorrectAnswer: "A",
+			Explanation:   "Ide utama bisa ditemukan dari pokok pembahasan materi.",
+		},
+	}, nil
+}
+
+func TestPracticeStartSessionPassesSourceContentToGenerator(t *testing.T) {
+	repo := &fakePracticeRepo{}
+	generator := &sourcePracticeGemini{}
+	service := NewPracticeService(repo, nil, generator, nil, nil)
+	sourceContent := strings.Repeat("Materi algoritma berisi langkah-langkah untuk menyelesaikan masalah. ", 2)
+
+	result, err := service.StartSession(context.Background(), "user-1", "SD", dto.StartPracticeRequest{
+		Subject:       "Matematika",
+		Difficulty:    "mudah",
+		Level:         "SD",
+		SourceContent: sourceContent,
+	})
+	if err != nil {
+		t.Fatalf("StartSession returned error: %v", err)
+	}
+
+	if generator.sourceContent != sourceContent {
+		t.Fatalf("expected source content to be passed to generator")
+	}
+	if result.SessionID == "" || len(result.Questions) != 1 {
+		t.Fatalf("unexpected start session result: %#v", result)
+	}
 }
 
 func TestPracticeStartSessionRefundsQuotaOnGeminiFailure(t *testing.T) {

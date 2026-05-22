@@ -26,6 +26,10 @@ func writeAIValidationError(c *gin.Context, err error) bool {
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Mata pelajaran tidak boleh kosong"})
 	case errors.Is(err, service.ErrPracticeSubjectTooLong):
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Nama mata pelajaran terlalu panjang. Maksimal 120 karakter"})
+	case errors.Is(err, service.ErrPracticeSourceTooShort):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Materi terlalu pendek. Minimal 80 karakter"})
+	case errors.Is(err, service.ErrPracticeSourceTooLong):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Materi terlalu panjang. Maksimal 5000 karakter"})
 	case errors.Is(err, service.ErrScheduleSubjectsRequired):
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Mata pelajaran tidak boleh kosong"})
 	case errors.Is(err, service.ErrScheduleTooManySubjects):

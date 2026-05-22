@@ -10,6 +10,7 @@ This project uses conservative per-feature limits so Gemini requests stay predic
 | Explain | 3000 characters | Question text; image input stays supported |
 | Summary | 8000 characters | Raw text pasted by user |
 | Practice | 120 characters | Subject name |
+| Practice source material | 5000 characters | Optional pasted material; minimum 80 characters when used |
 | Schedule | 8 subjects | Each subject up to 120 characters |
 
 ## Output limits

@@ -17,7 +17,9 @@ const (
 
 	MaxSummaryContentChars = 8000
 
-	MaxPracticeSubjectChars = 120
+	MaxPracticeSubjectChars       = 120
+	MinPracticeSourceContentChars = 80
+	MaxPracticeSourceContentChars = 5000
 
 	MaxScheduleSubjectCount = 8
 	MaxScheduleSubjectChars = 120
@@ -46,6 +48,8 @@ var (
 	ErrSummaryContentTooLong    = errors.New("summary content exceeds maximum length")
 	ErrPracticeSubjectRequired  = errors.New("practice subject is required")
 	ErrPracticeSubjectTooLong   = errors.New("practice subject exceeds maximum length")
+	ErrPracticeSourceTooShort   = errors.New("practice source content is too short")
+	ErrPracticeSourceTooLong    = errors.New("practice source content exceeds maximum length")
 	ErrScheduleSubjectsRequired = errors.New("schedule subjects are required")
 	ErrScheduleTooManySubjects  = errors.New("schedule has too many subjects")
 	ErrScheduleSubjectTooLong   = errors.New("schedule subject exceeds maximum length")
@@ -91,6 +95,20 @@ func validatePracticeSubject(subject string) error {
 	}
 	if runeLen(text) > MaxPracticeSubjectChars {
 		return ErrPracticeSubjectTooLong
+	}
+	return nil
+}
+
+func validatePracticeSourceContent(content string) error {
+	text := strings.TrimSpace(content)
+	if text == "" {
+		return nil
+	}
+	if runeLen(text) < MinPracticeSourceContentChars {
+		return ErrPracticeSourceTooShort
+	}
+	if runeLen(text) > MaxPracticeSourceContentChars {
+		return ErrPracticeSourceTooLong
 	}
 	return nil
 }

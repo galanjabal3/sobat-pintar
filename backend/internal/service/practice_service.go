@@ -24,7 +24,7 @@ type PracticeService interface {
 }
 
 type practiceGenerator interface {
-	GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int) ([]gemini.PracticeQuestion, error)
+	GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int, sourceContent string) ([]gemini.PracticeQuestion, error)
 }
 
 func (s *practiceService) GetHistory(ctx context.Context, userID string) ([]*model.PracticeSession, error) {
@@ -53,6 +53,9 @@ func (s *practiceService) StartSession(ctx context.Context, userID, level string
 	if err := validatePracticeSubject(req.Subject); err != nil {
 		return nil, err
 	}
+	if err := validatePracticeSourceContent(req.SourceContent); err != nil {
+		return nil, err
+	}
 
 	// Fixed count to 5 questions for now
 	count := 5
@@ -62,7 +65,7 @@ func (s *practiceService) StartSession(ctx context.Context, userID, level string
 		return nil, err
 	}
 
-	aiQuestions, err := s.geminiClient.GeneratePracticeQuestions(ctx, level, req.Subject, req.Difficulty, count)
+	aiQuestions, err := s.geminiClient.GeneratePracticeQuestions(ctx, level, req.Subject, req.Difficulty, count, req.SourceContent)
 	if err != nil {
 		if refundErr := s.refundAIQuota(ctx, userID, AIFeaturePractice); refundErr != nil {
 			return nil, fmt.Errorf("failed to generate content: %w (quota refund failed: %v)", err, refundErr)
@@ -149,18 +152,21 @@ func (s *practiceService) GetSession(ctx context.Context, userID, sessionID stri
 
 func toPracticeQuestionResponse(q *model.Question) *dto.PracticeQuestionResponse {
 	explanation := ""
+	correctAnswer := ""
 	if q.UserAnswer != nil {
 		explanation = q.Explanation
+		correctAnswer = q.CorrectAnswer
 	}
 
 	return &dto.PracticeQuestionResponse{
-		ID:           q.ID,
-		SessionID:    q.SessionID,
-		QuestionText: q.QuestionText,
-		Options:      q.Options,
-		UserAnswer:   q.UserAnswer,
-		IsCorrect:    q.IsCorrect,
-		Explanation:  explanation,
+		ID:            q.ID,
+		SessionID:     q.SessionID,
+		QuestionText:  q.QuestionText,
+		Options:       q.Options,
+		UserAnswer:    q.UserAnswer,
+		IsCorrect:     q.IsCorrect,
+		Explanation:   explanation,
+		CorrectAnswer: correctAnswer,
 	}
 }
 
@@ -184,8 +190,9 @@ func (s *practiceService) SubmitAnswer(ctx context.Context, userID string, req d
 	}
 
 	return &dto.SubmitAnswerResponse{
-		IsCorrect:   isCorrect,
-		Explanation: question.Explanation,
+		IsCorrect:     isCorrect,
+		Explanation:   question.Explanation,
+		CorrectAnswer: question.CorrectAnswer,
 	}, nil
 }
 
