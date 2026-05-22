@@ -3,7 +3,7 @@
 import React, { useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarDays, Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap } from "lucide-react";
+import { ArrowRight, CalendarDays, Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
@@ -42,6 +42,7 @@ export default function DashboardPage() {
       icon: Camera,
       color: "bg-[#E6F9F3]", // Soft Teal
       iconColor: "text-primary",
+      cta: "Foto soal",
       href: "/explain",
       enabled: true,
     },
@@ -51,6 +52,7 @@ export default function DashboardPage() {
       icon: MessageCircle,
       color: "bg-[#FFFBEB]", // Soft Amber
       iconColor: "text-secondary",
+      cta: "Mulai chat",
       href: "/chat",
       enabled: true,
     },
@@ -60,6 +62,7 @@ export default function DashboardPage() {
       icon: BookOpen,
       color: "bg-[#FFF7ED]", // Soft Orange
       iconColor: "text-orange-500",
+      cta: "Latihan",
       href: "/practice",
       enabled: true,
     },
@@ -69,6 +72,7 @@ export default function DashboardPage() {
       icon: FileText,
       color: "bg-[#EEF2FF]", // Soft Indigo
       iconColor: "text-blue-500",
+      cta: "Ringkas",
       href: "/summary",
       enabled: true,
     },
@@ -78,6 +82,8 @@ export default function DashboardPage() {
       icon: CalendarDays,
       color: "bg-[#ECFEFF]", // Soft Cyan
       iconColor: "text-cyan-500",
+      cta: "Atur jadwal",
+      wide: true,
       href: "/schedule",
       enabled: true,
     },
@@ -220,25 +226,36 @@ export default function DashboardPage() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 gap-3 min-[380px]:gap-4 sm:gap-6"
+          className="grid grid-cols-2 gap-3 min-[430px]:gap-4 sm:gap-6"
         >
-          {features.map((feature, idx) => {
+          {features.map((feature) => {
             const Icon = feature.icon;
             return (
-              <motion.div key={feature.title} variants={itemVariants} className="min-w-0">
+              <motion.div key={feature.title} variants={itemVariants} className={cn("min-w-0", feature.wide && "col-span-2")}>
                 <Link
                   href={feature.href}
                   className={cn(
-                    "group min-h-[148px] min-[380px]:min-h-[156px] sm:min-h-[176px] p-4 min-[380px]:p-5 rounded-[1.75rem] sm:rounded-[2rem] flex flex-col justify-between gap-4 min-[380px]:gap-5 transition-all duration-300 hover:scale-[1.03] active:scale-95 border-4 border-white shadow-xl shadow-primary/5 relative overflow-hidden",
+                    "group relative flex min-h-[152px] flex-col justify-between overflow-hidden rounded-[1.75rem] border-2 border-white p-4 shadow-xl shadow-primary/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 active:scale-95 min-[430px]:min-h-[160px] min-[430px]:p-5 sm:min-h-[176px] sm:rounded-[2rem]",
+                    feature.wide && "min-h-[136px] flex-row items-center gap-4 pr-5 sm:min-h-[148px]",
                     feature.color
                   )}
                 >
-                  <div className="p-3 min-[380px]:p-4 rounded-2xl w-fit shadow-lg shadow-black/5 transition-transform group-hover:rotate-12 bg-white shrink-0">
-                    <Icon size={20} strokeWidth={3} className={cn("min-[380px]:size-[22px]", feature.iconColor)} />
+                  <ArrowRight size={16} strokeWidth={3} className="absolute right-5 top-5 shrink-0 text-neutral-800 transition-transform group-hover:translate-x-1" />
+                  <div className={cn("flex min-w-0 flex-1 flex-col justify-between gap-4", feature.wide && "h-full pr-8")}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/5 transition-transform group-hover:rotate-6 min-[430px]:h-14 min-[430px]:w-14">
+                        <Icon size={21} strokeWidth={3} className={cn("min-[430px]:size-[23px]", feature.iconColor)} />
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="mb-1 text-sm font-black leading-tight text-neutral-800 min-[430px]:text-base">{feature.title}</h3>
+                      <p className="text-[11px] font-bold leading-relaxed text-neutral-500 min-[430px]:text-xs">{feature.desc}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="break-words font-black text-sm min-[380px]:text-base text-neutral-800 mb-1 leading-tight">{feature.title}</h3>
-                    <p className="text-[11px] min-[380px]:text-xs text-neutral-500 font-bold leading-relaxed opacity-80">{feature.desc}</p>
+                  <div className={cn("mt-4 flex items-center justify-between gap-2", feature.wide && "mt-0 shrink-0 self-end")}>
+                    <span className="rounded-full bg-white/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-neutral-700 shadow-sm shadow-black/5">
+                      {feature.cta}
+                    </span>
                   </div>
                 </Link>
               </motion.div>
