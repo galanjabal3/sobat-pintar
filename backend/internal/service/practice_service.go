@@ -56,9 +56,10 @@ func (s *practiceService) StartSession(ctx context.Context, userID, level string
 	if err := validatePracticeSourceContent(req.SourceContent); err != nil {
 		return nil, err
 	}
-
-	// Fixed count to 5 questions for now
-	count := 5
+	count, err := normalizePracticeQuestionCount(req.QuestionCount)
+	if err != nil {
+		return nil, err
+	}
 
 	// 1. Generate questions via Gemini
 	if err := s.consumeAIQuota(ctx, userID, AIFeaturePractice, PracticeDailyQuota); err != nil {

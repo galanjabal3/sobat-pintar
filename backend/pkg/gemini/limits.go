@@ -6,7 +6,7 @@ const (
 	chatMaxOutputTokens     int32 = 1000
 	explainMaxOutputTokens  int32 = 2400
 	summaryMaxOutputTokens  int32 = 2000
-	practiceMaxOutputTokens int32 = 3200
+	practiceMaxOutputTokens int32 = 6400
 	scheduleMaxOutputTokens int32 = 2200
 )
 

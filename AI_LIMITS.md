@@ -11,6 +11,7 @@ This project uses conservative per-feature limits so Gemini requests stay predic
 | Summary | 8000 characters | Raw text pasted by user |
 | Practice | 120 characters | Subject name |
 | Practice source material | 5000 characters | Optional pasted material; minimum 80 characters when used |
+| Practice question count | 15 questions | User can choose 5, 10, or 15 questions |
 | Schedule | 8 subjects | Each subject up to 120 characters |
 
 ## Output limits
@@ -20,7 +21,7 @@ This project uses conservative per-feature limits so Gemini requests stay predic
 | Chat | 640 | Short, helpful reply |
 | Explain | 2400 | Step-by-step explanation with enough room for complete answers; retries once with more room if Gemini reaches the token cap |
 | Summary | 2000 | Compact bullets + conclusion; retries once with more room if Gemini reaches the token cap |
-| Practice | 3200 | Five-question JSON response |
+| Practice | 6400 | 5, 10, or 15-question JSON response |
 | Schedule | 2200 | JSON schedule response, capped to 7 days and retried with more room if needed |
 
 ## Daily quota per user

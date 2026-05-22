@@ -20,6 +20,8 @@ const (
 	MaxPracticeSubjectChars       = 120
 	MinPracticeSourceContentChars = 80
 	MaxPracticeSourceContentChars = 5000
+	DefaultPracticeQuestionCount  = 5
+	MaxPracticeQuestionCount      = 15
 
 	MaxScheduleSubjectCount = 8
 	MaxScheduleSubjectChars = 120
@@ -50,6 +52,7 @@ var (
 	ErrPracticeSubjectTooLong   = errors.New("practice subject exceeds maximum length")
 	ErrPracticeSourceTooShort   = errors.New("practice source content is too short")
 	ErrPracticeSourceTooLong    = errors.New("practice source content exceeds maximum length")
+	ErrPracticeQuestionCount    = errors.New("practice question count is invalid")
 	ErrScheduleSubjectsRequired = errors.New("schedule subjects are required")
 	ErrScheduleTooManySubjects  = errors.New("schedule has too many subjects")
 	ErrScheduleSubjectTooLong   = errors.New("schedule subject exceeds maximum length")
@@ -111,6 +114,18 @@ func validatePracticeSourceContent(content string) error {
 		return ErrPracticeSourceTooLong
 	}
 	return nil
+}
+
+func normalizePracticeQuestionCount(count int) (int, error) {
+	if count == 0 {
+		return DefaultPracticeQuestionCount, nil
+	}
+	switch count {
+	case 5, 10, MaxPracticeQuestionCount:
+		return count, nil
+	default:
+		return 0, ErrPracticeQuestionCount
+	}
 }
 
 func validateScheduleSubjects(subjects []string) error {

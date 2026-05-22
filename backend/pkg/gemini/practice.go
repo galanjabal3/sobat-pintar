@@ -34,6 +34,7 @@ Tingkat kesulitan: %s (mudah/sedang/sulit).
 Soal harus bertujuan untuk latihan belajar, bukan meniru ujian aktif atau membocorkan jawaban ujian.
 Buat tepat %d soal. Setiap soal harus punya tepat 4 opsi A, B, C, D.
 correct_answer harus salah satu dari A, B, C, atau D, dan hanya boleh ada satu jawaban benar.
+Semua opsi jawaban harus berbeda makna dan berbeda teks. Jangan membuat dua opsi yang sama persis atau hanya beda kapitalisasi/tanda baca.
 Explanation harus menjelaskan konsep dan langkah berpikir secara singkat, bukan hanya menyebut jawaban.
 %s
 %s
@@ -91,14 +92,25 @@ func validatePracticeResponse(questions []PracticeQuestion, expectedCount int) e
 			return errInvalidPracticeResponse
 		}
 
+		seenOptions := make(map[string]struct{}, 4)
 		for _, key := range []string{"A", "B", "C", "D"} {
-			if strings.TrimSpace(question.Options[key]) == "" {
+			optionText := strings.TrimSpace(question.Options[key])
+			if optionText == "" {
 				return errInvalidPracticeResponse
 			}
+			normalizedOption := normalizePracticeOptionText(optionText)
+			if _, exists := seenOptions[normalizedOption]; exists {
+				return errInvalidPracticeResponse
+			}
+			seenOptions[normalizedOption] = struct{}{}
 		}
 	}
 
 	return nil
+}
+
+func normalizePracticeOptionText(value string) string {
+	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(value))), " ")
 }
 
 func isValidAnswerKey(value string) bool {

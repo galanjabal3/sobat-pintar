@@ -34,6 +34,16 @@ func TestValidatePracticeResponseRejectsMissingOption(t *testing.T) {
 	}
 }
 
+func TestValidatePracticeResponseRejectsDuplicateOptions(t *testing.T) {
+	question := validPracticeQuestion()
+	question.Options["C"] = "  4  "
+
+	err := validatePracticeResponse([]PracticeQuestion{question}, 1)
+	if !errors.Is(err, errInvalidPracticeResponse) {
+		t.Fatalf("expected invalid practice response error, got %v", err)
+	}
+}
+
 func TestValidatePracticeResponseAllowsValidQuestions(t *testing.T) {
 	err := validatePracticeResponse([]PracticeQuestion{validPracticeQuestion()}, 1)
 	if err != nil {

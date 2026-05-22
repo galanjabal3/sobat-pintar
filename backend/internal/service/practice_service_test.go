@@ -226,10 +226,12 @@ func (f *failingPracticeGemini) GeneratePracticeQuestions(ctx context.Context, l
 
 type sourcePracticeGemini struct {
 	sourceContent string
+	count         int
 }
 
 func (g *sourcePracticeGemini) GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int, sourceContent string) ([]gemini.PracticeQuestion, error) {
 	g.sourceContent = sourceContent
+	g.count = count
 	return []gemini.PracticeQuestion{
 		{
 			Question:      "Apa ide utama materi ini?",
@@ -238,6 +240,62 @@ func (g *sourcePracticeGemini) GeneratePracticeQuestions(ctx context.Context, le
 			Explanation:   "Ide utama bisa ditemukan dari pokok pembahasan materi.",
 		},
 	}, nil
+}
+
+func TestPracticeStartSessionUsesDefaultQuestionCount(t *testing.T) {
+	repo := &fakePracticeRepo{}
+	generator := &sourcePracticeGemini{}
+	service := NewPracticeService(repo, nil, generator, nil, nil)
+
+	_, err := service.StartSession(context.Background(), "user-1", "SD", dto.StartPracticeRequest{
+		Subject:    "Matematika",
+		Difficulty: "mudah",
+		Level:      "SD",
+	})
+	if err != nil {
+		t.Fatalf("StartSession returned error: %v", err)
+	}
+
+	if generator.count != DefaultPracticeQuestionCount {
+		t.Fatalf("expected default count %d, got %d", DefaultPracticeQuestionCount, generator.count)
+	}
+}
+
+func TestPracticeStartSessionPassesQuestionCountToGenerator(t *testing.T) {
+	repo := &fakePracticeRepo{}
+	generator := &sourcePracticeGemini{}
+	service := NewPracticeService(repo, nil, generator, nil, nil)
+
+	_, err := service.StartSession(context.Background(), "user-1", "SD", dto.StartPracticeRequest{
+		Subject:       "Matematika",
+		Difficulty:    "mudah",
+		Level:         "SD",
+		QuestionCount: 10,
+	})
+	if err != nil {
+		t.Fatalf("StartSession returned error: %v", err)
+	}
+
+	if generator.count != 10 {
+		t.Fatalf("expected count 10, got %d", generator.count)
+	}
+}
+
+func TestPracticeStartSessionRejectsInvalidQuestionCount(t *testing.T) {
+	service := NewPracticeService(nil, nil, nil, nil, nil)
+
+	_, err := service.StartSession(context.Background(), "user-1", "SD", dto.StartPracticeRequest{
+		Subject:       "Matematika",
+		Difficulty:    "mudah",
+		Level:         "SD",
+		QuestionCount: 7,
+	})
+	if err == nil {
+		t.Fatal("expected invalid question count error")
+	}
+	if !errors.Is(err, ErrPracticeQuestionCount) {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestPracticeStartSessionPassesSourceContentToGenerator(t *testing.T) {

@@ -7,6 +7,7 @@ type StartPracticeRequest struct {
 	Difficulty    string `json:"difficulty" binding:"required"`
 	Level         string `json:"level" binding:"required"` // TK, SD, SMP, SMA
 	SourceContent string `json:"source_content,omitempty"`
+	QuestionCount int    `json:"question_count,omitempty"`
 }
 
 type StartPracticeResponse struct {

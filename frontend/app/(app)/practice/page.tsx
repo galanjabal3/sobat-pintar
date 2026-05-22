@@ -14,7 +14,12 @@ import { motion } from "framer-motion";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
-import { MAX_PRACTICE_SOURCE_CONTENT_CHARS, MIN_PRACTICE_SOURCE_CONTENT_CHARS } from "@/lib/aiLimits";
+import {
+  MAX_PRACTICE_SOURCE_CONTENT_CHARS,
+  MIN_PRACTICE_SOURCE_CONTENT_CHARS,
+  PRACTICE_QUESTION_COUNTS,
+} from "@/lib/aiLimits";
+
 const SUBJECTS = [
   { id: "Matematika", icon: <Calculator size={24} />, color: "bg-blue-100 text-blue-600 border-blue-200", desc: "Berhitung jadi seru!" },
   { id: "IPA", icon: <Beaker size={24} />, color: "bg-green-100 text-green-600 border-green-200", desc: "Eksplorasi alam" },
@@ -37,6 +42,7 @@ export default function PracticePage() {
    const [practiceMode, setPracticeMode] = useState<PracticeMode>("general");
    const [selectedSubject, setSelectedSubject] = useState<string>("Matematika");
    const [selectedDifficulty, setSelectedDifficulty] = useState<string>("sedang");
+   const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(5);
    const [sourceContent, setSourceContent] = useState("");
    const [isLoading, setIsLoading] = useState(false);
  
@@ -58,6 +64,7 @@ export default function PracticePage() {
          difficulty: selectedDifficulty,
          level: userLevel,
          source_content: practiceMode === "source" ? trimmedSourceContent : undefined,
+         question_count: selectedQuestionCount,
        });
        
        const sessionID = response.data.session_id;
@@ -145,7 +152,7 @@ export default function PracticePage() {
              </div>
              
              <div className="grid grid-cols-2 gap-4">
-               {SUBJECTS.map((sub, idx) => (
+               {SUBJECTS.map((sub) => (
                  <motion.button
                    key={sub.id}
                    whileHover={{ y: -5 }}
@@ -233,6 +240,42 @@ export default function PracticePage() {
                    )}
                  >
                    {diff}
+                 </button>
+               ))}
+             </div>
+           </motion.section>
+
+           {/* Question Count Selection */}
+           <motion.section
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ delay: 0.25 }}
+           >
+             <div className="flex items-center gap-2 mb-6">
+               <Sparkles size={16} className="text-primary" />
+               <div>
+                 <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest">Jumlah Soal</h2>
+                 <p className="mt-1 text-[10px] font-bold text-neutral-300">
+                   Pilih yang pas dengan waktu belajarmu.
+                 </p>
+               </div>
+             </div>
+
+             <div className="grid grid-cols-3 gap-3">
+               {PRACTICE_QUESTION_COUNTS.map((count) => (
+                 <button
+                   key={count}
+                   type="button"
+                   onClick={() => setSelectedQuestionCount(count)}
+                   className={cn(
+                     "rounded-[2rem] border-4 py-4 text-center transition-all",
+                     selectedQuestionCount === count
+                       ? "border-primary bg-white text-primary shadow-xl shadow-primary/10"
+                       : "border-white bg-white/50 text-neutral-400 shadow-xl shadow-primary/5 hover:border-primary/20"
+                   )}
+                 >
+                   <span className="block text-xl font-black leading-none">{count}</span>
+                   <span className="mt-1 block text-[9px] font-black uppercase tracking-widest">Soal</span>
                  </button>
                ))}
              </div>
