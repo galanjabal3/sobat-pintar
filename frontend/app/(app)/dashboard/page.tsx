@@ -3,7 +3,7 @@
 import React, { useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap } from "lucide-react";
+import { CalendarDays, Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
@@ -70,6 +70,15 @@ export default function DashboardPage() {
       color: "bg-[#EEF2FF]", // Soft Indigo
       iconColor: "text-blue-500",
       href: "/summary",
+      enabled: true,
+    },
+    {
+      title: "Jadwal Belajar",
+      desc: "Atur waktu otomatis",
+      icon: CalendarDays,
+      color: "bg-[#ECFEFF]", // Soft Cyan
+      iconColor: "text-cyan-500",
+      href: "/schedule",
       enabled: true,
     },
   ].filter(f => f.enabled || showAll);

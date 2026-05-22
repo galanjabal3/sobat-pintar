@@ -32,7 +32,7 @@ Jangan langsung kasih jawaban — jelaskan konsepnya dulu step by step.
 	}
 
 	// Call GenerateContent with the content object.
-	resp, err := c.GenAI.Models.GenerateContent(ctx, c.ModelName, []*genai.Content{content}, nil)
+	resp, err := c.generateContentWithRetry(ctx, []*genai.Content{content}, explainGenerationConfig())
 	if err != nil {
 		return "", fmt.Errorf("failed to generate content: %w", err)
 	}

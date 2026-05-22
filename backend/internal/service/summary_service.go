@@ -24,13 +24,15 @@ type summaryService struct {
 	repo         repository.SummaryRepository
 	geminiClient *gemini.Client
 	gamify       GamificationService
+	quota        AIQuotaService
 }
 
-func NewSummaryService(repo repository.SummaryRepository, geminiClient *gemini.Client, gamify GamificationService) SummaryService {
+func NewSummaryService(repo repository.SummaryRepository, geminiClient *gemini.Client, gamify GamificationService, quota AIQuotaService) SummaryService {
 	return &summaryService{
 		repo:         repo,
 		geminiClient: geminiClient,
 		gamify:       gamify,
+		quota:        quota,
 	}
 }
 
@@ -39,13 +41,21 @@ func (s *summaryService) CreateSummary(ctx context.Context, userID, level string
 
 	if req.SourceType == "text" {
 		contentToSummarize = req.Content
+		if err := validateSummaryContent(contentToSummarize); err != nil {
+			return nil, err
+		}
 	} else {
 		// TODO: Extract text from PDF or Image (Phase 4)
 		return nil, fmt.Errorf("ekstraksi dari %s belum didukung", req.SourceType)
 	}
 
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureSummary, SummaryDailyQuota); err != nil {
+		return nil, err
+	}
+
 	summaryText, err := s.geminiClient.SummarizeMateri(ctx, level, contentToSummarize)
 	if err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureSummary)
 		return nil, err
 	}
 
@@ -60,6 +70,7 @@ func (s *summaryService) CreateSummary(ctx context.Context, userID, level string
 	}
 
 	if err := s.repo.Create(ctx, summary); err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureSummary)
 		return nil, err
 	}
 
@@ -125,4 +136,18 @@ func (s *summaryService) GetPublicSummaryByID(ctx context.Context, id string) (*
 
 func (s *summaryService) DeleteSummary(ctx context.Context, id, userID string) error {
 	return s.repo.Delete(ctx, id, userID)
+}
+
+func (s *summaryService) consumeAIQuota(ctx context.Context, userID, feature string, limit int) error {
+	if s.quota == nil {
+		return nil
+	}
+	return s.quota.Consume(ctx, userID, feature, limit)
+}
+
+func (s *summaryService) refundAIQuota(ctx context.Context, userID, feature string) error {
+	if s.quota == nil {
+		return nil
+	}
+	return s.quota.Refund(ctx, userID, feature)
 }

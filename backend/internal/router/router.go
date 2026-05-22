@@ -9,6 +9,7 @@ import (
 )
 
 func SetupRouter(
+	aiHandler *handler.AIHandler,
 	authHandler *handler.AuthHandler,
 	explainHandler *handler.ExplainHandler,
 	chatHandler *handler.ChatHandler,
@@ -39,7 +40,7 @@ func SetupRouter(
 		modules.RegisterPublicRoutes(api, explainHandler, summaryHandler)
 
 		// Protected routes
-		modules.RegisterProtectedRoutes(api, jwtService, authHandler, explainHandler, chatHandler, practiceHandler, summaryHandler, scheduleHandler, gamificationHandler, uploadHandler)
+		modules.RegisterProtectedRoutes(api, jwtService, aiHandler, authHandler, explainHandler, chatHandler, practiceHandler, summaryHandler, scheduleHandler, gamificationHandler, uploadHandler)
 	}
 
 	return r

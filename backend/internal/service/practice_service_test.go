@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	"sobat-pintar/internal/dto"
 	"sobat-pintar/internal/model"
+	"sobat-pintar/pkg/gemini"
 )
 
 type fakePracticeRepo struct {
@@ -101,6 +103,25 @@ func (g *fakePracticeGamify) AwardBadge(ctx context.Context, userID, badgeID str
 	return nil
 }
 
+type fakePracticeQuota struct {
+	consumeCalls int
+	refundCalls  int
+}
+
+func (q *fakePracticeQuota) Consume(ctx context.Context, userID, feature string, limit int) error {
+	q.consumeCalls++
+	return nil
+}
+
+func (q *fakePracticeQuota) Refund(ctx context.Context, userID, feature string) error {
+	q.refundCalls++
+	return nil
+}
+
+func (q *fakePracticeQuota) GetDailyUsage(ctx context.Context, userID string) (*dto.AIQuotaResponse, error) {
+	return &dto.AIQuotaResponse{}, nil
+}
+
 func TestPracticeFinishSessionCalculatesScoreAndAwardsPoints(t *testing.T) {
 	repo := &fakePracticeRepo{
 		session: &model.PracticeSession{
@@ -116,7 +137,7 @@ func TestPracticeFinishSessionCalculatesScoreAndAwardsPoints(t *testing.T) {
 		},
 	}
 	gamify := &fakePracticeGamify{}
-	service := NewPracticeService(repo, nil, nil, gamify)
+	service := NewPracticeService(repo, nil, nil, gamify, nil)
 
 	result, err := service.FinishSession(context.Background(), "user-1", "session-1")
 	if err != nil {
@@ -150,7 +171,7 @@ func TestPracticeGetResultRejectsIncompleteSession(t *testing.T) {
 			practiceQuestion("q2", "session-1", nil, nil),
 		},
 	}
-	service := NewPracticeService(repo, nil, nil, &fakePracticeGamify{})
+	service := NewPracticeService(repo, nil, nil, &fakePracticeGamify{}, nil)
 
 	_, err := service.GetResult(context.Background(), "user-1", "session-1")
 	if err == nil {
@@ -161,6 +182,50 @@ func TestPracticeGetResultRejectsIncompleteSession(t *testing.T) {
 	}
 	if repo.completedScore != nil {
 		t.Fatalf("expected incomplete session to remain uncompleted, got score %d", *repo.completedScore)
+	}
+}
+
+func TestPracticeStartSessionRejectsLongSubject(t *testing.T) {
+	service := NewPracticeService(nil, nil, nil, nil, nil)
+
+	_, err := service.StartSession(context.Background(), "user-1", "SD", dto.StartPracticeRequest{
+		Subject:    strings.Repeat("a", MaxPracticeSubjectChars+1),
+		Difficulty: "mudah",
+		Level:      "SD",
+	})
+	if err == nil {
+		t.Fatal("expected long subject error")
+	}
+	if !errors.Is(err, ErrPracticeSubjectTooLong) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+type failingPracticeGemini struct{}
+
+func (f *failingPracticeGemini) GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int) ([]gemini.PracticeQuestion, error) {
+	return nil, errors.New("gemini failed")
+}
+
+func TestPracticeStartSessionRefundsQuotaOnGeminiFailure(t *testing.T) {
+	repo := &fakePracticeRepo{}
+	quota := &fakePracticeQuota{}
+	service := NewPracticeService(repo, nil, &failingPracticeGemini{}, &fakePracticeGamify{}, quota)
+
+	_, err := service.StartSession(context.Background(), "user-1", "SD", dto.StartPracticeRequest{
+		Subject:    "Matematika",
+		Difficulty: "mudah",
+		Level:      "SD",
+	})
+	if err == nil {
+		t.Fatal("expected gemini failure")
+	}
+
+	if quota.consumeCalls != 1 {
+		t.Fatalf("expected one quota consume call, got %d", quota.consumeCalls)
+	}
+	if quota.refundCalls != 1 {
+		t.Fatalf("expected one quota refund call, got %d", quota.refundCalls)
 	}
 }
 

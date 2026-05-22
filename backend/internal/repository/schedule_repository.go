@@ -10,6 +10,7 @@ import (
 type ScheduleRepository interface {
 	CreateSchedule(ctx context.Context, schedule *model.StudySchedule) error
 	GetScheduleByUserID(ctx context.Context, userID string) ([]model.StudySchedule, error)
+	GetScheduleByID(ctx context.Context, id string) (*model.StudySchedule, error)
 	DeleteSchedule(ctx context.Context, id, userID string) error
 	CreateReminder(ctx context.Context, reminder *model.Reminder) error
 	ListPendingReminders(ctx context.Context) ([]model.Reminder, error)
@@ -49,6 +50,16 @@ func (r *scheduleRepository) GetScheduleByUserID(ctx context.Context, userID str
 		schedules = append(schedules, s)
 	}
 	return schedules, nil
+}
+
+func (r *scheduleRepository) GetScheduleByID(ctx context.Context, id string) (*model.StudySchedule, error) {
+	query := `SELECT id, user_id, subject, exam_date, sessions, created_at FROM study_schedules WHERE id = $1`
+	var schedule model.StudySchedule
+	err := r.db.QueryRow(ctx, query, id).Scan(&schedule.ID, &schedule.UserID, &schedule.Subject, &schedule.ExamDate, &schedule.Sessions, &schedule.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &schedule, nil
 }
 
 func (r *scheduleRepository) DeleteSchedule(ctx context.Context, id, userID string) error {

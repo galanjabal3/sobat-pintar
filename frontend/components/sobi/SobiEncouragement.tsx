@@ -3,12 +3,10 @@
  import React from "react";
  import Image from "next/image";
  import { cn } from "@/lib/utils";
- import { motion } from "framer-motion";
- import { Sparkles, Heart } from "lucide-react";
- import { SOBI_ASSETS } from "@/lib/assets";
- import ReactMarkdown from "react-markdown";
- import remarkGfm from "remark-gfm";
- import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
+import { motion } from "framer-motion";
+import { Sparkles, Heart } from "lucide-react";
+import { SOBI_ASSETS } from "@/lib/assets";
+import { AIMarkdown } from "@/components/ai/AIMarkdown";
  
  interface SobiEncouragementProps {
    message?: string;
@@ -54,17 +52,7 @@
            </p>
          </div>
          <div className={cn("text-xs font-black leading-relaxed", isCorrect ? "text-neutral-800" : "text-neutral-800")}>
-           <ReactMarkdown
-             remarkPlugins={[remarkGfm]}
-             components={{
-               p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-               em: ({ children }) => <em className="italic font-black">{children}</em>,
-               del: ({ children }) => <del className="text-neutral-500 decoration-2">{children}</del>,
-               a: ({ href, children }) => renderAIMarkdownLink(href, children),
-             }}
-           >
-             {formatAIMarkdown(message)}
-           </ReactMarkdown>
+           <AIMarkdown>{message}</AIMarkdown>
          </div>
        </div>
      </motion.div>

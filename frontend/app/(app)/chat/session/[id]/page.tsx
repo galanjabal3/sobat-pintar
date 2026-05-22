@@ -7,13 +7,15 @@
  import api from "@/lib/api";
  import { motion, AnimatePresence } from "framer-motion";
  import { useToastStore } from "@/store/toastStore";
- import { cn } from "@/lib/utils";
- import { format } from "date-fns";
- import { id as idLocale } from "date-fns/locale";
- import ReactMarkdown from "react-markdown";
- import remarkGfm from "remark-gfm";
- import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
- import { useAuthStore } from "@/store/authStore";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { useAuthStore } from "@/store/authStore";
+import { MAX_CHAT_MESSAGE_CHARS } from "@/lib/aiLimits";
+import { QuotaBadge } from "@/components/ai/QuotaBadge";
+import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
+import { AIMarkdown } from "@/components/ai/AIMarkdown";
+import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
 
  interface Message {
    id: string;
@@ -95,17 +97,18 @@
      } : null);
 
      try {
-       const response = await api.post(`/chat/sessions/${sessionId}/messages`, {
-         message: userMsgText
-       });
+      const response = await api.post(`/chat/sessions/${sessionId}/messages`, {
+        message: userMsgText
+      });
 
-       setChat(prev => prev ? {
-         ...prev,
-         messages: [...prev.messages, response.data]
-       } : null);
-     } catch (err) {
-       console.error(err);
-       addToast("Sobi belum bisa menjawab. Pesanmu tetap tersimpan di layar.", "error");
+      setChat(prev => prev ? {
+        ...prev,
+        messages: [...prev.messages, response.data]
+      } : null);
+      notifyAIQuotaUpdated();
+    } catch (err) {
+      console.error(err);
+      addToast("Sobi belum bisa menjawab. Pesanmu tetap tersimpan di layar.", "error");
        setChat(prev => prev ? {
          ...prev,
          messages: [
@@ -213,30 +216,21 @@
                    )}
                  </div>
 
-                 <div className={cn(
-                   "p-4 rounded-[1.8rem] text-sm font-medium leading-relaxed shadow-xl shadow-primary/5 border-2",
-                   msg.status === "failed"
-                     ? "bg-red-50 border-error/15 text-neutral-800 rounded-tl-none"
-                     : msg.role === "user"
-                       ? "bg-white border-secondary/10 text-neutral-800 rounded-tr-none"
-                       : "bg-primary/5 border-primary/10 text-neutral-800 rounded-tl-none"
-                 )}>
-                   {msg.role === "assistant" ? (
-                     <div className="prose prose-sm max-w-none prose-p:my-2 prose-p:leading-relaxed prose-strong:text-neutral-900 prose-ol:my-2 prose-ul:my-2 prose-li:my-1 prose-li:pl-1 prose-headings:my-2 prose-headings:text-neutral-900">
-                       <ReactMarkdown
-                         remarkPlugins={[remarkGfm]}
-                         components={{
-                           a: ({href, children}) => renderAIMarkdownLink(href, children),
-                           em: ({children}) => <em className="italic font-semibold">{children}</em>,
-                           del: ({children}) => <del className="text-neutral-500 decoration-2">{children}</del>,
-                         }}
-                       >
-                         {formatAIMarkdown(msg.content)}
-                       </ReactMarkdown>
-                     </div>
-                   ) : (
-                     <p className="whitespace-pre-wrap">{msg.content}</p>
-                   )}
+                <div className={cn(
+                  "p-4 rounded-[1.8rem] text-sm font-medium leading-relaxed shadow-xl shadow-primary/5 border-2",
+                  msg.status === "failed"
+                    ? "bg-red-50 border-error/15 text-neutral-800 rounded-tl-none"
+                    : msg.role === "user"
+                      ? "bg-white border-secondary/10 text-neutral-800 rounded-tr-none"
+                      : "bg-primary/5 border-primary/10 text-neutral-800 rounded-tl-none"
+                )}>
+                  {msg.role === "assistant" ? (
+                    <AIMarkdown className="prose prose-sm max-w-none prose-p:my-2 prose-p:leading-relaxed prose-strong:text-neutral-900 prose-ol:my-2 prose-ul:my-2 prose-li:my-1 prose-li:pl-1 prose-headings:my-2 prose-headings:text-neutral-900">
+                      {msg.content}
+                    </AIMarkdown>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
                    <p className={cn(
                      "text-[8px] font-black uppercase tracking-widest mt-2",
                      msg.status === "failed" ? "text-error/50" : msg.role === "user" ? "text-secondary/40 text-right" : "text-primary/40"
@@ -270,19 +264,32 @@
        </div>
 
        {/* Input Area */}
-       <div className="p-6 bg-white/70 backdrop-blur-xl border-t-4 border-white shadow-2xl shadow-primary/20">
-         <form
-           onSubmit={handleSendMessage}
-           className="relative flex items-center gap-3"
+      <div className="p-6 bg-white/70 backdrop-blur-xl border-t-4 border-white shadow-2xl shadow-primary/20">
+        <div className="mb-3">
+          <QuotaBadge feature="chat" />
+        </div>
+       <form
+         onSubmit={handleSendMessage}
+          className="relative flex items-end gap-3"
          >
            <div className="relative flex-1 group">
-             <input
-               value={message}
-               onChange={(e) => setMessage(e.target.value)}
-               placeholder="Tanya Sobi apa saja..."
-               className="w-full bg-gray-50/50 border-2 border-transparent rounded-[2rem] p-5 pr-14 text-sm font-medium focus:outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all"
-             />
-             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/30">
+            <AutoGrowTextarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
+              enterKeyHint="send"
+              placeholder="Tanya Sobi apa saja..."
+              maxLength={MAX_CHAT_MESSAGE_CHARS}
+              minRows={1}
+              maxRows={5}
+              className="max-h-36 w-full bg-gray-50/50 border-2 border-transparent rounded-[2rem] p-5 pr-14 text-sm font-medium leading-relaxed focus:outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all"
+            />
+             <div className="absolute right-4 top-5 text-primary/30">
                <Sparkles size={20} />
              </div>
            </div>

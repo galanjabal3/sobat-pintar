@@ -16,29 +16,45 @@ import (
 type ScheduleService interface {
 	GenerateSchedule(ctx context.Context, userID, level string, req dto.GenerateScheduleRequest) (*dto.ScheduleResponse, error)
 	GetSchedules(ctx context.Context, userID string) ([]dto.ScheduleResponse, error)
+	GetScheduleByID(ctx context.Context, userID, id string) (*dto.ScheduleResponse, error)
 }
 
 type scheduleService struct {
 	repo         repository.ScheduleRepository
 	geminiClient *gemini.Client
+	quota        AIQuotaService
 }
 
-func NewScheduleService(repo repository.ScheduleRepository, geminiClient *gemini.Client) ScheduleService {
+func NewScheduleService(repo repository.ScheduleRepository, geminiClient *gemini.Client, quota AIQuotaService) ScheduleService {
 	return &scheduleService{
 		repo:         repo,
 		geminiClient: geminiClient,
+		quota:        quota,
 	}
 }
 
 func (s *scheduleService) GenerateSchedule(ctx context.Context, userID, level string, req dto.GenerateScheduleRequest) (*dto.ScheduleResponse, error) {
+	if err := validateScheduleSubjects(req.Subjects); err != nil {
+		return nil, err
+	}
+	if err := validateScheduleExamDates(req.ExamDates); err != nil {
+		return nil, err
+	}
+
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureSchedule, ScheduleDailyQuota); err != nil {
+		return nil, err
+	}
+
 	aiSchedule, err := s.geminiClient.GenerateStudySchedule(ctx, level, req.Subjects, req.ExamDates, req.AvailableDays, req.HoursPerDay)
 	if err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
 		return nil, err
 	}
 
 	// Marshall sessions to JSON for DB storage
 	sessionsJSON, err := json.Marshal(aiSchedule.Schedule)
 	if err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
 		return nil, fmt.Errorf("failed to marshal schedule: %v", err)
 	}
 
@@ -57,11 +73,15 @@ func (s *scheduleService) GenerateSchedule(ctx context.Context, userID, level st
 	}
 
 	if err := s.repo.CreateSchedule(ctx, schedule); err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
 		return nil, err
 	}
-	
+
 	var res dto.ScheduleResponse
 	res.ID = schedule.ID
+	if !schedule.ExamDate.IsZero() {
+		res.ExamDate = schedule.ExamDate.Format("2006-01-02")
+	}
 	for _, day := range aiSchedule.Schedule {
 		var sessions []dto.StudySession
 		for _, sess := range day.Sessions {
@@ -110,11 +130,66 @@ func (s *scheduleService) GetSchedules(ctx context.Context, userID string) ([]dt
 			})
 		}
 
-		res = append(res, dto.ScheduleResponse{
+		item := dto.ScheduleResponse{
 			ID:       sc.ID,
 			Schedule: dtoDaily,
-		})
+		}
+		if !sc.ExamDate.IsZero() {
+			item.ExamDate = sc.ExamDate.Format("2006-01-02")
+		}
+
+		res = append(res, item)
 	}
 
 	return res, nil
+}
+
+func (s *scheduleService) GetScheduleByID(ctx context.Context, userID, id string) (*dto.ScheduleResponse, error) {
+	schedule, err := s.repo.GetScheduleByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if schedule.UserID != userID {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	var daily []gemini.DailySchedule
+	if err := json.Unmarshal([]byte(schedule.Sessions), &daily); err != nil {
+		return nil, err
+	}
+
+	res := dto.ScheduleResponse{ID: schedule.ID}
+	if !schedule.ExamDate.IsZero() {
+		res.ExamDate = schedule.ExamDate.Format("2006-01-02")
+	}
+	for _, d := range daily {
+		var dtoSessions []dto.StudySession
+		for _, sess := range d.Sessions {
+			dtoSessions = append(dtoSessions, dto.StudySession{
+				Subject:         sess.Subject,
+				DurationMinutes: sess.DurationMinutes,
+				Topic:           sess.Topic,
+			})
+		}
+		res.Schedule = append(res.Schedule, dto.DailySchedule{
+			Date:     d.Date,
+			Sessions: dtoSessions,
+		})
+	}
+
+	return &res, nil
+}
+
+func (s *scheduleService) consumeAIQuota(ctx context.Context, userID, feature string, limit int) error {
+	if s.quota == nil {
+		return nil
+	}
+	return s.quota.Consume(ctx, userID, feature, limit)
+}
+
+func (s *scheduleService) refundAIQuota(ctx context.Context, userID, feature string) error {
+	if s.quota == nil {
+		return nil
+	}
+	return s.quota.Refund(ctx, userID, feature)
 }

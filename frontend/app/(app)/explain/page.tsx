@@ -2,16 +2,20 @@
  
  import React, { useState, useRef, useEffect } from "react";
  import { useRouter } from "next/navigation";
- import { Camera, Type, Send, Sparkles, X, ChevronLeft, School } from "lucide-react";
+ import { Camera, Type, Sparkles, X, ChevronLeft, School } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
  import { getApiErrorMessage } from "@/lib/apiError";
  import { useAuthStore } from "@/store/authStore";
  import { useToastStore } from "@/store/toastStore";
- import Link from "next/link";
- import Image from "next/image";
- import { motion, AnimatePresence } from "framer-motion";
- import { SOBI_ASSETS } from "@/lib/assets";
+import Link from "next/link";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { SOBI_ASSETS } from "@/lib/assets";
+import { MAX_EXPLAIN_QUESTION_CHARS } from "@/lib/aiLimits";
+import { QuotaBadge } from "@/components/ai/QuotaBadge";
+import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
+import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
  
  export default function ExplainPage() {
    const router = useRouter();
@@ -22,6 +26,7 @@
    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
    const [isLoading, setIsLoading] = useState(false);
    const fileInputRef = useRef<HTMLInputElement>(null);
+   const isSubmittingRef = useRef(false);
    const [history, setHistory] = useState<any[]>([]);
    const userLevel = user?.level || "SD";
    const canSubmit = Boolean(question.trim() || imageFile);
@@ -50,13 +55,14 @@
    };
  
    const handleExplain = async () => {
-     if (isLoading) return;
+     if (isSubmittingRef.current) return;
 
      if (!question.trim() && !imageFile) {
        addToast("Harap ketik soal atau pilih gambar!", "error");
        return;
      }
  
+     isSubmittingRef.current = true;
      setIsLoading(true);
      try {
        let imageUrl = "";
@@ -73,15 +79,16 @@
          imageUrl = uploadResponse.data.url || uploadResponse.data.data.url;
        }
  
-       const response = await api.post("/explain", {
-         question: question,
-         level: userLevel,
-         image_url: imageUrl,
-       });
-       router.push(`/explain/result?id=${response.data.id}`);
+      const response = await api.post("/explain", {
+        question: question,
+        level: userLevel,
+        image_url: imageUrl,
+      });
+      notifyAIQuotaUpdated();
+      router.push(`/explain/result?id=${response.data.id}`);
     } catch (err: unknown) {
+      isSubmittingRef.current = false;
       addToast(getApiErrorMessage(err, "Maaf, Sobi gagal memproses pertanyaanmu. Coba lagi ya!"), "error");
-    } finally {
       setIsLoading(false);
     }
    };
@@ -211,12 +218,22 @@
              <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-neutral-300 group-focus-within:text-primary transition-colors">
                <Type size={20} strokeWidth={2.5} />
              </div>
-             <textarea
-               value={question}
-               onChange={(e) => setQuestion(e.target.value)}
-               placeholder="Atau ketik soalmu di sini..."
-               className="w-full bg-gray-50/50 border-2 border-transparent rounded-[2rem] p-5 pl-14 text-sm font-medium focus:outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all resize-none h-28"
-             />
+            <AutoGrowTextarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  handleExplain();
+                }
+              }}
+              enterKeyHint="send"
+              placeholder="Atau ketik soalmu di sini..."
+              maxLength={MAX_EXPLAIN_QUESTION_CHARS}
+              minRows={4}
+              maxRows={10}
+              className="w-full bg-gray-50/50 border-2 border-transparent rounded-[2rem] p-5 pl-14 text-sm font-medium leading-relaxed focus:outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all"
+            />
            </div>
  
            <div className="mb-10 flex justify-center">
@@ -229,16 +246,19 @@
            </div>
  
            {/* Action Button Upgrade */}
-           <Button
-             onClick={handleExplain}
-             disabled={!canSubmit}
-             className="w-full py-8 h-auto text-xl font-black rounded-[2rem] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-primary/90 disabled:shadow-none"
-             isLoading={isLoading}
-           >
-             <Send size={24} strokeWidth={3} className="mr-3" />
-             Jelasin Sekarang!
-           </Button>
-         </motion.div>
+          <Button
+            onClick={handleExplain}
+            disabled={!canSubmit || isLoading}
+            className="w-full py-8 h-auto text-xl font-black rounded-[2rem] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-primary/90 disabled:shadow-none"
+            isLoading={isLoading}
+          >
+            <Sparkles size={24} strokeWidth={3} className="mr-3" />
+            Jelasin Sekarang!
+          </Button>
+          <div className="mt-4">
+            <QuotaBadge feature="explain" />
+          </div>
+        </motion.div>
  
          {/* History Section Upgrade */}
          <motion.section 

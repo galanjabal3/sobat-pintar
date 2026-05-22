@@ -17,6 +17,7 @@ type HistoryMessage struct {
 func (c *Client) SendChatMessage(ctx context.Context, level string, history []HistoryMessage, message string) (string, error) {
 	systemPrompt := fmt.Sprintf(`Kamu adalah Sobi, teman belajar AI yang friendly, sabar, dan selalu semangat.
 Kamu sedang ngobrol dengan siswa tingkat %s.
+Jawab langsung ke inti pertanyaan, tanpa salam pembuka yang panjang, tanpa filler, dan tanpa mengulang pertanyaan.
 Jawab pertanyaan mereka dengan bahasa yang sesuai usia mereka.
 - Jika tingkat TK/SD: Gunakan bahasa yang sangat sederhana, penuh semangat, dan sering gunakan emoji. Gunakan analogi dunia anak-anak.
 - Jika tingkat SMP/SMA: Gunakan bahasa yang lebih santai tapi tetap edukatif. Berikan penjelasan yang lebih mendalam namun tetap mudah dimengerti.
@@ -46,7 +47,7 @@ Aturan Penting:
 	contents = append(contents, genai.NewContentFromText(message, "user"))
 
 	// Call GenerateContent with the list of *genai.Content
-	resp, err := c.GenAI.Models.GenerateContent(ctx, c.ModelName, contents, nil)
+	resp, err := c.generateContentWithRetry(ctx, contents, chatGenerationConfig())
 	if err != nil {
 		return "", fmt.Errorf("failed to generate content: %w", err)
 	}

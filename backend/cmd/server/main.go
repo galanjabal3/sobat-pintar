@@ -62,18 +62,21 @@ func main() {
 	summaryRepo := repository.NewSummaryRepository(db)
 	scheduleRepo := repository.NewScheduleRepository(db)
 	gamificationRepo := repository.NewGamificationRepository(db)
+	aiQuotaRepo := repository.NewAIQuotaRepository(db)
 
 	// Initialize app services
 	gamificationService := service.NewGamificationService(gamificationRepo)
+	aiQuotaService := service.NewAIQuotaService(aiQuotaRepo)
 	authService := service.NewAuthService(userRepo, jwtService, cfg.GoogleClientID, cloudinaryClient)
-	explainService := service.NewExplainService(explainRepo, geminiClient, gamificationService)
-	chatService := service.NewChatService(chatRepo, geminiClient, gamificationService)
-	practiceService := service.NewPracticeService(practiceRepo, userRepo, geminiClient, gamificationService)
-	summaryService := service.NewSummaryService(summaryRepo, geminiClient, gamificationService)
-	scheduleService := service.NewScheduleService(scheduleRepo, geminiClient)
+	explainService := service.NewExplainService(explainRepo, geminiClient, gamificationService, aiQuotaService)
+	chatService := service.NewChatService(chatRepo, geminiClient, gamificationService, aiQuotaService)
+	practiceService := service.NewPracticeService(practiceRepo, userRepo, geminiClient, gamificationService, aiQuotaService)
+	summaryService := service.NewSummaryService(summaryRepo, geminiClient, gamificationService, aiQuotaService)
+	scheduleService := service.NewScheduleService(scheduleRepo, geminiClient, aiQuotaService)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
+	aiHandler := handler.NewAIHandler(aiQuotaService)
 	explainHandler := handler.NewExplainHandler(explainService)
 	chatHandler := handler.NewChatHandler(chatService)
 	practiceHandler := handler.NewPracticeHandler(practiceService)
@@ -84,6 +87,7 @@ func main() {
 
 	// Setup router
 	r := router.SetupRouter(
+		aiHandler,
 		authHandler,
 		explainHandler,
 		chatHandler,

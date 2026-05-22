@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -28,7 +29,7 @@ func (r *fakeSummaryRepo) Delete(ctx context.Context, id string, userID string) 
 }
 
 func TestCreateSummaryRejectsUnsupportedSourceType(t *testing.T) {
-	service := NewSummaryService(&fakeSummaryRepo{}, nil, nil)
+	service := NewSummaryService(&fakeSummaryRepo{}, nil, nil, nil)
 
 	_, err := service.CreateSummary(context.Background(), "user-1", "SD", dto.CreateSummaryRequest{
 		SourceType: "pdf",
@@ -40,5 +41,40 @@ func TestCreateSummaryRejectsUnsupportedSourceType(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "ekstraksi dari pdf belum didukung") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateSummaryRejectsLongText(t *testing.T) {
+	service := NewSummaryService(&fakeSummaryRepo{}, nil, nil, nil)
+
+	_, err := service.CreateSummary(context.Background(), "user-1", "SD", dto.CreateSummaryRequest{
+		SourceType: "text",
+		Content:    strings.Repeat("a", MaxSummaryContentChars+1),
+	})
+	if err == nil {
+		t.Fatal("expected long text error")
+	}
+	if !errors.Is(err, ErrSummaryContentTooLong) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateSummaryRejectsQuotaExceeded(t *testing.T) {
+	quota := &fakeQuotaService{err: &QuotaExceededError{Feature: AIFeatureSummary, Limit: SummaryDailyQuota}}
+	service := NewSummaryService(&fakeSummaryRepo{}, nil, nil, quota)
+
+	_, err := service.CreateSummary(context.Background(), "user-1", "SD", dto.CreateSummaryRequest{
+		SourceType: "text",
+		Content:    "Materi singkat",
+	})
+	if err == nil {
+		t.Fatal("expected quota exceeded error")
+	}
+	var quotaErr *QuotaExceededError
+	if !errors.As(err, &quotaErr) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if quota.calls != 1 {
+		t.Fatalf("expected quota to be checked once, got %d", quota.calls)
 	}
 }

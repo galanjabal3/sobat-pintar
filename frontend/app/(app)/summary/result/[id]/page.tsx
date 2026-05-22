@@ -11,10 +11,8 @@
  import { SOBI_ASSETS } from "@/lib/assets";
  import { format } from "date-fns";
  import { id as idLocale } from "date-fns/locale";
- import ReactMarkdown from "react-markdown";
- import remarkGfm from "remark-gfm";
- import ShareModal from "@/components/ui/ShareModal";
- import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
+import ShareModal from "@/components/ui/ShareModal";
+import { AIMarkdown } from "@/components/ai/AIMarkdown";
  
  interface SummaryDetail {
    id: string;
@@ -31,14 +29,25 @@
      .replace(/"/g, "&quot;");
  }
 
- function formatInlineMarkdown(value: string) {
-   return escapeHtml(value)
-     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-     .replace(/\+\+(.+?)\+\+/g, "<u>$1</u>")
-     .replace(/==(.+?)==/g, "<mark>$1</mark>")
-     .replace(/~~(.+?)~~/g, "<del>$1</del>");
- }
+function formatInlineMarkdown(value: string) {
+  return escapeHtml(value)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/\+\+(.+?)\+\+/g, "<u>$1</u>")
+    .replace(/==(.+?)==/g, "<mark>$1</mark>")
+    .replace(/~~(.+?)~~/g, "<del>$1</del>");
+}
+
+function formatInlinePrintText(value: string) {
+  return escapeHtml(value)
+    .replace(/\$\$([^$\n]+?)\$\$/g, "<span class=\"math\">$1</span>")
+    .replace(/\$([^$\n]+?)\$/g, "<span class=\"math\">$1</span>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/\+\+(.+?)\+\+/g, "<u>$1</u>")
+    .replace(/==(.+?)==/g, "<mark>$1</mark>")
+    .replace(/~~(.+?)~~/g, "<del>$1</del>");
+}
 
  function renderSummaryForPrint(markdown: string) {
    const lines = markdown.split(/\r?\n/);
@@ -66,36 +75,36 @@
        continue;
      }
 
-     if (line.startsWith("### ")) {
-       closeList();
-       html.push(`<h3>${formatInlineMarkdown(line.slice(4))}</h3>`);
-       continue;
-     }
+    if (line.startsWith("### ")) {
+      closeList();
+      html.push(`<h3>${formatInlinePrintText(line.slice(4))}</h3>`);
+      continue;
+    }
 
-     if (line.startsWith("## ")) {
-       closeList();
-       html.push(`<h2>${formatInlineMarkdown(line.slice(3))}</h2>`);
-       continue;
-     }
+    if (line.startsWith("## ")) {
+      closeList();
+      html.push(`<h2>${formatInlinePrintText(line.slice(3))}</h2>`);
+      continue;
+    }
 
-     if (line.startsWith("# ")) {
-       closeList();
-       html.push(`<h1>${formatInlineMarkdown(line.slice(2))}</h1>`);
-       continue;
-     }
+    if (line.startsWith("# ")) {
+      closeList();
+      html.push(`<h1>${formatInlinePrintText(line.slice(2))}</h1>`);
+      continue;
+    }
 
      if (/^(\*|-)\s+/.test(line)) {
-       if (!listOpen) {
-         html.push("<ul>");
-         listOpen = true;
-       }
-       html.push(`<li>${formatInlineMarkdown(line.replace(/^(\*|-)\s+/, ""))}</li>`);
-       continue;
-     }
+      if (!listOpen) {
+        html.push("<ul>");
+        listOpen = true;
+      }
+      html.push(`<li>${formatInlinePrintText(line.replace(/^(\*|-)\s+/, ""))}</li>`);
+      continue;
+    }
 
-     closeList();
-     html.push(`<p>${formatInlineMarkdown(line)}</p>`);
-   }
+    closeList();
+    html.push(`<p>${formatInlinePrintText(line)}</p>`);
+  }
 
    closeList();
    return html.join("");
@@ -104,12 +113,14 @@
 function stripSummaryMarkdown(markdown: string) {
   return markdown
     .replace(/^#{1,6}\s+/gm, "")
-     .replace(/\*\*(.*?)\*\*/g, "$1")
-     .replace(/\*(.*?)\*/g, "$1")
-     .replace(/\+\+(.*?)\+\+/g, "$1")
-     .replace(/==(.*?)==/g, "$1")
-     .replace(/~~(.*?)~~/g, "$1")
-     .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/\+\+(.*?)\+\+/g, "$1")
+    .replace(/==(.*?)==/g, "$1")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/\$\$([^$\n]+?)\$\$/g, "$1")
+    .replace(/\$([^$\n]+?)\$/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
     .replace(/^\s*[-*]\s+/gm, "- ")
     .replace(/^-{3,}$/gm, "")
     .trim();
@@ -237,6 +248,10 @@ function stripSummaryMarkdown(markdown: string) {
                border-radius: 4px;
                padding: 0 3px;
              }
+             .math {
+               font-style: italic;
+               color: #111827;
+             }
              u {
                text-underline-offset: 3px;
              }
@@ -340,32 +355,29 @@ function stripSummaryMarkdown(markdown: string) {
            <div className="bg-white p-8 rounded-[3rem] border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
              
-             <div className="prose prose-sm max-w-none text-neutral-800">
-               <ReactMarkdown
-                 remarkPlugins={[remarkGfm]}
-                 components={{
-                   h1: ({children}) => <h1 className="text-xl font-black text-neutral-800 mt-8 mb-4">{children}</h1>,
-                   h2: ({children}) => <h2 className="text-lg font-black text-neutral-800 mt-6 mb-3">{children}</h2>,
-                   h3: ({children}) => <h3 className="text-base font-black text-neutral-800 mt-5 mb-2">{children}</h3>,
-                   p: ({children}) => <p className="text-neutral-600 mb-4 leading-[1.8] font-medium text-[15px]">{children}</p>,
-                   strong: ({children}) => <strong className="font-black text-primary">{children}</strong>,
-                   em: ({children}) => <em className="italic font-bold text-neutral-800">{children}</em>,
-                   del: ({children}) => <del className="text-neutral-500 decoration-2">{children}</del>,
-                   a: ({href, children}) => renderAIMarkdownLink(href, children),
-                   ul: ({children}) => <ul className="mb-6 list-disc space-y-3 pl-5 marker:text-primary">{children}</ul>,
-                   ol: ({children}) => <ol className="mb-6 list-decimal space-y-3 pl-5 marker:font-black marker:text-primary">{children}</ol>,
-                   li: ({children}) => (
-                     <li className="pl-2 text-neutral-600 font-medium text-[15px] leading-relaxed [&>p]:m-0 [&>ol]:mt-3 [&>ul]:mt-3">
-                       {children}
-                     </li>
-                   ),
-                   hr: () => <div className="my-8 h-px bg-primary/10" />,
-                   blockquote: ({children}) => <div className="border-l-4 border-secondary bg-secondary/5 p-4 rounded-r-2xl italic text-neutral-600 mb-6">{children}</div>,
-                 }}
-               >
-                 {formatAIMarkdown(detail?.summary || "")}
-               </ReactMarkdown>
-             </div>
+             <AIMarkdown
+               className="prose prose-sm max-w-none text-neutral-800"
+               components={{
+                 h1: ({children}) => <h1 className="text-xl font-black text-neutral-800 mt-8 mb-4">{children}</h1>,
+                 h2: ({children}) => <h2 className="text-lg font-black text-neutral-800 mt-6 mb-3">{children}</h2>,
+                 h3: ({children}) => <h3 className="text-base font-black text-neutral-800 mt-5 mb-2">{children}</h3>,
+                 p: ({children}) => <p className="text-neutral-600 mb-4 leading-[1.8] font-medium text-[15px]">{children}</p>,
+                 strong: ({children}) => <strong className="font-black text-primary">{children}</strong>,
+                 em: ({children}) => <em className="italic font-bold text-neutral-800">{children}</em>,
+                 del: ({children}) => <del className="text-neutral-500 decoration-2">{children}</del>,
+                 ul: ({children}) => <ul className="mb-6 list-disc space-y-3 pl-5 marker:text-primary">{children}</ul>,
+                 ol: ({children}) => <ol className="mb-6 list-decimal space-y-3 pl-5 marker:font-black marker:text-primary">{children}</ol>,
+                 li: ({children}) => (
+                   <li className="pl-2 text-neutral-600 font-medium text-[15px] leading-relaxed [&>p]:m-0 [&>ol]:mt-3 [&>ul]:mt-3">
+                     {children}
+                   </li>
+                 ),
+                 hr: () => <div className="my-8 h-px bg-primary/10" />,
+                 blockquote: ({children}) => <div className="border-l-4 border-secondary bg-secondary/5 p-4 rounded-r-2xl italic text-neutral-600 mb-6">{children}</div>,
+               }}
+             >
+               {detail?.summary || ""}
+             </AIMarkdown>
            </div>
  
            {/* Feedback / Sobi Tip */}

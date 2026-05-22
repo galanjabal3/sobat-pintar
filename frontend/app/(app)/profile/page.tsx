@@ -8,14 +8,28 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { User, Mail, School, Zap, ChevronRight, Settings, ShieldCheck, HelpCircle, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
 export default function ProfilePage() {
-  const { user, fetchProfile } = useAuthStore();
+  const { user, fetchProfile, updateUser } = useAuthStore();
   const router = useRouter();
 
   React.useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    const refreshProfile = async () => {
+      await fetchProfile();
+
+      try {
+        const response = await api.get("/gamification/points");
+        if (typeof response.data?.points === "number") {
+          updateUser({ points: response.data.points });
+        }
+      } catch (err) {
+        console.error("Failed to refresh profile points:", err);
+      }
+    };
+
+    refreshProfile();
+  }, [fetchProfile, updateUser]);
 
   return (
     <div className="min-h-screen bg-[#FDFEFF] relative overflow-hidden">

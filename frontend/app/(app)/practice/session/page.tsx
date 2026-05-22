@@ -11,9 +11,7 @@ import { useToastStore } from "@/store/toastStore";
 import SobiEncouragement from "@/components/sobi/SobiEncouragement";
 import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "@/components/ui/Modal";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
+import { AIMarkdown } from "@/components/ai/AIMarkdown";
 
 interface Question {
   id: string;
@@ -25,28 +23,7 @@ interface Question {
 }
 
 function PracticeMarkdown({ children, className }: { children: string; className?: string }) {
-  return (
-    <div className={className}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          p: ({ children }) => <p className="m-0">{children}</p>,
-          strong: ({ children }) => <strong className="font-black text-neutral-900">{children}</strong>,
-          em: ({ children }) => <em className="italic font-black text-neutral-900">{children}</em>,
-          del: ({ children }) => <del className="text-neutral-500 decoration-2">{children}</del>,
-          code: ({ children }) => (
-            <code className="rounded-lg bg-primary/10 px-1.5 py-0.5 font-black text-primary">{children}</code>
-          ),
-          a: ({ href, children }) => renderAIMarkdownLink(href, children),
-          ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-5 text-left">{children}</ul>,
-          ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-5 text-left">{children}</ol>,
-          li: ({ children }) => <li className="pl-1">{children}</li>,
-        }}
-      >
-        {formatAIMarkdown(children)}
-      </ReactMarkdown>
-    </div>
-  );
+  return <AIMarkdown className={className}>{children}</AIMarkdown>;
 }
 
 function PracticeSessionContent() {

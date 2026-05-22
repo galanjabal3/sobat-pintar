@@ -32,6 +32,12 @@ func (h *SummaryHandler) CreateSummary(c *gin.Context) {
 
 	res, err := h.service.CreateSummary(c.Request.Context(), userID, level, req)
 	if err != nil {
+		if writeAIValidationError(c, err) {
+			return
+		}
+		if writeAIQuotaError(c, err) {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Success: false,
 			Message: "Gagal membuat rangkuman",

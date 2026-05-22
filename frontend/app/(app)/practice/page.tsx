@@ -8,9 +8,11 @@
  import { cn } from "@/lib/utils";
  import api from "@/lib/api";
  import { getApiErrorMessage } from "@/lib/apiError";
- import { useAuthStore } from "@/store/authStore";
- import { useToastStore } from "@/store/toastStore";
- import { motion } from "framer-motion";
+import { useAuthStore } from "@/store/authStore";
+import { useToastStore } from "@/store/toastStore";
+import { motion } from "framer-motion";
+import { QuotaBadge } from "@/components/ai/QuotaBadge";
+import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
  
  const SUBJECTS = [
    { id: "Matematika", icon: <Calculator size={24} />, color: "bg-blue-100 text-blue-600 border-blue-200", desc: "Berhitung jadi seru!" },
@@ -43,6 +45,7 @@
        });
        
        const sessionID = response.data.session_id;
+       notifyAIQuotaUpdated();
        router.push(`/practice/session?id=${sessionID}`);
      } catch (err: unknown) {
        addToast(getApiErrorMessage(err, "Gagal memulai latihan. Coba lagi ya!"), "error");
@@ -156,18 +159,18 @@
              transition={{ delay: 0.3 }}
              className="pt-6 space-y-6"
            >
-             <Button
-               onClick={handleStart}
-               isLoading={isLoading}
-               disabled={isLoading}
-               className="w-full py-7 h-auto text-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black group"
-             >
-               Mulai Latihan
-               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-             </Button>
-             
-             <Link 
-               href="/practice/history" 
+            <Button
+              onClick={handleStart}
+              isLoading={isLoading}
+              disabled={isLoading}
+              className="w-full py-7 h-auto text-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black group"
+            >
+              Mulai Latihan
+              <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+            <QuotaBadge feature="practice" className="mt-4" />
+            <Link
+              href="/practice/history"
                className="flex items-center justify-center gap-2 text-primary font-black text-xs uppercase tracking-widest hover:underline"
              >
                <BookOpen size={14} />

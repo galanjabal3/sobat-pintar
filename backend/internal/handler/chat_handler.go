@@ -33,6 +33,12 @@ func (h *ChatHandler) CreateSession(c *gin.Context) {
 
 	res, err := h.chatService.CreateSession(c.Request.Context(), userID, req)
 	if err != nil {
+		if writeAIValidationError(c, err) {
+			return
+		}
+		if writeAIQuotaError(c, err) {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Success: false,
 			Message: "Gagal membuat sesi chat",
@@ -104,6 +110,12 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 
 	res, err := h.chatService.SendMessage(c.Request.Context(), userID, sessionID, req)
 	if err != nil {
+		if writeAIValidationError(c, err) {
+			return
+		}
+		if writeAIQuotaError(c, err) {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Success: false,
 			Message: "Gagal mengirim pesan",

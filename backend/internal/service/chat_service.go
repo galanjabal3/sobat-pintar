@@ -31,13 +31,15 @@ type chatService struct {
 	repo         repository.ChatRepository
 	geminiClient chatGenerator
 	gamify       GamificationService
+	quota        AIQuotaService
 }
 
-func NewChatService(repo repository.ChatRepository, geminiClient chatGenerator, gamify GamificationService) ChatService {
+func NewChatService(repo repository.ChatRepository, geminiClient chatGenerator, gamify GamificationService, quota AIQuotaService) ChatService {
 	return &chatService{
 		repo:         repo,
 		geminiClient: geminiClient,
 		gamify:       gamify,
+		quota:        quota,
 	}
 }
 
@@ -127,6 +129,10 @@ func (s *chatService) GetSessionDetail(ctx context.Context, userID string, sessi
 }
 
 func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID string, req dto.SendMessageRequest) (*dto.MessageResponse, error) {
+	if err := validateChatMessage(req.Message); err != nil {
+		return nil, err
+	}
+
 	session, err := s.repo.GetSessionByID(ctx, sessionID)
 	if err != nil {
 		return nil, err
@@ -134,6 +140,10 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 
 	if session.UserID != userID {
 		return nil, fmt.Errorf("unauthorized")
+	}
+
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureChat, ChatDailyQuota); err != nil {
+		return nil, err
 	}
 
 	// 1. Save user message
@@ -146,6 +156,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		CreatedAt: time.Now(),
 	}
 	if err := s.repo.CreateMessage(ctx, userMsg); err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
 		return nil, err
 	}
 
@@ -161,6 +172,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 	// 2. Get history for Gemini
 	messages, err := s.repo.GetMessagesBySessionID(ctx, sessionID)
 	if err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
 		return nil, err
 	}
 
@@ -175,10 +187,12 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 			Content: m.Content,
 		})
 	}
+	history = trimChatHistory(history, MaxChatHistoryMessages)
 
 	// 3. Call Gemini
 	aiResponse, err := s.geminiClient.SendChatMessage(ctx, session.Level, history, req.Message)
 	if err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
 		failedMsg := &model.Message{
 			ID:        uuid.New().String(),
 			SessionID: sessionID,
@@ -209,6 +223,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		CreatedAt: time.Now(),
 	}
 	if err := s.repo.CreateMessage(ctx, aiMsg); err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
 		return nil, err
 	}
 
@@ -236,6 +251,23 @@ func (s *chatService) DeleteSession(ctx context.Context, userID string, sessionI
 func shouldAutoTitleChatSession(title string) bool {
 	normalized := strings.TrimSpace(title)
 	return normalized == "" || normalized == defaultChatSessionTitle
+}
+
+func (s *chatService) consumeAIQuota(ctx context.Context, userID, feature string, limit int) error {
+	if s.quota == nil {
+		return nil
+	}
+	if err := s.quota.Consume(ctx, userID, feature, limit); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *chatService) refundAIQuota(ctx context.Context, userID, feature string) error {
+	if s.quota == nil {
+		return nil
+	}
+	return s.quota.Refund(ctx, userID, feature)
 }
 
 func buildChatSessionTitle(message string) string {

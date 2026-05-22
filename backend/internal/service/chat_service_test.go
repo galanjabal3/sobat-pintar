@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,7 +75,7 @@ func TestChatListSessionsIncludesLastMessage(t *testing.T) {
 				UpdatedAt:   time.Now(),
 			},
 		},
-	}, nil, nil)
+	}, nil, nil, nil)
 
 	sessions, err := service.ListSessions(context.Background(), "user-1")
 	if err != nil {
@@ -100,6 +101,28 @@ func (c *fakeGeminiClient) SendChatMessage(ctx context.Context, level string, hi
 	return c.response, nil
 }
 
+type fakeQuotaService struct {
+	err     error
+	calls   int
+	feature string
+	limit   int
+}
+
+func (q *fakeQuotaService) Consume(ctx context.Context, userID, feature string, limit int) error {
+	q.calls++
+	q.feature = feature
+	q.limit = limit
+	return q.err
+}
+
+func (q *fakeQuotaService) Refund(ctx context.Context, userID, feature string) error {
+	return nil
+}
+
+func (q *fakeQuotaService) GetDailyUsage(ctx context.Context, userID string) (*dto.AIQuotaResponse, error) {
+	return &dto.AIQuotaResponse{}, nil
+}
+
 func TestChatSendMessageAutoTitlesDefaultSession(t *testing.T) {
 	repo := &fakeChatRepo{
 		session: &model.ChatSession{
@@ -112,7 +135,7 @@ func TestChatSendMessageAutoTitlesDefaultSession(t *testing.T) {
 		},
 		messages: []*model.Message{},
 	}
-	service := NewChatService(repo, &fakeGeminiClient{response: "Jawaban Sobi"}, nil)
+	service := NewChatService(repo, &fakeGeminiClient{response: "Jawaban Sobi"}, nil, nil)
 
 	_, err := service.SendMessage(context.Background(), "user-1", "session-1", dto.SendMessageRequest{
 		Message: "Cara kerja fotosintesis?",
@@ -131,5 +154,51 @@ func TestChatSendMessageAutoTitlesDefaultSession(t *testing.T) {
 	}
 	if repo.session.Title != expectedTitle {
 		t.Fatalf("expected session title to be updated, got %q", repo.session.Title)
+	}
+}
+
+func TestChatSendMessageRejectsLongMessage(t *testing.T) {
+	service := NewChatService(nil, nil, nil, nil)
+
+	_, err := service.SendMessage(context.Background(), "user-1", "session-1", dto.SendMessageRequest{
+		Message: strings.Repeat("a", MaxChatMessageChars+1),
+	})
+	if err == nil {
+		t.Fatal("expected long message error")
+	}
+	if !errors.Is(err, ErrChatMessageTooLong) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestChatSendMessageRejectsQuotaExceeded(t *testing.T) {
+	repo := &fakeChatRepo{
+		session: &model.ChatSession{
+			ID:        "session-1",
+			UserID:    "user-1",
+			Title:     "Obrolan Baru dengan Sobi",
+			Level:     "SD",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+	}
+	quota := &fakeQuotaService{err: &QuotaExceededError{Feature: AIFeatureChat, Limit: ChatDailyQuota}}
+	service := NewChatService(repo, &fakeGeminiClient{response: "Jawaban Sobi"}, nil, quota)
+
+	_, err := service.SendMessage(context.Background(), "user-1", "session-1", dto.SendMessageRequest{
+		Message: "Cara kerja fotosintesis?",
+	})
+	if err == nil {
+		t.Fatal("expected quota exceeded error")
+	}
+	var quotaErr *QuotaExceededError
+	if !errors.As(err, &quotaErr) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if quota.calls != 1 {
+		t.Fatalf("expected quota to be checked once, got %d", quota.calls)
+	}
+	if len(repo.messages) != 0 {
+		t.Fatalf("expected no messages to be stored, got %d", len(repo.messages))
 	}
 }

@@ -23,6 +23,10 @@ type PracticeService interface {
 	GetDailyProgress(ctx context.Context, userID string) (int, error)
 }
 
+type practiceGenerator interface {
+	GeneratePracticeQuestions(ctx context.Context, level, subject, difficulty string, count int) ([]gemini.PracticeQuestion, error)
+}
+
 func (s *practiceService) GetHistory(ctx context.Context, userID string) ([]*model.PracticeSession, error) {
 	return s.repo.GetHistoryByUserID(ctx, userID)
 }
@@ -30,26 +34,39 @@ func (s *practiceService) GetHistory(ctx context.Context, userID string) ([]*mod
 type practiceService struct {
 	repo         repository.PracticeRepository
 	userRepo     repository.UserRepository
-	geminiClient *gemini.Client
+	geminiClient practiceGenerator
 	gamify       GamificationService
+	quota        AIQuotaService
 }
 
-func NewPracticeService(repo repository.PracticeRepository, userRepo repository.UserRepository, geminiClient *gemini.Client, gamify GamificationService) PracticeService {
+func NewPracticeService(repo repository.PracticeRepository, userRepo repository.UserRepository, geminiClient practiceGenerator, gamify GamificationService, quota AIQuotaService) PracticeService {
 	return &practiceService{
 		repo:         repo,
 		userRepo:     userRepo,
 		geminiClient: geminiClient,
 		gamify:       gamify,
+		quota:        quota,
 	}
 }
 
 func (s *practiceService) StartSession(ctx context.Context, userID, level string, req dto.StartPracticeRequest) (*dto.StartPracticeResponse, error) {
+	if err := validatePracticeSubject(req.Subject); err != nil {
+		return nil, err
+	}
+
 	// Fixed count to 5 questions for now
 	count := 5
 
 	// 1. Generate questions via Gemini
+	if err := s.consumeAIQuota(ctx, userID, AIFeaturePractice, PracticeDailyQuota); err != nil {
+		return nil, err
+	}
+
 	aiQuestions, err := s.geminiClient.GeneratePracticeQuestions(ctx, level, req.Subject, req.Difficulty, count)
 	if err != nil {
+		if refundErr := s.refundAIQuota(ctx, userID, AIFeaturePractice); refundErr != nil {
+			return nil, fmt.Errorf("failed to generate content: %w (quota refund failed: %v)", err, refundErr)
+		}
 		return nil, err
 	}
 
@@ -62,6 +79,9 @@ func (s *practiceService) StartSession(ctx context.Context, userID, level string
 		CreatedAt:  time.Now(),
 	}
 	if err := s.repo.CreateSession(ctx, session); err != nil {
+		if refundErr := s.refundAIQuota(ctx, userID, AIFeaturePractice); refundErr != nil {
+			return nil, fmt.Errorf("failed to create practice session: %w (quota refund failed: %v)", err, refundErr)
+		}
 		return nil, err
 	}
 
@@ -81,6 +101,9 @@ func (s *practiceService) StartSession(ctx context.Context, userID, level string
 	}
 
 	if err := s.repo.CreateQuestions(ctx, questions); err != nil {
+		if refundErr := s.refundAIQuota(ctx, userID, AIFeaturePractice); refundErr != nil {
+			return nil, fmt.Errorf("failed to create practice questions: %w (quota refund failed: %v)", err, refundErr)
+		}
 		return nil, err
 	}
 
@@ -240,4 +263,18 @@ func (s *practiceService) buildPracticeResult(ctx context.Context, userID, sessi
 
 func (s *practiceService) GetDailyProgress(ctx context.Context, userID string) (int, error) {
 	return s.repo.CountQuestionsAnsweredToday(ctx, userID)
+}
+
+func (s *practiceService) consumeAIQuota(ctx context.Context, userID, feature string, limit int) error {
+	if s.quota == nil {
+		return nil
+	}
+	return s.quota.Consume(ctx, userID, feature, limit)
+}
+
+func (s *practiceService) refundAIQuota(ctx context.Context, userID, feature string) error {
+	if s.quota == nil {
+		return nil
+	}
+	return s.quota.Refund(ctx, userID, feature)
 }

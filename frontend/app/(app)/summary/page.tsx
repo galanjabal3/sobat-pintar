@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
  import { useRouter } from "next/navigation";
-import { ChevronLeft, FileText, Sparkles, Send, Clock, Trash2, ArrowRight } from "lucide-react";
+import { ChevronLeft, FileText, Sparkles, Clock, Trash2, ArrowRight } from "lucide-react";
 import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +13,10 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Modal } from "@/components/ui/Modal";
 import { SOBI_ASSETS } from "@/lib/assets";
+import { MAX_SUMMARY_CONTENT_CHARS } from "@/lib/aiLimits";
+import { QuotaBadge } from "@/components/ai/QuotaBadge";
+import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
+import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
 
 interface SummaryHistory {
   id: string;
@@ -22,7 +26,29 @@ interface SummaryHistory {
 }
 
 function getSummaryPreview(item: SummaryHistory) {
-  return item.title || item.summary?.split(/\r?\n/).find((line) => line.trim()) || "Materi Tanpa Judul";
+  if (item.title) return cleanSummaryPreviewText(item.title);
+
+  const preview = item.summary
+    ?.split(/\r?\n/)
+    .map(cleanSummaryPreviewText)
+    .find((line) => line && !isGenericSummaryHeading(line));
+
+  return preview || "Materi Tanpa Judul";
+}
+
+function cleanSummaryPreviewText(text: string) {
+  return text
+    .replace(/^#{1,6}\s+/, "")
+    .replace(/^[-*+]\s+/, "")
+    .replace(/^\d+[.)]\s+/, "")
+    .replace(/[*_`~]/g, "")
+    .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isGenericSummaryHeading(text: string) {
+  return /^(poin[-\s]?poin penting|kesimpulan|tips sobi|tips untuk mengingat|rangkuman)\s*:?\s*$/i.test(text);
 }
 
 export default function SummaryPage() {
@@ -65,6 +91,7 @@ export default function SummaryPage() {
          content: text,
        });
        addToast("Rangkuman berhasil dibuat!", "success");
+       notifyAIQuotaUpdated();
        setText("");
        router.push(`/summary/result/${response.data.id}`);
      } catch (err: unknown) {
@@ -139,25 +166,38 @@ export default function SummaryPage() {
              </h3>
              
              <div className="relative">
-               <textarea
-                 value={text}
-                 onChange={(e) => setText(e.target.value)}
-                 placeholder="Tempel teks atau materi di sini..."
-                 className="w-full h-40 bg-white/50 border-2 border-primary/5 rounded-3xl p-5 text-sm font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all resize-none placeholder:text-neutral-300"
-               />
+              <AutoGrowTextarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    handleSummarize();
+                  }
+                }}
+                enterKeyHint="send"
+                placeholder="Tempel teks atau materi di sini..."
+                maxLength={MAX_SUMMARY_CONTENT_CHARS}
+                minRows={7}
+                maxRows={14}
+                className="w-full bg-white/50 border-2 border-primary/5 rounded-3xl p-5 text-sm font-medium leading-relaxed focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all placeholder:text-neutral-300"
+              />
              </div>
  
-             <Button
-               onClick={handleSummarize}
-               isLoading={isSubmitting}
-               disabled={!canSubmit || isSubmitting}
-               className="w-full mt-6 py-6 h-auto text-lg rounded-[2rem] shadow-2xl shadow-primary/20 font-black group"
-             >
-               Buat Rangkuman
-               <Send size={18} className="ml-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-             </Button>
-           </div>
-         </motion.div>
+            <Button
+              onClick={handleSummarize}
+              isLoading={isSubmitting}
+              disabled={!canSubmit || isSubmitting}
+              className="w-full mt-6 py-6 h-auto text-lg rounded-[2rem] shadow-2xl shadow-primary/20 font-black group"
+            >
+              <Sparkles size={20} strokeWidth={3} className="mr-3" />
+              Buat Rangkuman
+            </Button>
+            <div className="mt-4">
+              <QuotaBadge feature="summary" />
+            </div>
+          </div>
+        </motion.div>
  
          {/* History Section */}
          <div className="space-y-6">

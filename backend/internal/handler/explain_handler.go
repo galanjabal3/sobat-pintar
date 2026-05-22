@@ -47,6 +47,12 @@ func (h *ExplainHandler) Explain(c *gin.Context) {
 	userID := c.GetString("user_id")
 	explanation, err := h.service.Explain(c.Request.Context(), userID, req.Question, req.ImageURL, req.Level)
 	if err != nil {
+		if writeAIValidationError(c, err) {
+			return
+		}
+		if writeAIQuotaError(c, err) {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Success: false,
 			Message: "Sobi gagal memproses pertanyaanmu",
@@ -59,11 +65,11 @@ func (h *ExplainHandler) Explain(c *gin.Context) {
 		Success: true,
 		Message: "Penjelasan berhasil dibuat",
 		Data: dto.ExplainResponse{
-			ID:       explanation.ID,
-			Question: explanation.QuestionText,
-			ImageURL: explanation.ImageURL,
-			Answer:   explanation.Answer,
-			Level:    explanation.Level,
+			ID:           explanation.ID,
+			QuestionText: explanation.QuestionText,
+			ImageURL:     explanation.ImageURL,
+			Answer:       explanation.Answer,
+			Level:        explanation.Level,
 		},
 	})
 }
@@ -102,11 +108,11 @@ func (h *ExplainHandler) GetPublicExplanation(c *gin.Context) {
 		Success: true,
 		Message: "Penjelasan berhasil diambil",
 		Data: dto.ExplainResponse{
-			ID:       explanation.ID,
-			Question: explanation.QuestionText,
-			ImageURL: explanation.ImageURL,
-			Answer:   explanation.Answer,
-			Level:    explanation.Level,
+			ID:           explanation.ID,
+			QuestionText: explanation.QuestionText,
+			ImageURL:     explanation.ImageURL,
+			Answer:       explanation.Answer,
+			Level:        explanation.Level,
 		},
 	})
 }
@@ -136,11 +142,11 @@ func (h *ExplainHandler) GetExplanation(c *gin.Context) {
 		Success: true,
 		Message: "Penjelasan berhasil diambil",
 		Data: dto.ExplainResponse{
-			ID:       explanation.ID,
-			Question: explanation.QuestionText,
-			ImageURL: explanation.ImageURL,
-			Answer:   explanation.Answer,
-			Level:    explanation.Level,
+			ID:           explanation.ID,
+			QuestionText: explanation.QuestionText,
+			ImageURL:     explanation.ImageURL,
+			Answer:       explanation.Answer,
+			Level:        explanation.Level,
 		},
 	})
 }
@@ -151,6 +157,12 @@ func (h *ExplainHandler) ReExplain(c *gin.Context) {
 
 	explanation, err := h.service.ReExplain(c.Request.Context(), userID, id)
 	if err != nil {
+		if writeAIValidationError(c, err) {
+			return
+		}
+		if writeAIQuotaError(c, err) {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Success: false,
 			Message: "Sobi gagal menjelaskan ulang",
@@ -163,11 +175,11 @@ func (h *ExplainHandler) ReExplain(c *gin.Context) {
 		Success: true,
 		Message: "Penjelasan ulang berhasil",
 		Data: dto.ExplainResponse{
-			ID:       explanation.ID,
-			Question: explanation.QuestionText,
-			ImageURL: explanation.ImageURL,
-			Answer:   explanation.Answer,
-			Level:    explanation.Level,
+			ID:           explanation.ID,
+			QuestionText: explanation.QuestionText,
+			ImageURL:     explanation.ImageURL,
+			Answer:       explanation.Answer,
+			Level:        explanation.Level,
 		},
 	})
 }

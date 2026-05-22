@@ -3,16 +3,14 @@
 import React, { useCallback, useEffect, useState } from "react";
  import { useRouter, useSearchParams } from "next/navigation";
  import { ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb } from "lucide-react";
- import ReactMarkdown from "react-markdown";
- import remarkGfm from "remark-gfm";
- import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
  import { useToastStore } from "@/store/toastStore";
- import Image from "next/image";
- import { SOBI_ASSETS } from "@/lib/assets";
- import ShareModal from "@/components/ui/ShareModal";
- import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { SOBI_ASSETS } from "@/lib/assets";
+import ShareModal from "@/components/ui/ShareModal";
+import { motion, AnimatePresence } from "framer-motion";
+import { AIMarkdown } from "@/components/ai/AIMarkdown";
  
  interface Explanation {
    id: string;
@@ -40,23 +38,13 @@ import React, { useCallback, useEffect, useState } from "react";
     }
 
     try {
-      const response = await api.get(`/explain/history`);
-      const item = response.data.find((e: any) => e.id === id);
-      if (item) {
-        setExplanation(item);
-      } else {
-        // Try fetch by ID if not found in recent history
-        try {
-          const resById = await api.get(`/explain/${id}`);
-          if (resById.data) setExplanation(resById.data);
-          else router.push("/explain");
-        } catch {
-          router.push("/explain");
-        }
-      }
+      const resById = await api.get(`/explain/${id}`);
+      if (resById.data) setExplanation(resById.data);
+      else router.push("/explain");
     } catch (err) {
       console.error(err);
       addToast("Gagal memuat hasil Jelasin AI.", "error");
+      router.push("/explain");
     } finally {
       setIsLoading(false);
     }
@@ -207,33 +195,29 @@ import React, { useCallback, useEffect, useState } from "react";
                  <p className="text-xs font-black text-neutral-400 uppercase tracking-widest">Penjelasan Langkah Demi Langkah</p>
                </div>
                
-               <div className="prose prose-sm max-w-none text-neutral-800">
-                 <ReactMarkdown
-                   remarkPlugins={[remarkGfm]}
-                   components={{
-                     h1: ({children}) => <h1 className="text-xl font-black text-neutral-800 mt-8 mb-4">{children}</h1>,
-                     h2: ({children}) => <h2 className="text-lg font-black text-neutral-800 mt-6 mb-3">{children}</h2>,
-                     h3: ({children}) => <h3 className="text-md font-black text-neutral-800 mt-4 mb-2">{children}</h3>,
-                     p: ({children}) => <p className="text-neutral-600 mb-4 leading-[1.8] font-medium text-[15px]">{children}</p>,
-                     strong: ({children}) => <strong className="font-black text-primary">{children}</strong>,
-                     em: ({children}) => <em className="italic font-bold text-neutral-800">{children}</em>,
-                     del: ({children}) => <del className="text-neutral-500 decoration-2">{children}</del>,
-                     a: ({href, children}) => renderAIMarkdownLink(href, children),
-                     ul: ({children}) => <ul className="mb-6 list-disc space-y-3 pl-5 marker:text-primary">{children}</ul>,
-                     ol: ({children}) => <ol className="mb-6 list-decimal space-y-3 pl-5 marker:font-black marker:text-primary">{children}</ol>,
-                     li: ({children}) => (
-                       <li className="pl-2 text-neutral-600 font-medium text-[15px] leading-relaxed [&>p]:m-0 [&>ol]:mt-3 [&>ul]:mt-3">
-                         {children}
-                       </li>
-                     ),
-                     code: ({children}) => <code className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-sm font-black font-mono border border-primary/10">{children}</code>,
-                     blockquote: ({children}) => <div className="border-l-4 border-secondary bg-secondary/5 p-4 rounded-r-2xl italic text-neutral-600 mb-6">{children}</div>,
-                   }}
-                 >
-                   {formatAIMarkdown(explanation?.answer || "")}
-                 </ReactMarkdown>
-               </div>
-             </div>
+               <AIMarkdown
+                 className="prose prose-sm max-w-none text-neutral-800"
+                 components={{
+                   h1: ({children}) => <h1 className="text-xl font-black text-neutral-800 mt-8 mb-4">{children}</h1>,
+                   h2: ({children}) => <h2 className="text-lg font-black text-neutral-800 mt-6 mb-3">{children}</h2>,
+                   h3: ({children}) => <h3 className="text-md font-black text-neutral-800 mt-4 mb-2">{children}</h3>,
+                   p: ({children}) => <p className="text-neutral-600 mb-4 leading-[1.8] font-medium text-[15px]">{children}</p>,
+                   strong: ({children}) => <strong className="font-black text-primary">{children}</strong>,
+                   em: ({children}) => <em className="italic font-bold text-neutral-800">{children}</em>,
+                   del: ({children}) => <del className="text-neutral-500 decoration-2">{children}</del>,
+                   ul: ({children}) => <ul className="mb-6 list-disc space-y-3 pl-5 marker:text-primary">{children}</ul>,
+                   ol: ({children}) => <ol className="mb-6 list-decimal space-y-3 pl-5 marker:font-black marker:text-primary">{children}</ol>,
+                   li: ({children}) => (
+                     <li className="pl-2 text-neutral-600 font-medium text-[15px] leading-relaxed [&>p]:m-0 [&>ol]:mt-3 [&>ul]:mt-3">
+                       {children}
+                     </li>
+                   ),
+                   blockquote: ({children}) => <div className="border-l-4 border-secondary bg-secondary/5 p-4 rounded-r-2xl italic text-neutral-600 mb-6">{children}</div>,
+                 }}
+               >
+                 {explanation?.answer || ""}
+               </AIMarkdown>
+              </div>
            </motion.div>
  
            {/* Action Buttons Upgrade */}

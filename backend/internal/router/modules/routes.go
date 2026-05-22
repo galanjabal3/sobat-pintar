@@ -26,6 +26,7 @@ func RegisterAuthRoutes(rg *gin.RouterGroup, h *handler.AuthHandler) {
 }
 
 func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
+	aiH *handler.AIHandler,
 	authH *handler.AuthHandler,
 	explainH *handler.ExplainHandler,
 	chatH *handler.ChatHandler,
@@ -40,6 +41,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 	{
 		protected.GET("/user/profile", authH.GetProfile)
 		protected.PATCH("/user/profile", authH.UpdateProfile)
+		protected.GET("/ai/usage", aiH.GetUsage)
 
 		// Upload routes
 		if uploadH != nil {
@@ -95,6 +97,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 		{
 			schedule.POST("/generate", scheduleH.GenerateSchedule)
 			schedule.GET("", scheduleH.GetSchedules)
+			schedule.GET("/:id", scheduleH.GetSchedule)
 		}
 
 		// Gamification routes

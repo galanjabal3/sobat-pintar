@@ -2,9 +2,7 @@ package gemini
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	"google.golang.org/genai"
 )
@@ -36,26 +34,22 @@ Format response HANYA JSON seperti ini, tanpa teks lain:
   ]
 }`, count, subject, level, difficulty, textFormattingInstruction())
 
-	// Call GenerateContent with the content object.
-	resp, err := c.GenAI.Models.GenerateContent(ctx, c.ModelName, genai.Text(prompt), nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate content: %w", err)
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		resp, err := c.generateContentWithRetry(ctx, []*genai.Content{genai.NewContentFromText(prompt, "user")}, practiceGenerationConfig())
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate content: %w", err)
+		}
+
+		rawText := resp.Text()
+
+		var practiceRes PracticeResponse
+		if err := decodeGeminiJSON(rawText, &practiceRes); err == nil {
+			return practiceRes.Questions, nil
+		} else {
+			lastErr = err
+		}
 	}
 
-	rawText := resp.Text() // Use resp.Text() to get the response string
-
-	// Robust JSON extraction
-	start := strings.Index(rawText, "{")
-	end := strings.LastIndex(rawText, "}")
-	if start == -1 || end == -1 || end < start {
-		return nil, fmt.Errorf("failed to find JSON in Gemini response: %s", rawText)
-	}
-	cleanText := rawText[start : end+1]
-
-	var practiceRes PracticeResponse
-	if err := json.Unmarshal([]byte(cleanText), &practiceRes); err != nil {
-		return nil, fmt.Errorf("failed to parse Gemini response: %w\nResponse was: %s", err, cleanText)
-	}
-
-	return practiceRes.Questions, nil
+	return nil, fmt.Errorf("failed to parse Gemini response after retry: %w", lastErr)
 }

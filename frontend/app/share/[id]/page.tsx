@@ -5,12 +5,10 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import { SOBI_ASSETS } from "@/lib/assets";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import api from "@/lib/api";
-import { formatAIMarkdown, renderAIMarkdownLink } from "@/lib/aiMarkdown";
+import { AIMarkdown } from "@/components/ai/AIMarkdown";
 
 export default function SharePage() {
   const { id } = useParams();
@@ -66,27 +64,24 @@ export default function SharePage() {
           </div>
           <div className="pt-6">
             <p className="text-[10px] font-black text-primary mb-3 uppercase tracking-widest">Rangkuman Sobi</p>
-            <div className="prose prose-sm max-w-none text-neutral-800">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({children}) => <h1 className="text-lg font-bold text-gray-800 mt-3 mb-1">{children}</h1>,
-                  h2: ({children}) => <h2 className="text-base font-bold text-gray-800 mt-3 mb-1">{children}</h2>,
-                  h3: ({children}) => <h3 className="text-sm font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
-                  p: ({children}) => <p className="text-gray-700 mb-2 leading-relaxed">{children}</p>,
-                  strong: ({children}) => <strong className="font-bold text-primary">{children}</strong>,
-                  em: ({children}) => <em className="italic font-semibold text-gray-800">{children}</em>,
-                  del: ({children}) => <del className="text-gray-500 decoration-2">{children}</del>,
-                  a: ({href, children}) => renderAIMarkdownLink(href, children),
-                  ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                  ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                  li: ({children}) => <li className="text-gray-700 text-sm">{children}</li>,
-                  hr: () => <div className="my-5 h-px bg-primary/10" />,
-                }}
-              >
-                {formatAIMarkdown(data.summary || "")}
-              </ReactMarkdown>
-            </div>
+            <AIMarkdown
+              className="prose prose-sm max-w-none text-neutral-800"
+              components={{
+                h1: ({children}) => <h1 className="text-lg font-bold text-gray-800 mt-3 mb-1">{children}</h1>,
+                h2: ({children}) => <h2 className="text-base font-bold text-gray-800 mt-3 mb-1">{children}</h2>,
+                h3: ({children}) => <h3 className="text-sm font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
+                p: ({children}) => <p className="text-gray-700 mb-2 leading-relaxed">{children}</p>,
+                strong: ({children}) => <strong className="font-bold text-primary">{children}</strong>,
+                em: ({children}) => <em className="italic font-semibold text-gray-800">{children}</em>,
+                del: ({children}) => <del className="text-gray-500 decoration-2">{children}</del>,
+                ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                li: ({children}) => <li className="text-gray-700 text-sm">{children}</li>,
+                hr: () => <div className="my-5 h-px bg-primary/10" />,
+              }}
+            >
+              {data.summary || ""}
+            </AIMarkdown>
           </div>
         </div>
 
@@ -121,7 +116,7 @@ export default function SharePage() {
               />
             </div>
           )}
-          <p className="text-neutral-700 text-sm font-medium leading-relaxed">{data.question}</p>
+          <p className="text-neutral-700 text-sm font-medium leading-relaxed">{data.question_text}</p>
         </div>
 
         {/* AI Answer */}
@@ -141,27 +136,23 @@ export default function SharePage() {
           </div>
           <div className="pt-6">
             <p className="text-[10px] font-black text-primary mb-3 uppercase tracking-widest">Penjelasan Sobi</p>
-            <div className="prose prose-sm max-w-none text-neutral-800">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({children}) => <h1 className="text-lg font-bold text-gray-800 mt-3 mb-1">{children}</h1>,
-                  h2: ({children}) => <h2 className="text-base font-bold text-gray-800 mt-3 mb-1">{children}</h2>,
-                  h3: ({children}) => <h3 className="text-sm font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
-                  p: ({children}) => <p className="text-gray-700 mb-2 leading-relaxed">{children}</p>,
-                  strong: ({children}) => <strong className="font-bold text-gray-900">{children}</strong>,
-                  em: ({children}) => <em className="italic font-semibold text-gray-800">{children}</em>,
-                  del: ({children}) => <del className="text-gray-500 decoration-2">{children}</del>,
-                  a: ({href, children}) => renderAIMarkdownLink(href, children),
-                  ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                  ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                  li: ({children}) => <li className="text-gray-700 text-sm">{children}</li>,
-                  code: ({children}) => <code className="bg-gray-100 px-1 rounded text-sm font-mono">{children}</code>,
-                }}
-              >
-                {formatAIMarkdown(data.answer || "")}
-              </ReactMarkdown>
-            </div>
+            <AIMarkdown
+              className="prose prose-sm max-w-none text-neutral-800"
+              components={{
+                h1: ({children}) => <h1 className="text-lg font-bold text-gray-800 mt-3 mb-1">{children}</h1>,
+                h2: ({children}) => <h2 className="text-base font-bold text-gray-800 mt-3 mb-1">{children}</h2>,
+                h3: ({children}) => <h3 className="text-sm font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
+                p: ({children}) => <p className="text-gray-700 mb-2 leading-relaxed">{children}</p>,
+                strong: ({children}) => <strong className="font-bold text-gray-900">{children}</strong>,
+                em: ({children}) => <em className="italic font-semibold text-gray-800">{children}</em>,
+                del: ({children}) => <del className="text-gray-500 decoration-2">{children}</del>,
+                ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                li: ({children}) => <li className="text-gray-700 text-sm">{children}</li>,
+              }}
+            >
+              {data.answer || ""}
+            </AIMarkdown>
           </div>
         </div>
       </div>

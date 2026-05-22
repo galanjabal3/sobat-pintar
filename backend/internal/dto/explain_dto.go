@@ -7,9 +7,9 @@ type ExplainRequest struct {
 }
 
 type ExplainResponse struct {
-	ID       string `json:"id"`
-	Question string `json:"question"`
-	ImageURL string `json:"image_url"`
-	Answer   string `json:"answer"`
-	Level    string `json:"level"`
+	ID           string `json:"id"`
+	QuestionText string `json:"question_text"`
+	ImageURL     string `json:"image_url"`
+	Answer       string `json:"answer"`
+	Level        string `json:"level"`
 }

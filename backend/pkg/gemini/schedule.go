@@ -2,7 +2,6 @@ package gemini
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -31,14 +30,20 @@ func (c *Client) GenerateStudySchedule(ctx context.Context, level string, subjec
 	for i, d := range examDates {
 		examDatesStr[i] = d.Format("2006-01-02")
 	}
+	today := todayInJakarta()
+	nearestExamDate := nearestExamDate(examDates)
 
 	prompt := fmt.Sprintf(`Kamu adalah Sobi. Buatkan jadwal belajar realistis untuk siswa tingkat %s.
+Tanggal hari ini: %s
 Mata pelajaran yang perlu dipelajari: %s
 Tanggal ujian terdekat: %s
 Hari yang tersedia: %s
 Jam belajar per hari: %d jam
+Buat maksimal 7 hari jadwal. Tanggal jadwal HARUS mulai dari hari ini atau setelahnya, tidak boleh tanggal lampau, dan tidak boleh melewati tanggal ujian terdekat.
+Gunakan hanya hari yang tersedia. Untuk setiap hari, buat sesi belajar yang ringkas dan realistis sesuai jam per hari.
+Tips maksimal 3 item.
 
-Format response HANYA JSON:
+Format response HANYA JSON, tanpa markdown dan tanpa code fence:
 {
   "schedule": [
     {
@@ -49,21 +54,81 @@ Format response HANYA JSON:
     }
   ],
   "tips": ["tip belajar 1", "tip belajar 2"]
-}`, level, strings.Join(subjects, ", "), strings.Join(examDatesStr, ", "), strings.Join(availableDays, ", "), hoursPerDay)
+}`, level, today.Format("2006-01-02"), strings.Join(subjects, ", "), strings.Join(examDatesStr, ", "), strings.Join(availableDays, ", "), hoursPerDay)
 
-	// Call GenerateContent with the content object.
-	resp, err := c.GenAI.Models.GenerateContent(ctx, c.ModelName, genai.Text(prompt), nil)
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		config := scheduleGenerationConfig()
+		if attempt > 0 {
+			config.MaxOutputTokens += 1600
+		}
+
+		resp, err := c.generateContentWithRetry(ctx, []*genai.Content{genai.NewContentFromText(prompt, "user")}, config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate content: %w", err)
+		}
+		if len(resp.Candidates) > 0 && resp.Candidates[0].FinishReason == genai.FinishReasonMaxTokens {
+			lastErr = errMaxTokens
+			continue
+		}
+
+		rawText := resp.Text()
+
+		var scheduleRes ScheduleResponse
+		if err := decodeGeminiJSON(rawText, &scheduleRes); err == nil {
+			if err := validateScheduleDateBounds(scheduleRes.Schedule, today, nearestExamDate); err != nil {
+				lastErr = err
+				continue
+			}
+			return &scheduleRes, nil
+		} else {
+			lastErr = err
+		}
+	}
+
+	return nil, fmt.Errorf("failed to parse Gemini response after retry: %w", lastErr)
+}
+
+func todayInJakarta() time.Time {
+	location, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate content: %w", err)
+		location = time.FixedZone("WIB", 7*60*60)
+	}
+	now := time.Now().In(location)
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location)
+}
+
+func nearestExamDate(examDates []time.Time) time.Time {
+	if len(examDates) == 0 {
+		return time.Time{}
 	}
 
-	// The Text() method directly extracts the response text.
-	rawText := resp.Text()
-
-	var scheduleRes ScheduleResponse
-	if err := json.Unmarshal([]byte(rawText), &scheduleRes); err != nil {
-		return nil, fmt.Errorf("failed to parse Gemini response: %w\nResponse was: %s", err, rawText)
+	nearest := examDates[0]
+	for _, examDate := range examDates[1:] {
+		if examDate.Before(nearest) {
+			nearest = examDate
+		}
 	}
+	return dateOnly(nearest)
+}
 
-	return &scheduleRes, nil
+func validateScheduleDateBounds(schedule []DailySchedule, startDate, endDate time.Time) error {
+	for _, day := range schedule {
+		scheduleDate, err := time.Parse("2006-01-02", day.Date)
+		if err != nil {
+			return err
+		}
+		scheduleDate = dateOnly(scheduleDate)
+		if scheduleDate.Before(dateOnly(startDate)) {
+			return errInvalidScheduleDates
+		}
+		if !endDate.IsZero() && scheduleDate.After(dateOnly(endDate)) {
+			return errInvalidScheduleDates
+		}
+	}
+	return nil
+}
+
+func dateOnly(value time.Time) time.Time {
+	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, value.Location())
 }
