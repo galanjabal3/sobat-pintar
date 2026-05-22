@@ -1,0 +1,2 @@
+ALTER TABLE study_schedules
+ADD COLUMN IF NOT EXISTS tips JSONB NOT NULL DEFAULT '[]'::jsonb;

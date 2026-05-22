@@ -58,6 +58,11 @@ func (s *scheduleService) GenerateSchedule(ctx context.Context, userID, level st
 		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
 		return nil, fmt.Errorf("failed to marshal schedule: %v", err)
 	}
+	tipsJSON, err := json.Marshal(aiSchedule.Tips)
+	if err != nil {
+		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
+		return nil, fmt.Errorf("failed to marshal schedule tips: %v", err)
+	}
 
 	// Create model and save to DB
 	schedule := &model.StudySchedule{
@@ -65,6 +70,7 @@ func (s *scheduleService) GenerateSchedule(ctx context.Context, userID, level st
 		UserID:    userID,
 		Subject:   fmt.Sprintf("Persiapan %v", req.Subjects),
 		Sessions:  string(sessionsJSON),
+		Tips:      string(tipsJSON),
 		CreatedAt: time.Now(),
 	}
 
@@ -114,6 +120,10 @@ func (s *scheduleService) GetSchedules(ctx context.Context, userID string) ([]dt
 		if err := json.Unmarshal([]byte(sc.Sessions), &daily); err != nil {
 			continue
 		}
+		var tips []string
+		if err := json.Unmarshal([]byte(sc.Tips), &tips); err != nil {
+			tips = []string{}
+		}
 
 		var dtoDaily []dto.DailySchedule
 		for _, d := range daily {
@@ -134,6 +144,7 @@ func (s *scheduleService) GetSchedules(ctx context.Context, userID string) ([]dt
 		item := dto.ScheduleResponse{
 			ID:       sc.ID,
 			Schedule: dtoDaily,
+			Tips:     tips,
 		}
 		if !sc.ExamDate.IsZero() {
 			item.ExamDate = sc.ExamDate.Format("2006-01-02")
@@ -158,8 +169,12 @@ func (s *scheduleService) GetScheduleByID(ctx context.Context, userID, id string
 	if err := json.Unmarshal([]byte(schedule.Sessions), &daily); err != nil {
 		return nil, err
 	}
+	var tips []string
+	if err := json.Unmarshal([]byte(schedule.Tips), &tips); err != nil {
+		tips = []string{}
+	}
 
-	res := dto.ScheduleResponse{ID: schedule.ID}
+	res := dto.ScheduleResponse{ID: schedule.ID, Tips: tips}
 	if !schedule.ExamDate.IsZero() {
 		res.ExamDate = schedule.ExamDate.Format("2006-01-02")
 	}

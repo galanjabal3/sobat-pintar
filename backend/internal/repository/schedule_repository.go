@@ -26,14 +26,14 @@ func NewScheduleRepository(db *pgxpool.Pool) ScheduleRepository {
 }
 
 func (r *scheduleRepository) CreateSchedule(ctx context.Context, schedule *model.StudySchedule) error {
-	query := `INSERT INTO study_schedules (id, user_id, subject, exam_date, sessions, created_at) 
-			  VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := r.db.Exec(ctx, query, schedule.ID, schedule.UserID, schedule.Subject, schedule.ExamDate, schedule.Sessions, schedule.CreatedAt)
+	query := `INSERT INTO study_schedules (id, user_id, subject, exam_date, sessions, tips, created_at) 
+			  VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := r.db.Exec(ctx, query, schedule.ID, schedule.UserID, schedule.Subject, schedule.ExamDate, schedule.Sessions, schedule.Tips, schedule.CreatedAt)
 	return err
 }
 
 func (r *scheduleRepository) GetScheduleByUserID(ctx context.Context, userID string) ([]model.StudySchedule, error) {
-	query := `SELECT id, user_id, subject, exam_date, sessions, created_at FROM study_schedules WHERE user_id = $1 ORDER BY created_at DESC`
+	query := `SELECT id, user_id, subject, exam_date, sessions, tips, created_at FROM study_schedules WHERE user_id = $1 ORDER BY created_at DESC`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (r *scheduleRepository) GetScheduleByUserID(ctx context.Context, userID str
 	var schedules []model.StudySchedule
 	for rows.Next() {
 		var s model.StudySchedule
-		err := rows.Scan(&s.ID, &s.UserID, &s.Subject, &s.ExamDate, &s.Sessions, &s.CreatedAt)
+		err := rows.Scan(&s.ID, &s.UserID, &s.Subject, &s.ExamDate, &s.Sessions, &s.Tips, &s.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -53,9 +53,9 @@ func (r *scheduleRepository) GetScheduleByUserID(ctx context.Context, userID str
 }
 
 func (r *scheduleRepository) GetScheduleByID(ctx context.Context, id string) (*model.StudySchedule, error) {
-	query := `SELECT id, user_id, subject, exam_date, sessions, created_at FROM study_schedules WHERE id = $1`
+	query := `SELECT id, user_id, subject, exam_date, sessions, tips, created_at FROM study_schedules WHERE id = $1`
 	var schedule model.StudySchedule
-	err := r.db.QueryRow(ctx, query, id).Scan(&schedule.ID, &schedule.UserID, &schedule.Subject, &schedule.ExamDate, &schedule.Sessions, &schedule.CreatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&schedule.ID, &schedule.UserID, &schedule.Subject, &schedule.ExamDate, &schedule.Sessions, &schedule.Tips, &schedule.CreatedAt)
 	if err != nil {
 		return nil, err
 	}

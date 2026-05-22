@@ -8,6 +8,7 @@ type StudySchedule struct {
 	Subject   string    `json:"subject"`
 	ExamDate  time.Time `json:"exam_date"`
 	Sessions  string    `json:"sessions"` // JSON string of sessions
+	Tips      string    `json:"tips"`     // JSON string of tips
 	CreatedAt time.Time `json:"created_at"`
 }
 
