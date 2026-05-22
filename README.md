@@ -131,7 +131,7 @@ sobat-pintar/
 │   ├── lib/                # API client, utilities
 │   └── public/             # Static assets
 │
-└── docs/                   # Documentation
+└── *.md                    # Project documentation and AI context files
 ```
 
 ---
@@ -213,12 +213,18 @@ GET    /public/summary/:id
 ```
 POST /schedule/generate
 GET  /schedule
+GET  /schedule/:id
 POST /upload/profile
 POST /upload/posts
 POST /upload/attachments
 GET  /gamification/points
 GET  /gamification/badges
 GET  /gamification/leaderboard
+```
+
+### AI Usage
+```
+GET /ai/usage
 ```
 
 ---

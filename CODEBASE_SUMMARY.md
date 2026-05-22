@@ -1,6 +1,6 @@
 # Sobat Pintar Codebase Summary
 
-Last reviewed: May 21, 2026
+Last reviewed: May 22, 2026
 
 ## Product Context
 
@@ -37,7 +37,7 @@ Frontend:
 - Zustand for auth and toast state
 - Axios API client with token injection and refresh-token retry
 - Framer Motion for UI animation
-- React Markdown for AI response rendering
+- React Markdown with math support for AI response rendering
 - Lucide React icons
 
 ## Repository Layout
@@ -64,7 +64,7 @@ Backend layout:
 - `backend/pkg/cloudinary`: active Cloudinary upload client
 - `backend/pkg/storage`: Cloudflare R2 placeholder
 - `backend/pkg/fcm`: Firebase notification placeholder
-- `backend/migrations`: SQL migrations `001` through `021`
+- `backend/migrations`: SQL migrations `001` through `022`
 
 Frontend layout:
 
@@ -126,6 +126,8 @@ Protected learning features:
 - `DELETE /summary/:id`
 - `POST /schedule/generate`
 - `GET /schedule`
+- `GET /schedule/:id`
+- `GET /ai/usage`
 - `GET /gamification/points`
 - `GET /gamification/badges`
 - `GET /gamification/leaderboard`
@@ -224,6 +226,7 @@ Protected app:
 - `/summary`
 - `/summary/result/[id]`
 - `/schedule`
+- `/schedule/result/[id]`
 - `/badges`
 - `/leaderboard`
 - `/groups`
@@ -253,6 +256,7 @@ Current migrations create or modify:
 - `group_members`
 - `group_notes`
 - `images`
+- `ai_usage_quotas`
 
 Later migrations add:
 
@@ -261,6 +265,7 @@ Later migrations add:
 - `chat_messages.status`
 - `users.avatar_url`
 - `users.avatar_public_id`
+- daily per-user AI usage quotas with `ai_usage_quotas`
 
 The migration runner applies all `.sql` files in sorted order. It does not track already-applied migrations in a schema migrations table, so SQL files should remain idempotent.
 
@@ -269,7 +274,7 @@ The migration runner applies all `.sql` files in sorted order. It does not track
 - Group collaboration is scaffolded but not functional.
 - Summary file upload/extraction is not implemented despite older docs claiming PDF support.
 - Cloudflare R2 and FCM are placeholder packages.
-- Rate limiting middleware is a no-op.
+- General rate limiting middleware is a no-op; AI feature quotas are enforced separately through `ai_usage_quotas`.
 - Backend migrations do not use a migration tracking table.
 - Some handlers return raw `gin.H{"error": ...}` while others return `BaseResponse`; the frontend API client partially normalizes only the `BaseResponse` success shape.
 
@@ -281,9 +286,10 @@ Groups/Kolaborasi should be treated as a future feature for now. The existing da
 
 Recommended order:
 
-1. Standardize backend API response and error shapes so frontend handling is predictable across all features.
-2. Keep Summary positioned as text-based summarization, or implement PDF/image text extraction before advertising file-based summaries.
-3. Add focused backend tests for auth, practice scoring, summary validation, and gamification point mutations.
+1. Persist schedule tips if they should appear again on saved schedule detail pages.
+2. Add delete support for saved schedules in the API and UI.
+3. Keep Summary positioned as text-based summarization, or implement PDF/image text extraction before advertising file-based summaries.
+4. Add focused backend tests for auth and gamification point mutations.
 
 Near-term priority:
 

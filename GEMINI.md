@@ -124,7 +124,7 @@ sobat-pintar/
 │   │   ├── storage/                   # Cloudflare R2 placeholder
 │   │   ├── cloudinary/                # Cloudinary wrapper
 │   │   └── logger/                    # Structured logger (zerolog)
-│   └── migrations/                    # SQL files (001–021)
+│   └── migrations/                    # SQL files (001–022)
 │
 ├── frontend/
 │   ├── app/
@@ -191,6 +191,12 @@ GET    /api/v1/public/summary/:id
 ```
 POST   /api/v1/schedule/generate
 GET    /api/v1/schedule
+GET    /api/v1/schedule/:id
+```
+
+### AI Usage
+```
+GET    /api/v1/ai/usage
 ```
 
 ### Gamification
