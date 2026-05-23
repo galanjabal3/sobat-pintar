@@ -11,6 +11,7 @@ import (
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
 	"sobat-pintar/pkg/gemini"
+	"sobat-pintar/pkg/logger"
 )
 
 type PracticeService interface {
@@ -251,8 +252,10 @@ func (s *practiceService) buildPracticeResult(ctx context.Context, userID, sessi
 		session.Score = sql.NullInt64{Int64: int64(score), Valid: true}
 
 		// Award points
-		if score > 0 {
-			_ = s.gamify.AddPoints(ctx, userID, score, "practice_completion")
+		if score > 0 && s.gamify != nil {
+			if err := s.gamify.AddPoints(ctx, userID, score, "practice_completion"); err != nil {
+				logger.Error(err, "Failed to award practice points", "user_id", userID, "session_id", sessionID)
+			}
 		}
 	} else {
 		score = int(session.Score.Int64)

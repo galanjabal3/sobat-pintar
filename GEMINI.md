@@ -35,6 +35,8 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - Frontend: subject selector, question card, answer options — done
 - Score + result page — done
 - Sobi encouragement after each answer — done
+- Topic-based or pasted source-material practice — done
+- Question count options, optional timer, result review, and perfect-score celebration — done
 
 ### Phase 3 — Tanya Sobi ✅ DONE
 - DB migrations (chat_sessions, messages) — done
@@ -52,6 +54,7 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - AI-generated study schedule logic — done
 - Subject input and exam date management — done
 - Frontend: Schedule generator and view pages — done
+- Stored Sobi tips and schedule deletion — done
 
 ### Phase 6 — Gamification ✅ DONE
 - Points system and streak tracking — done
@@ -124,7 +127,7 @@ sobat-pintar/
 │   │   ├── storage/                   # Cloudflare R2 placeholder
 │   │   ├── cloudinary/                # Cloudinary wrapper
 │   │   └── logger/                    # Structured logger (zerolog)
-│   └── migrations/                    # SQL files (001–022)
+│   └── migrations/                    # SQL files (001-023)
 │
 ├── frontend/
 │   ├── app/
@@ -192,6 +195,7 @@ GET    /api/v1/public/summary/:id
 POST   /api/v1/schedule/generate
 GET    /api/v1/schedule
 GET    /api/v1/schedule/:id
+DELETE /api/v1/schedule/:id
 ```
 
 ### AI Usage

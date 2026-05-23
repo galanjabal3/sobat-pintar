@@ -11,6 +11,7 @@ import (
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
 	"sobat-pintar/pkg/gemini"
+	"sobat-pintar/pkg/logger"
 )
 
 type ScheduleService interface {
@@ -48,19 +49,19 @@ func (s *scheduleService) GenerateSchedule(ctx context.Context, userID, level st
 
 	aiSchedule, err := s.geminiClient.GenerateStudySchedule(ctx, level, req.Subjects, req.ExamDates, req.AvailableDays, req.HoursPerDay)
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSchedule), userID, AIFeatureSchedule)
 		return nil, err
 	}
 
 	// Marshall sessions to JSON for DB storage
 	sessionsJSON, err := json.Marshal(aiSchedule.Schedule)
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSchedule), userID, AIFeatureSchedule)
 		return nil, fmt.Errorf("failed to marshal schedule: %v", err)
 	}
 	tipsJSON, err := json.Marshal(aiSchedule.Tips)
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSchedule), userID, AIFeatureSchedule)
 		return nil, fmt.Errorf("failed to marshal schedule tips: %v", err)
 	}
 
@@ -80,7 +81,7 @@ func (s *scheduleService) GenerateSchedule(ctx context.Context, userID, level st
 	}
 
 	if err := s.repo.CreateSchedule(ctx, schedule); err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureSchedule)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSchedule), userID, AIFeatureSchedule)
 		return nil, err
 	}
 
@@ -118,10 +119,12 @@ func (s *scheduleService) GetSchedules(ctx context.Context, userID string) ([]dt
 	for _, sc := range schedules {
 		var daily []gemini.DailySchedule
 		if err := json.Unmarshal([]byte(sc.Sessions), &daily); err != nil {
+			logger.Error(err, "Failed to decode saved schedule sessions", "user_id", userID, "schedule_id", sc.ID)
 			continue
 		}
 		var tips []string
 		if err := json.Unmarshal([]byte(sc.Tips), &tips); err != nil {
+			logger.Error(err, "Failed to decode saved schedule tips", "user_id", userID, "schedule_id", sc.ID)
 			tips = []string{}
 		}
 
@@ -167,10 +170,12 @@ func (s *scheduleService) GetScheduleByID(ctx context.Context, userID, id string
 
 	var daily []gemini.DailySchedule
 	if err := json.Unmarshal([]byte(schedule.Sessions), &daily); err != nil {
+		logger.Error(err, "Failed to decode saved schedule sessions", "user_id", userID, "schedule_id", schedule.ID)
 		return nil, err
 	}
 	var tips []string
 	if err := json.Unmarshal([]byte(schedule.Tips), &tips); err != nil {
+		logger.Error(err, "Failed to decode saved schedule tips", "user_id", userID, "schedule_id", schedule.ID)
 		tips = []string{}
 	}
 

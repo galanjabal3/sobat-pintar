@@ -2,13 +2,17 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
 	"sobat-pintar/pkg/gemini"
+	"sobat-pintar/pkg/logger"
 )
+
+var ErrExplanationUnauthorized = errors.New("unauthorized explanation access")
 
 type ExplainService interface {
 	Explain(ctx context.Context, userID, question, imageURL, level string) (*model.Explanation, error)
@@ -25,7 +29,7 @@ func (s *explainService) ReExplain(ctx context.Context, userID, id string) (*mod
 		return nil, err
 	}
 	if explanation.UserID != userID {
-		return nil, context.DeadlineExceeded // simplified error for now
+		return nil, ErrExplanationUnauthorized
 	}
 
 	if err := s.consumeAIQuota(ctx, userID, AIFeatureExplain, ExplainDailyQuota); err != nil {
@@ -34,7 +38,7 @@ func (s *explainService) ReExplain(ctx context.Context, userID, id string) (*mod
 
 	answer, err := s.geminiClient.ReExplainQuestion(ctx, explanation.QuestionText, explanation.Answer, explanation.Level)
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureExplain)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureExplain), userID, AIFeatureExplain)
 		return nil, err
 	}
 
@@ -43,7 +47,7 @@ func (s *explainService) ReExplain(ctx context.Context, userID, id string) (*mod
 	explanation.CreatedAt = time.Now()
 	err = s.repo.Create(ctx, explanation) // Storing new re-explanation version
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureExplain)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureExplain), userID, AIFeatureExplain)
 		return nil, err
 	}
 
@@ -86,7 +90,7 @@ func (s *explainService) Explain(ctx context.Context, userID, question, imageURL
 	}
 
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureExplain)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureExplain), userID, AIFeatureExplain)
 		return nil, err
 	}
 
@@ -102,13 +106,15 @@ func (s *explainService) Explain(ctx context.Context, userID, question, imageURL
 
 	err = s.repo.Create(ctx, explanation)
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureExplain)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureExplain), userID, AIFeatureExplain)
 		return nil, err
 	}
 
 	// Award points for using the explain feature
 	if s.gamification != nil {
-		_ = s.gamification.AddPoints(ctx, userID, 10, "explain_question")
+		if err := s.gamification.AddPoints(ctx, userID, 10, "explain_question"); err != nil {
+			logger.Error(err, "Failed to award explanation points", "user_id", userID, "explanation_id", explanation.ID)
+		}
 	}
 
 	return explanation, nil

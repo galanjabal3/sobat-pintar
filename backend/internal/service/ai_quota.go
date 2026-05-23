@@ -8,6 +8,7 @@ import (
 
 	"sobat-pintar/internal/dto"
 	"sobat-pintar/internal/repository"
+	"sobat-pintar/pkg/logger"
 )
 
 const (
@@ -93,6 +94,12 @@ func quotaExceeded(feature string, limit int) error {
 	return &QuotaExceededError{
 		Feature: feature,
 		Limit:   limit,
+	}
+}
+
+func logAIQuotaRefundError(err error, userID, feature string) {
+	if err != nil {
+		logger.Error(err, "Failed to refund AI quota", "user_id", userID, "feature", feature)
 	}
 }
 

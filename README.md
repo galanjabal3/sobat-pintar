@@ -12,7 +12,7 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 |---|---|---|
 | 📸 **Jelasin Soal** | Foto atau ketik soal, AI jelaskan sesuai level | ✅ Done |
 | 💬 **Tanya Sobi** | Chat bebas dengan AI tutor | ✅ Done |
-| 📝 **Latihan Soal** | Soal adaptif yang makin susah sesuai kemampuan | ✅ Done |
+| 📝 **Latihan Soal** | Latihan dari topik atau materi sendiri, lengkap dengan pembahasan | ✅ Done |
 | 📄 **Rangkum Materi** | Teks materi dirangkum otomatis oleh AI | ✅ Done |
 | 🗓️ **Jadwal Belajar** | AI bantu buat jadwal belajar yang realistis | ✅ Done |
 | 🏆 **Gamification** | Poin, streak harian, badge, leaderboard | ✅ Done |
@@ -214,6 +214,7 @@ GET    /public/summary/:id
 POST /schedule/generate
 GET  /schedule
 GET  /schedule/:id
+DELETE /schedule/:id
 POST /upload/profile
 POST /upload/posts
 POST /upload/attachments

@@ -38,7 +38,7 @@ backend/
 │   ├── repository/           # PostgreSQL queries
 │   ├── router/               # Route registration
 │   └── service/              # Business logic
-├── migrations/               # SQL migrations 001-022
+├── migrations/               # SQL migrations 001-023
 ├── pkg/
 │   ├── cloudinary/           # Cloudinary upload client
 │   ├── fcm/                  # Firebase Cloud Messaging helpers

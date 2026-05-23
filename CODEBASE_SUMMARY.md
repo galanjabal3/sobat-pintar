@@ -1,6 +1,6 @@
 # Sobat Pintar Codebase Summary
 
-Last reviewed: May 22, 2026
+Last reviewed: May 24, 2026
 
 ## Product Context
 
@@ -64,7 +64,7 @@ Backend layout:
 - `backend/pkg/cloudinary`: active Cloudinary upload client
 - `backend/pkg/storage`: Cloudflare R2 placeholder
 - `backend/pkg/fcm`: Firebase notification placeholder
-- `backend/migrations`: SQL migrations `001` through `022`
+- `backend/migrations`: SQL migrations `001` through `023`
 
 Frontend layout:
 
@@ -127,6 +127,7 @@ Protected learning features:
 - `POST /schedule/generate`
 - `GET /schedule`
 - `GET /schedule/:id`
+- `DELETE /schedule/:id`
 - `GET /ai/usage`
 - `GET /gamification/points`
 - `GET /gamification/badges`
@@ -153,9 +154,11 @@ Tanya Sobi:
 Latihan Soal:
 
 - Active session creation, Gemini question generation, answer submission, session finishing, result, history, and daily progress.
-- Generates five questions per session.
+- Generates 5, 10, or 15 questions per session, selected before starting.
+- Supports topic-based practice or optional pasted source material.
+- Frontend supports an optional countdown timer stored for the active browser session; it is not persisted in backend history.
 - Stores correct answer and explanation in the database.
-- Result scoring is based on correct answers over total questions.
+- Result scoring includes review of correct answers and explanations, plus a perfect-score celebration.
 - Awards points based on final score.
 
 Rangkum Materi:
@@ -167,8 +170,8 @@ Rangkum Materi:
 Jadwal Belajar:
 
 - Active AI schedule generation from subjects, exam dates, available days, and daily hours.
-- Stores generated sessions as JSON.
-- Can list previously generated schedules.
+- Stores generated sessions and Sobi tips as JSON.
+- Can list, view, and delete previously generated schedules.
 - Reminder repository methods exist, but reminder delivery is not wired into a runtime job.
 
 Gamification:
@@ -266,6 +269,7 @@ Later migrations add:
 - `users.avatar_url`
 - `users.avatar_public_id`
 - daily per-user AI usage quotas with `ai_usage_quotas`
+- generated schedule tips stored on `study_schedules`
 
 The migration runner applies all `.sql` files in sorted order. It does not track already-applied migrations in a schema migrations table, so SQL files should remain idempotent.
 
@@ -276,6 +280,7 @@ The migration runner applies all `.sql` files in sorted order. It does not track
 - Cloudflare R2 and FCM are placeholder packages.
 - General rate limiting middleware is a no-op; AI feature quotas are enforced separately through `ai_usage_quotas`.
 - Backend migrations do not use a migration tracking table.
+- Practice timer mode is currently a frontend-only preference and is not stored in practice history.
 - Some handlers return raw `gin.H{"error": ...}` while others return `BaseResponse`; the frontend API client partially normalizes only the `BaseResponse` success shape.
 
 ## Current Product Decision
@@ -286,10 +291,10 @@ Groups/Kolaborasi should be treated as a future feature for now. The existing da
 
 Recommended order:
 
-1. Persist schedule tips if they should appear again on saved schedule detail pages.
-2. Add delete support for saved schedules in the API and UI.
+1. Polish practice history so it exposes the richer result context consistently.
+2. Persist timer configuration and completion timing only if timed practice should appear in history or analytics.
 3. Keep Summary positioned as text-based summarization, or implement PDF/image text extraction before advertising file-based summaries.
-4. Add focused backend tests for auth and gamification point mutations.
+4. Continue adding focused backend tests around AI side effects and authorization paths.
 
 Near-term priority:
 

@@ -18,7 +18,7 @@ This project uses conservative per-feature limits so Gemini requests stay predic
 
 | Feature | Max output tokens | Notes |
 |---|---:|---|
-| Chat | 640 | Short, helpful reply |
+| Chat | 1000 | Short, helpful reply |
 | Explain | 2400 | Step-by-step explanation with enough room for complete answers; retries once with more room if Gemini reaches the token cap |
 | Summary | 2000 | Compact bullets + conclusion; retries once with more room if Gemini reaches the token cap |
 | Practice | 6400 | 5, 10, or 15-question JSON response |

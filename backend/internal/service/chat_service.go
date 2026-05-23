@@ -157,7 +157,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		CreatedAt: time.Now(),
 	}
 	if err := s.repo.CreateMessage(ctx, userMsg); err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureChat), userID, AIFeatureChat)
 		return nil, err
 	}
 
@@ -166,6 +166,8 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		if nextTitle != session.Title {
 			if err := s.repo.UpdateSessionTitle(ctx, sessionID, nextTitle); err == nil {
 				session.Title = nextTitle
+			} else {
+				logger.Error(err, "Failed to update chat session title", "user_id", userID, "session_id", sessionID)
 			}
 		}
 	}
@@ -173,7 +175,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 	// 2. Get history for Gemini
 	messages, err := s.repo.GetMessagesBySessionID(ctx, sessionID)
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureChat), userID, AIFeatureChat)
 		return nil, err
 	}
 
@@ -194,7 +196,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 	aiResponse, err := s.geminiClient.SendChatMessage(ctx, session.Level, history, req.Message)
 	if err != nil {
 		logger.Error(err, "Failed to generate chat response", "user_id", userID, "session_id", sessionID, "level", session.Level)
-		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureChat), userID, AIFeatureChat)
 		failedMsg := &model.Message{
 			ID:        uuid.New().String(),
 			SessionID: sessionID,
@@ -225,16 +227,20 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		CreatedAt: time.Now(),
 	}
 	if err := s.repo.CreateMessage(ctx, aiMsg); err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureChat)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureChat), userID, AIFeatureChat)
 		return nil, err
 	}
 
 	// 5. Update session timestamp
-	_ = s.repo.UpdateSessionTimestamp(ctx, sessionID)
+	if err := s.repo.UpdateSessionTimestamp(ctx, sessionID); err != nil {
+		logger.Error(err, "Failed to update chat session timestamp", "user_id", userID, "session_id", sessionID)
+	}
 
 	// Award points for chatting
 	if s.gamify != nil {
-		_ = s.gamify.AddPoints(ctx, userID, 5, "chat_message")
+		if err := s.gamify.AddPoints(ctx, userID, 5, "chat_message"); err != nil {
+			logger.Error(err, "Failed to award chat points", "user_id", userID, "session_id", sessionID)
+		}
 	}
 
 	return &dto.MessageResponse{

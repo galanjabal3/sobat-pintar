@@ -220,6 +220,43 @@ func TestAuthUpdateProfileUpdatesStoredUser(t *testing.T) {
 	}
 }
 
+func TestGoogleProfileFromClaimsRejectsMissingRequiredClaims(t *testing.T) {
+	tests := []struct {
+		name    string
+		claims  map[string]interface{}
+		subject string
+	}{
+		{name: "missing email", claims: map[string]interface{}{"name": "Siswa"}, subject: "google-1"},
+		{name: "invalid email type", claims: map[string]interface{}{"email": true}, subject: "google-1"},
+		{name: "missing subject", claims: map[string]interface{}{"email": "siswa@example.com"}, subject: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := googleProfileFromClaims(tt.claims, tt.subject)
+			if err == nil {
+				t.Fatal("expected invalid Google token profile error")
+			}
+		})
+	}
+}
+
+func TestGoogleProfileFromClaimsUsesEmailPrefixAsNameFallback(t *testing.T) {
+	email, name, err := googleProfileFromClaims(
+		map[string]interface{}{"email": " siswa.pintar@example.com "},
+		"google-1",
+	)
+	if err != nil {
+		t.Fatalf("googleProfileFromClaims returned error: %v", err)
+	}
+	if email != "siswa.pintar@example.com" {
+		t.Fatalf("unexpected email: %s", email)
+	}
+	if name != "siswa.pintar" {
+		t.Fatalf("unexpected fallback name: %s", name)
+	}
+}
+
 func TestShouldDeleteAvatar(t *testing.T) {
 	tests := []struct {
 		name     string

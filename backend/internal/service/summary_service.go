@@ -10,6 +10,7 @@ import (
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
 	"sobat-pintar/pkg/gemini"
+	"sobat-pintar/pkg/logger"
 )
 
 type SummaryService interface {
@@ -55,7 +56,7 @@ func (s *summaryService) CreateSummary(ctx context.Context, userID, level string
 
 	summaryText, err := s.geminiClient.SummarizeMateri(ctx, level, contentToSummarize)
 	if err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureSummary)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSummary), userID, AIFeatureSummary)
 		return nil, err
 	}
 
@@ -70,12 +71,16 @@ func (s *summaryService) CreateSummary(ctx context.Context, userID, level string
 	}
 
 	if err := s.repo.Create(ctx, summary); err != nil {
-		_ = s.refundAIQuota(ctx, userID, AIFeatureSummary)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSummary), userID, AIFeatureSummary)
 		return nil, err
 	}
 
 	// Award points for creating a summary
-	_ = s.gamify.AddPoints(ctx, userID, 15, "create_summary")
+	if s.gamify != nil {
+		if err := s.gamify.AddPoints(ctx, userID, 15, "create_summary"); err != nil {
+			logger.Error(err, "Failed to award summary points", "user_id", userID, "summary_id", summary.ID)
+		}
+	}
 
 	return &dto.SummaryResponse{
 		ID:        summary.ID,

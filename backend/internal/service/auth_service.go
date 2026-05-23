@@ -107,9 +107,11 @@ func (s *authService) GoogleLogin(ctx context.Context, idToken string) (string, 
 		return "", "", nil, errors.New("invalid google token")
 	}
 
-	email := payload.Claims["email"].(string)
-	name := payload.Claims["name"].(string)
-	googleID := payload.Subject
+	email, name, err := googleProfileFromClaims(payload.Claims, payload.Subject)
+	if err != nil {
+		return "", "", nil, err
+	}
+	googleID := strings.TrimSpace(payload.Subject)
 
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil && !strings.Contains(err.Error(), "no rows") {
@@ -135,7 +137,9 @@ func (s *authService) GoogleLogin(ctx context.Context, idToken string) (string, 
 		// Update GoogleID if not set
 		if user.GoogleID == nil {
 			user.GoogleID = &googleID
-			_ = s.repo.Update(ctx, user)
+			if err := s.repo.Update(ctx, user); err != nil {
+				return "", "", nil, err
+			}
 		}
 	}
 
@@ -147,6 +151,25 @@ func (s *authService) GoogleLogin(ctx context.Context, idToken string) (string, 
 	s.updateStreak(ctx, user)
 
 	return accessToken, refreshToken, user, nil
+}
+
+func googleProfileFromClaims(claims map[string]interface{}, subject string) (string, string, error) {
+	email, ok := claims["email"].(string)
+	email = strings.TrimSpace(email)
+	if !ok || email == "" || strings.TrimSpace(subject) == "" {
+		return "", "", errors.New("invalid google token profile")
+	}
+
+	name, _ := claims["name"].(string)
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = strings.TrimSpace(strings.Split(email, "@")[0])
+	}
+	if name == "" {
+		name = "Siswa Sobat Pintar"
+	}
+
+	return email, name, nil
 }
 
 func (s *authService) updateStreak(ctx context.Context, user *model.User) {
@@ -161,18 +184,18 @@ func (s *authService) updateStreak(ctx context.Context, user *model.User) {
 	if daysDiff == 1 {
 		user.Streak++
 		user.LastActivityAt = now
-		_ = s.repo.Update(ctx, user)
 	} else if daysDiff > 1 {
 		user.Streak = 1
 		user.LastActivityAt = now
-		_ = s.repo.Update(ctx, user)
 	} else if daysDiff == 0 && user.Streak == 0 {
 		user.Streak = 1
 		user.LastActivityAt = now
-		_ = s.repo.Update(ctx, user)
 	} else {
 		user.LastActivityAt = now
-		_ = s.repo.Update(ctx, user)
+	}
+
+	if err := s.repo.Update(ctx, user); err != nil {
+		logger.Error(err, "Failed to update login streak", "user_id", user.ID)
 	}
 }
 

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -157,6 +158,13 @@ func (h *ExplainHandler) ReExplain(c *gin.Context) {
 
 	explanation, err := h.service.ReExplain(c.Request.Context(), userID, id)
 	if err != nil {
+		if errors.Is(err, service.ErrExplanationUnauthorized) {
+			c.JSON(http.StatusForbidden, dto.ErrorResponse{
+				Success: false,
+				Message: "Kamu tidak punya akses ke penjelasan ini",
+			})
+			return
+		}
 		if writeAIValidationError(c, err) {
 			return
 		}
