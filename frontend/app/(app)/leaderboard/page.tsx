@@ -88,7 +88,7 @@ export default function LeaderboardPage() {
       {/* Premium Background Mesh */}
       <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-primary/10 to-transparent -z-10" />
       
-      <div className="px-6 pt-12 pb-20 max-w-2xl mx-auto relative z-10">
+      <div className="px-6 pt-12 pb-28 max-w-2xl mx-auto relative z-10">
         <motion.header 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -250,33 +250,11 @@ export default function LeaderboardPage() {
             </AnimatePresence>
           </div>
         </div>
+
+        {/* Background Decoration */}
+        <div className="pointer-events-none absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-secondary/5 blur-[100px] z-0" />
+
       </div>
-
-      {/* Background Decoration */}
-      <div className="fixed -bottom-20 -left-20 w-80 h-80 bg-secondary/5 rounded-full blur-[100px] pointer-events-none z-0" />
-
-      {/* Floating Trophy Sobi Background */}
-      <motion.div 
-        animate={{ 
-          y: [0, -15, 0],
-          rotate: [0, 4, 0]
-        }}
-        transition={{ 
-          duration: 5, 
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="fixed bottom-4 right-1 w-24 h-24 pointer-events-none opacity-24 z-0 sm:bottom-2 sm:right-0 sm:w-32 sm:h-32"
-      >
-        <Image
-          src={SOBI_ASSETS.TROPHY}
-          alt="Sobi leaderboard background"
-          fill
-          className="object-contain drop-shadow-2xl"
-          priority
-          sizes="128px"
-        />
-      </motion.div>
     </div>
   );
 }
