@@ -44,6 +44,14 @@ JWT_SECRET=replace_with_a_long_random_secret
 JWT_ACCESS_TTL=15m
 JWT_REFRESH_TTL=168h
 
+APP_BASE_URL=http://localhost:3000
+EMAIL_FROM=Sobat Pintar <no-reply@example.com>
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USERNAME=
+SMTP_PASSWORD=
+EMAIL_VERIFICATION_TTL=24h
+
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
@@ -58,6 +66,8 @@ Notes:
 - Keep `?sslmode=require` in the Supabase connection string.
 - Do not commit `backend/.env`.
 - The old `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DB_SSL_MODE` variables are still supported only as a fallback when `DATABASE_URL` is empty.
+- Set `APP_BASE_URL` to the frontend origin so the verification link points to the right domain.
+- In production, fill `SMTP_HOST`, `SMTP_PORT`, and `EMAIL_FROM` so register verification emails can be delivered.
 
 ---
 

@@ -16,6 +16,7 @@ import (
 	"sobat-pintar/pkg/gemini"
 	"sobat-pintar/pkg/jwt"
 	"sobat-pintar/pkg/logger"
+	"sobat-pintar/pkg/mailer"
 )
 
 func main() {
@@ -39,11 +40,16 @@ func main() {
 	geminiClient := gemini.NewClient(ctx, cfg.GeminiAPIKey, cfg.GeminiModel)
 	defer geminiClient.Close()
 
+	var err error
+	emailSender, err := mailer.NewSender(cfg)
+	if err != nil {
+		logger.Fatal(err, "Failed to initialize email sender")
+	}
+
 	var cloudinaryClient *cloudinary.Client
 	var uploadService *service.UploadService
 	var uploadHandler *handler.UploadHandler
 
-	var err error
 	cloudinaryClient, err = cloudinary.NewClient(cfg)
 	if err != nil {
 		logger.Info("Cloudinary client not initialized, upload features will be disabled.")
@@ -67,7 +73,7 @@ func main() {
 	// Initialize app services
 	gamificationService := service.NewGamificationService(gamificationRepo)
 	aiQuotaService := service.NewAIQuotaService(aiQuotaRepo)
-	authService := service.NewAuthService(userRepo, jwtService, cfg.GoogleClientID, cloudinaryClient)
+	authService := service.NewAuthService(userRepo, jwtService, cfg.GoogleClientID, cloudinaryClient, emailSender, cfg.AppBaseURL, cfg.EmailVerificationTTL)
 	explainService := service.NewExplainService(explainRepo, geminiClient, gamificationService, aiQuotaService)
 	chatService := service.NewChatService(chatRepo, geminiClient, gamificationService, aiQuotaService)
 	practiceService := service.NewPracticeService(practiceRepo, userRepo, geminiClient, gamificationService, aiQuotaService)

@@ -162,6 +162,8 @@ Base URL: `http://localhost:8080/api/v1`
 POST /auth/register    Register new user
 POST /auth/login       Login
 POST /auth/google      Login/register with Google ID token
+POST /auth/verify-email
+POST /auth/resend-verification
 POST /auth/refresh     Refresh access token
 ```
 

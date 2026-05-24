@@ -21,6 +21,8 @@ func RegisterAuthRoutes(rg *gin.RouterGroup, h *handler.AuthHandler) {
 		auth.POST("/register", h.Register)
 		auth.POST("/login", h.Login)
 		auth.POST("/google", h.GoogleLogin)
+		auth.POST("/verify-email", h.VerifyEmail)
+		auth.POST("/resend-verification", h.ResendVerificationEmail)
 		auth.POST("/refresh", h.Refresh)
 	}
 }

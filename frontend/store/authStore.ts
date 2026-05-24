@@ -7,6 +7,7 @@ interface User {
   name: string;
   email: string;
   level: string;
+  email_verified?: boolean;
   avatar_url?: string | null;
   avatar_public_id?: string | null;
   points: number;

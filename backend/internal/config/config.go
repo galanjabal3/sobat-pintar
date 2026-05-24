@@ -39,6 +39,14 @@ type Config struct {
 	CloudinaryAPISecret string
 
 	GoogleClientID string
+
+	AppBaseURL           string
+	EmailFrom            string
+	SMTPHost             string
+	SMTPPort             string
+	SMTPUsername         string
+	SMTPPassword         string
+	EmailVerificationTTL time.Duration
 }
 
 func LoadConfig() *Config {
@@ -76,6 +84,14 @@ func LoadConfig() *Config {
 		CloudinaryAPISecret: getEnv("CLOUDINARY_API_SECRET", ""),
 
 		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
+
+		AppBaseURL:           getEnv("APP_BASE_URL", "http://localhost:3000"),
+		EmailFrom:            getEnv("EMAIL_FROM", ""),
+		SMTPHost:             getEnv("SMTP_HOST", ""),
+		SMTPPort:             getEnv("SMTP_PORT", ""),
+		SMTPUsername:         getEnv("SMTP_USERNAME", ""),
+		SMTPPassword:         getEnv("SMTP_PASSWORD", ""),
+		EmailVerificationTTL: getDurationEnv("EMAIL_VERIFICATION_TTL", 24*time.Hour),
 	}
 
 	// Validate critical environment variables
@@ -109,6 +125,18 @@ func LoadConfig() *Config {
 	} else {
 		if cfg.CloudinaryCloudName == "" || cfg.CloudinaryAPIKey == "" || cfg.CloudinaryAPISecret == "" {
 			logger.Info("Cloudinary credentials not fully set, cloud image upload features will be disabled")
+		}
+	}
+
+	if cfg.AppEnv == "production" {
+		if cfg.SMTPHost == "" {
+			logger.Fatal(nil, "SMTP_HOST is not set")
+		}
+		if cfg.SMTPPort == "" {
+			logger.Fatal(nil, "SMTP_PORT is not set")
+		}
+		if cfg.EmailFrom == "" {
+			logger.Fatal(nil, "EMAIL_FROM is not set")
 		}
 	}
 

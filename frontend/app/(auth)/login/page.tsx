@@ -37,6 +37,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
 
   const {
     register,
@@ -105,6 +106,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     setError(null);
+    setVerificationEmail(null);
 
     try {
       const response = await api.post("/auth/login", data);
@@ -113,6 +115,10 @@ export default function LoginPage() {
       setAuth(user, access_token, refresh_token);
       router.push("/dashboard");
     } catch (err: unknown) {
+      const apiError = err as { response?: { status?: number } };
+      if (apiError.response?.status === 403) {
+        setVerificationEmail(data.email.trim().toLowerCase());
+      }
       setError(getApiErrorMessage(err, "Login gagal. Silakan coba lagi."));
     } finally {
       setIsLoading(false);
@@ -215,6 +221,18 @@ export default function LoginPage() {
         >
           Masuk
         </Button>
+
+        {verificationEmail && (
+          <p className="text-center text-xs font-bold text-neutral-400">
+            Email ini belum diverifikasi.{" "}
+            <Link
+              href={`/verify-email?email=${encodeURIComponent(verificationEmail)}`}
+              className="text-primary"
+            >
+              Kirim ulang link
+            </Link>
+          </p>
+        )}
       </form>
 
       <div className="mt-6 flex flex-col items-center gap-4">

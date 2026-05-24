@@ -30,6 +30,21 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
     return "Email atau password belum sesuai. Coba periksa lagi.";
   }
 
+  if (
+    combinedMessage.includes("email not verified") ||
+    combinedMessage.includes("email belum diverifikasi")
+  ) {
+    return "Email belum diverifikasi. Cek inbox atau kirim ulang link verifikasi.";
+  }
+
+  if (
+    combinedMessage.includes("verification token invalid") ||
+    combinedMessage.includes("verification token expired") ||
+    combinedMessage.includes("link verifikasi tidak valid")
+  ) {
+    return "Link verifikasi tidak valid atau sudah kedaluwarsa. Kirim ulang email verifikasi.";
+  }
+
   if (combinedMessage.includes("network error")) {
     return "Tidak bisa terhubung ke server. Coba lagi sebentar.";
   }

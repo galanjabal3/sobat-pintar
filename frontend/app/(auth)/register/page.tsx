@@ -24,9 +24,13 @@ const registerSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter"),
   email: z.string().email("Email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter"),
+  confirmPassword: z.string().min(6, "Konfirmasi password minimal 6 karakter"),
   level: z.enum(["TK", "SD", "SMP", "SMA"], {
     required_error: "Pilih jenjang sekolahmu",
   }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Password dan konfirmasi password harus sama",
+  path: ["confirmPassword"],
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -41,6 +45,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -52,6 +57,7 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       level: "SD",
+      confirmPassword: "",
     },
   });
 
@@ -118,23 +124,17 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await api.post("/auth/register", data);
+      const response = await api.post("/auth/register", {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        level: data.level,
+      });
 
-      let response;
-
-      try {
-        response = await api.post("/auth/login", {
-          email: data.email,
-          password: data.password,
-        });
-      } catch {
-        throw new Error("Akun berhasil dibuat, tapi belum bisa masuk otomatis. Silakan coba masuk manual.");
-      }
-
-      const { access_token, refresh_token, user } = response.data;
-
-      setAuth(user, access_token, refresh_token);
-      router.push("/dashboard");
+      const verificationSent = Boolean(response.data?.verification_sent);
+      router.push(
+        `/verify-email?email=${encodeURIComponent(data.email)}&sent=${verificationSent ? "1" : "0"}`
+      );
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, "Pendaftaran gagal. Silakan coba lagi."));
     } finally {
@@ -237,6 +237,32 @@ export default function RegisterPage() {
           {errors.password && (
             <p className="ml-2 mt-1.5 text-[10px] font-bold text-error">
               {errors.password.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <div className="relative">
+            <input
+              {...register("confirmPassword")}
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Konfirmasi Password"
+              autoComplete="new-password"
+              className="w-full rounded-2xl border-2 border-transparent bg-gray-50 p-4 pr-14 font-bold text-neutral-700 transition-all placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((current) => !current)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 transition-colors hover:text-primary"
+              aria-label={showConfirmPassword ? "Sembunyikan password" : "Tampilkan password"}
+            >
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+
+          {errors.confirmPassword && (
+            <p className="ml-2 mt-1.5 text-[10px] font-bold text-error">
+              {errors.confirmPassword.message}
             </p>
           )}
         </div>
