@@ -149,8 +149,9 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
          <motion.button
            whileHover={{ scale: 1.1 }}
            whileTap={{ scale: 0.9 }}
-           onClick={() => router.push("/chat")}
-           className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-800"
+	           onClick={() => router.push("/chat")}
+	           className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-800"
+	           aria-label="Kembali ke daftar obrolan"
          >
            <ChevronLeft size={20} strokeWidth={3} />
          </motion.button>
@@ -298,8 +299,9 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
              whileHover={{ scale: 1.05 }}
              whileTap={{ scale: 0.95 }}
              type="submit"
-             disabled={!message.trim() || isSending}
-             className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white shadow-2xl shadow-primary/30 disabled:opacity-50 transition-all shrink-0"
+	             disabled={!message.trim() || isSending}
+	             className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white shadow-2xl shadow-primary/30 disabled:opacity-50 transition-all shrink-0"
+	             aria-label="Kirim pesan"
            >
              <Send size={24} strokeWidth={2.5} className="ml-1" />
            </motion.button>

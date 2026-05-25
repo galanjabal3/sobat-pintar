@@ -16,8 +16,10 @@ export default function GroupsPage() {
       <div className="px-6 pt-12 pb-20 max-w-2xl mx-auto">
         <header className="flex items-center gap-4 mb-12">
           <button
+            type="button"
             onClick={() => router.push("/dashboard")}
             className="p-3 bg-white hover:bg-gray-50 rounded-2xl shadow-xl shadow-primary/5 border border-primary/5 transition-all"
+            aria-label="Kembali ke dashboard"
           >
             <ChevronLeft size={24} />
           </button>

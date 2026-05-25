@@ -10,9 +10,16 @@ import { Button } from "@/components/ui/Button";
 import api from "@/lib/api";
 import { AIMarkdown } from "@/components/ai/AIMarkdown";
 
+interface SharedContent {
+  answer?: string;
+  image_url?: string;
+  question_text?: string;
+  summary?: string;
+}
+
 export default function SharePage() {
   const { id } = useParams();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<SharedContent | null>(null);
   const [type, setType] = useState<"explain" | "summary" | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

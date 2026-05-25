@@ -114,8 +114,9 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
            <motion.button
              whileHover={{ scale: 1.1 }}
              whileTap={{ scale: 0.9 }}
-             onClick={() => router.back()}
-             className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800"
+	             onClick={() => router.back()}
+	             className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800"
+	             aria-label="Kembali"
            >
              <ChevronLeft size={24} strokeWidth={2.5} />
            </motion.button>
@@ -123,8 +124,9 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
            <motion.button 
              whileHover={{ scale: 1.1 }}
              whileTap={{ scale: 0.9 }}
-             onClick={() => setIsShareModalOpen(true)} 
-             className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800"
+	             onClick={() => setIsShareModalOpen(true)}
+	             className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800"
+	             aria-label="Bagikan penjelasan"
            >
              <Share2 size={20} strokeWidth={2.5} />
            </motion.button>

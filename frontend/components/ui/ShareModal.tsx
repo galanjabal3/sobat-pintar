@@ -17,11 +17,15 @@ export default function ShareModal({ isOpen, onClose, url, title = "Penjelasan d
 
   if (!isOpen) return null;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    addToast("Tautan berhasil disalin!", "success");
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      addToast("Tautan berhasil disalin!", "success");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      addToast("Gagal menyalin tautan. Silakan coba lagi.", "error");
+    }
   };
 
   const handleNativeShare = async () => {
@@ -32,10 +36,8 @@ export default function ShareModal({ isOpen, onClose, url, title = "Penjelasan d
           url: url,
         });
         onClose();
-      } catch (err: any) {
-        // Silently ignore AbortError (user canceled)
-        if (err.name !== 'AbortError') {
-          console.error("Error sharing:", err);
+      } catch (err: unknown) {
+        if (!(err instanceof DOMException && err.name === "AbortError")) {
           addToast("Gagal membagikan tautan. Silakan coba lagi.", "error");
         }
       }
@@ -45,7 +47,12 @@ export default function ShareModal({ isOpen, onClose, url, title = "Penjelasan d
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
-        <button onClick={onClose} className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600"
+          aria-label="Tutup dialog berbagi"
+        >
           <X size={20} />
         </button>
         

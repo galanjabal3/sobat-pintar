@@ -300,12 +300,13 @@ function stripSummaryMarkdown(markdown: string) {
        
        <header className="bg-white/70 backdrop-blur-xl px-6 pt-12 pb-4 border-b-4 border-white sticky top-0 z-20 shadow-xl shadow-primary/5 flex items-center justify-between">
          <div className="flex items-center gap-4">
-           <motion.button
+	           <motion.button
              whileHover={{ scale: 1.1 }}
              whileTap={{ scale: 0.9 }}
-             onClick={() => router.push("/summary")}
-             className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-800"
-           >
+	             onClick={() => router.push("/summary")}
+	             className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-800"
+	             aria-label="Kembali ke rangkuman"
+	           >
              <ChevronLeft size={20} strokeWidth={3} />
            </motion.button>
            <div>
@@ -317,12 +318,12 @@ function stripSummaryMarkdown(markdown: string) {
          </div>
          
          <div className="flex gap-2">
-           <button onClick={handleCopy} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors">
-             <Copy size={18} />
-           </button>
-           <button onClick={() => setIsShareModalOpen(true)} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors">
-             <Share2 size={18} />
-           </button>
+	           <button type="button" onClick={handleCopy} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors" aria-label="Salin rangkuman">
+	             <Copy size={18} />
+	           </button>
+	           <button type="button" onClick={() => setIsShareModalOpen(true)} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors" aria-label="Bagikan rangkuman">
+	             <Share2 size={18} />
+	           </button>
          </div>
        </header>
        <ShareModal
@@ -406,10 +407,10 @@ function stripSummaryMarkdown(markdown: string) {
            </motion.div>
  
            <div className="grid grid-cols-2 gap-4 pt-4">
-             <button onClick={handleDownloadPdf} className="flex items-center justify-center gap-3 py-5 bg-white border-4 border-white shadow-xl shadow-black/5 rounded-[2rem] font-black text-xs text-neutral-600 uppercase tracking-widest hover:shadow-2xl transition-all">
+	             <button type="button" onClick={handleDownloadPdf} className="flex items-center justify-center gap-3 py-5 bg-white border-4 border-white shadow-xl shadow-black/5 rounded-[2rem] font-black text-xs text-neutral-600 uppercase tracking-widest hover:shadow-2xl transition-all">
                <Download size={18} /> Simpan PDF
              </button>
-             <button onClick={() => router.push("/practice")} className="flex items-center justify-center gap-3 py-5 bg-primary text-white shadow-xl shadow-primary/20 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all">
+	             <button type="button" onClick={() => router.push("/practice")} className="flex items-center justify-center gap-3 py-5 bg-primary text-white shadow-xl shadow-primary/20 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all">
                Latihan Soal <ArrowRight size={18} />
              </button>
            </div>

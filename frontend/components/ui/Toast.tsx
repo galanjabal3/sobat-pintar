@@ -38,8 +38,10 @@ export function ToastContainer() {
             <Icon size={20} className={iconColorClass} />
             <p className="text-sm font-medium flex-1">{toast.message}</p>
             <button
+              type="button"
               onClick={() => removeToast(toast.id)}
               className="p-1 hover:bg-black/5 rounded-full transition-colors"
+              aria-label="Tutup notifikasi"
             >
               <X size={16} className="opacity-50" />
             </button>

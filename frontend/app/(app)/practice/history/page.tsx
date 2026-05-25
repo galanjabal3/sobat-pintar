@@ -47,7 +47,7 @@ export default function PracticeHistoryPage() {
   return (
     <div className="px-6 pt-12 pb-24">
       <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+        <button type="button" onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" aria-label="Kembali">
           <ChevronLeft size={24} />
         </button>
         <h1 className="text-xl font-black text-neutral-800">Riwayat Latihan</h1>

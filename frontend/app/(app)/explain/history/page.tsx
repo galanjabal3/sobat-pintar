@@ -41,8 +41,10 @@ export default function ExplainHistoryPage() {
     <div className="px-6 pt-12 pb-24">
       <header className="flex items-center gap-4 mb-8">
         <button
+          type="button"
           onClick={() => router.back()}
           className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          aria-label="Kembali"
         >
           <ChevronLeft size={24} />
         </button>

@@ -16,7 +16,12 @@ import { MAX_EXPLAIN_QUESTION_CHARS } from "@/lib/aiLimits";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
- 
+
+interface ExplainHistoryPreview {
+  id: string;
+  question_text?: string;
+}
+
  export default function ExplainPage() {
    const router = useRouter();
    const { user, fetchProfile } = useAuthStore();
@@ -27,7 +32,7 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
    const [isLoading, setIsLoading] = useState(false);
    const fileInputRef = useRef<HTMLInputElement>(null);
    const isSubmittingRef = useRef(false);
-   const [history, setHistory] = useState<any[]>([]);
+	   const [history, setHistory] = useState<ExplainHistoryPreview[]>([]);
    const userLevel = user?.level || "SD";
    const canSubmit = Boolean(question.trim() || imageFile);
  

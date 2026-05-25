@@ -99,8 +99,9 @@ export default function ChatPage() {
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => router.push("/dashboard")}
-              className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800"
+	              onClick={() => router.push("/dashboard")}
+	              className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800"
+	              aria-label="Kembali ke dashboard"
             >
               <ChevronLeft size={24} strokeWidth={2.5} />
             </motion.button>
@@ -115,8 +116,9 @@ export default function ChatPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleCreateSession}
-              disabled={isCreating}
-              className="w-12 h-12 bg-primary rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center text-white relative overflow-hidden"
+	              disabled={isCreating}
+	              className="w-12 h-12 bg-primary rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center text-white relative overflow-hidden"
+	              aria-label="Buat obrolan baru"
             >
              {isCreating ? (
                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

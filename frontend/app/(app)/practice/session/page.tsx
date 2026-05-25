@@ -287,8 +287,9 @@ function PracticeSessionContent() {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setIsExitModalOpen(true)}
-            className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-800"
+	            onClick={() => setIsExitModalOpen(true)}
+	            className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-800"
+	            aria-label="Keluar dari latihan"
           >
             <ChevronLeft size={20} strokeWidth={3} />
           </motion.button>
