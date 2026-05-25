@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -14,10 +13,8 @@ import { Button } from "@/components/ui/Button";
 import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { SOBI_ASSETS } from "@/lib/assets";
-import { renderGoogleButton } from "@/lib/googleAuth";
 import { useAuthStore } from "@/store/authStore";
-
-const GOOGLE_LOGIN_BUTTON_ID = "googleLoginBtn";
+import { GoogleLogin, GoogleOAuthProvider, type CredentialResponse } from "@react-oauth/google";
 
 const loginSchema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -26,7 +23,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
 
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -35,9 +32,11 @@ export default function LoginPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [googleButtonWidth, setGoogleButtonWidth] = useState(0);
+  const googleButtonContainerRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -65,43 +64,45 @@ export default function LoginPage() {
     }
   }, [isHydrated, user, router]);
 
-  const handleGoogleResponse = useCallback(
-    async (response: any) => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const res = await api.post("/auth/google", {
-          id_token: response.credential,
-        });
-
-        const { access_token, refresh_token, user } = res.data;
-
-        setAuth(user, access_token, refresh_token);
-        router.push("/dashboard");
-      } catch (err: unknown) {
-        setError(getApiErrorMessage(err, "Google login gagal. Silakan coba lagi."));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [router, setAuth]
-  );
-
-  const initializeGoogle = useCallback(() => {
-    const isReady = renderGoogleButton({
-      buttonElementId: GOOGLE_LOGIN_BUTTON_ID,
-      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-      callback: handleGoogleResponse,
-      text: "signin_with",
-    });
-
-    setIsGoogleReady(isReady);
-  }, [handleGoogleResponse]);
-
   useEffect(() => {
-    initializeGoogle();
-  }, [initializeGoogle]);
+    const container = googleButtonContainerRef.current;
+    if (!container) return;
+
+    const updateWidth = () => {
+      setGoogleButtonWidth(Math.floor(container.getBoundingClientRect().width));
+    };
+
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleGoogleSuccess = async (response: CredentialResponse) => {
+    if (!response.credential) {
+      setError("Google login gagal. Silakan coba lagi.");
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    setError(null);
+
+    try {
+      const res = await api.post("/auth/google", {
+        id_token: response.credential,
+      });
+
+      const { access_token, refresh_token, user } = res.data;
+
+      setAuth(user, access_token, refresh_token);
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Google login gagal. Silakan coba lagi."));
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
@@ -127,12 +128,6 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-[#FDFEFF] px-7 py-10">
-      <Script
-        src="https://accounts.google.com/gsi/client"
-        strategy="afterInteractive"
-        onLoad={initializeGoogle}
-      />
-
       <Link
         href="/"
         className="absolute left-5 top-7 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-neutral-800 shadow-xl shadow-primary/5 transition-colors hover:text-primary"
@@ -217,7 +212,7 @@ export default function LoginPage() {
         <Button
           type="submit"
           className="h-auto w-full rounded-2xl py-5 text-lg font-black shadow-lg shadow-primary/20"
-          isLoading={isLoading}
+          isLoading={isLoading || isGoogleLoading}
         >
           Masuk
         </Button>
@@ -233,10 +228,8 @@ export default function LoginPage() {
             </Link>
           </p>
         )}
-      </form>
 
-      <div className="mt-6 flex flex-col items-center gap-4">
-        <div className="flex w-full items-center gap-4">
+        <div className="flex items-center gap-4 pt-2">
           <div className="h-px flex-1 bg-gray-100" />
           <span className="text-xs font-bold uppercase tracking-widest text-neutral-300">
             Atau
@@ -244,21 +237,26 @@ export default function LoginPage() {
           <div className="h-px flex-1 bg-gray-100" />
         </div>
 
-        <div className="w-full rounded-[1.6rem] border-2 border-white bg-white/80 p-2 shadow-xl shadow-primary/5">
-          {!isGoogleReady && (
+        <div
+          ref={googleButtonContainerRef}
+          className="flex min-h-[48px] w-full justify-center overflow-hidden rounded-full"
+        >
+          {isLoading || isGoogleLoading || googleButtonWidth === 0 ? (
             <div className="flex h-[48px] items-center justify-center">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-primary" />
             </div>
-          )}
-
-          <div className={isGoogleReady ? "block w-full" : "invisible h-0 w-full"}>
-            <div
-              id={GOOGLE_LOGIN_BUTTON_ID}
-              className="flex min-h-[48px] w-full justify-center overflow-hidden rounded-full"
+          ) : (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("Google login gagal. Silakan coba lagi.")}
+              text="signin_with"
+              shape="pill"
+              size="large"
+              width={String(googleButtonWidth)}
             />
-          </div>
+          )}
         </div>
-      </div>
+      </form>
 
       <div className="mt-auto pt-12 text-center">
         <p className="text-sm font-medium text-neutral-400">
@@ -269,5 +267,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+      <LoginContent />
+    </GoogleOAuthProvider>
   );
 }
