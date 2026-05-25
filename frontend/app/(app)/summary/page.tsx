@@ -238,8 +238,10 @@ export default function SummaryPage() {
                            {getSummaryPreview(item)}
                          </h4>
                          <button
+                           type="button"
                            onClick={(e) => handleDelete(e, item.id)}
                            className="p-2 text-neutral-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                           aria-label="Hapus rangkuman"
                          >
                            <Trash2 size={16} />
                          </button>

@@ -3,19 +3,73 @@
 import React, { useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CalendarDays, Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap } from "lucide-react";
+import { ArrowRight, CalendarDays, Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap, type LucideIcon } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { motion } from "framer-motion";
 
+const DAILY_QUESTION_GOAL = 5;
+
+type RecentActivity = {
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  iconColor: string;
+  label: string;
+  timestamp: string;
+  title: string;
+};
+
+type ChatHistoryItem = {
+  id: string;
+  title?: string;
+  last_message?: string;
+  updated_at: string;
+};
+
+type PracticeHistoryItem = {
+  id: string;
+  subject: string;
+  difficulty: string;
+  completed_at?: string;
+};
+
+type SummaryHistoryItem = {
+  id: string;
+  created_at: string;
+};
+
+type ExplainHistoryItem = {
+  id: string;
+  question_text?: string;
+  created_at: string;
+};
+
+function isValidTimestamp(timestamp?: string): timestamp is string {
+  return Boolean(timestamp && !Number.isNaN(new Date(timestamp).getTime()));
+}
+
+function formatActivityDate(timestamp: string) {
+  return new Date(timestamp).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
 export default function DashboardPage() {
   const { user, fetchProfile } = useAuthStore();
   const [dailyProgress, setDailyProgress] = React.useState(0);
+  const [recentActivity, setRecentActivity] = React.useState<RecentActivity | null>(null);
+  const [isLoadingRecentActivity, setIsLoadingRecentActivity] = React.useState(true);
   const hasDailyProgress = dailyProgress > 0;
-  const progressMessage = dailyProgress > 0
-    ? "Wah, hebat! Teruskan belajarnya ya!"
-    : "Mulai satu soal dulu hari ini, yuk!";
+  const completedDailyGoal = dailyProgress >= DAILY_QUESTION_GOAL;
+  const progressPercent = Math.min((dailyProgress / DAILY_QUESTION_GOAL) * 100, 100);
+  const progressMessage = completedDailyGoal
+    ? "Target harian tercapai. Pertahankan streak-mu!"
+    : hasDailyProgress
+      ? `${DAILY_QUESTION_GOAL - dailyProgress} soal lagi untuk target hari ini.`
+      : "Mulai satu soal dulu hari ini, yuk!";
 
   const fetchDailyProgress = useCallback(async () => {
     try {
@@ -28,10 +82,89 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const fetchRecentActivity = useCallback(async () => {
+    const responses = await Promise.allSettled([
+      api.get("/chat/sessions"),
+      api.get("/practice/history"),
+      api.get("/summary/history"),
+      api.get("/explain/history"),
+    ]);
+
+    const candidates: RecentActivity[] = [];
+    const [chatResponse, practiceResponse, summaryResponse, explainResponse] = responses;
+
+    if (chatResponse.status === "fulfilled") {
+      const session = (chatResponse.value.data as ChatHistoryItem[] | undefined)?.[0];
+      if (session && isValidTimestamp(session.updated_at)) {
+        candidates.push({
+          description: session.last_message || session.title || "Buka kembali obrolan belajarmu.",
+          href: `/chat/session/${session.id}`,
+          icon: MessageCircle,
+          iconColor: "text-secondary",
+          label: "Tanya Sobi",
+          timestamp: session.updated_at,
+          title: "Lanjutkan obrolan",
+        });
+      }
+    }
+
+    if (practiceResponse.status === "fulfilled") {
+      const practice = (practiceResponse.value.data as PracticeHistoryItem[] | undefined)?.[0];
+      if (practice && isValidTimestamp(practice.completed_at)) {
+        candidates.push({
+          description: `${practice.subject} - ${practice.difficulty}`,
+          href: `/practice/result?id=${practice.id}`,
+          icon: BookOpen,
+          iconColor: "text-orange-500",
+          label: "Latihan Soal",
+          timestamp: practice.completed_at,
+          title: "Tinjau hasil latihan",
+        });
+      }
+    }
+
+    if (summaryResponse.status === "fulfilled") {
+      const summary = (summaryResponse.value.data as SummaryHistoryItem[] | undefined)?.[0];
+      if (summary && isValidTimestamp(summary.created_at)) {
+        candidates.push({
+          description: "Baca kembali materi yang sudah Sobi ringkas.",
+          href: `/summary/result/${summary.id}`,
+          icon: FileText,
+          iconColor: "text-blue-500",
+          label: "Rangkuman",
+          timestamp: summary.created_at,
+          title: "Buka rangkuman terbaru",
+        });
+      }
+    }
+
+    if (explainResponse.status === "fulfilled") {
+      const explanation = (explainResponse.value.data as ExplainHistoryItem[] | undefined)?.[0];
+      if (explanation && isValidTimestamp(explanation.created_at)) {
+        candidates.push({
+          description: explanation.question_text || "Lihat kembali soal yang sudah dijelaskan.",
+          href: `/explain/result?id=${explanation.id}`,
+          icon: Camera,
+          iconColor: "text-primary",
+          label: "Jelasin Soal",
+          timestamp: explanation.created_at,
+          title: "Buka penjelasan terbaru",
+        });
+      }
+    }
+
+    candidates.sort((left, right) => (
+      new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()
+    ));
+    setRecentActivity(candidates[0] || null);
+    setIsLoadingRecentActivity(false);
+  }, []);
+
   React.useEffect(() => {
     fetchProfile();
     fetchDailyProgress();
-  }, [fetchDailyProgress, fetchProfile]);
+    fetchRecentActivity();
+  }, [fetchDailyProgress, fetchProfile, fetchRecentActivity]);
 
   const showAll = process.env.NEXT_PUBLIC_DEBUG_MODE === "true";
 
@@ -188,9 +321,21 @@ export default function DashboardPage() {
             </div>
             <h3 className="text-3xl font-black text-neutral-800 leading-tight mb-2">
               {dailyProgress} Soal <br />
-              <span className="text-primary">{hasDailyProgress ? "Selesai" : "Belum Mulai"}</span>
+              <span className="text-primary">{completedDailyGoal ? "Target Tercapai" : "Hari Ini"}</span>
             </h3>
             <p className="text-[10px] font-bold text-neutral-400">{progressMessage}</p>
+            <div className="mt-4 max-w-[170px]">
+              <div className="mb-2 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-neutral-400">
+                <span>Target Harian</span>
+                <span>{Math.min(dailyProgress, DAILY_QUESTION_GOAL)}/{DAILY_QUESTION_GOAL}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-primary/10">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
             <Link
               href="/leaderboard"
               className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary"
@@ -211,6 +356,40 @@ export default function DashboardPage() {
 
           <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary/10" />
         </motion.div>
+
+        {isLoadingRecentActivity ? (
+          <div className="mb-10 h-28 animate-pulse rounded-[2rem] bg-gray-100" />
+        ) : recentActivity ? (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-10"
+          >
+            <Link
+              href={recentActivity.href}
+              className="group flex items-center gap-4 rounded-[2rem] border-2 border-primary/5 bg-white p-4 shadow-xl shadow-primary/5 transition-all hover:border-primary/20"
+            >
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gray-50">
+                <recentActivity.icon size={24} strokeWidth={2.5} className={recentActivity.iconColor} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-primary">
+                    Lanjut Belajar
+                  </p>
+                  <span className="text-[9px] font-bold text-neutral-300">
+                    {formatActivityDate(recentActivity.timestamp)}
+                  </span>
+                </div>
+                <h2 className="text-sm font-black text-neutral-800">{recentActivity.title}</h2>
+                <p className="truncate text-[11px] font-bold text-neutral-400">
+                  {recentActivity.label} - {recentActivity.description}
+                </p>
+              </div>
+              <ArrowRight size={18} className="shrink-0 text-primary transition-transform group-hover:translate-x-1" />
+            </Link>
+          </motion.div>
+        ) : null}
 
         <div className="mb-5 flex items-center gap-4">
           <h2 className="shrink-0 text-base font-black text-neutral-800">Apa rencanamu?</h2>

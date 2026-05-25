@@ -202,8 +202,10 @@ export default function ChatPage() {
                       {session.title || "Obrolan Tanpa Judul"}
                     </h4>
                     <button
+                      type="button"
                       onClick={(e) => handleDeleteSession(e, session.id)}
                       className="p-2 text-neutral-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      aria-label="Hapus obrolan"
                     >
                       <Trash2 size={16} />
                     </button>
