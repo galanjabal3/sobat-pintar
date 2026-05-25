@@ -9,7 +9,6 @@ import (
 	"sobat-pintar/internal/dto"
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
-	"sobat-pintar/pkg/gemini"
 	"sobat-pintar/pkg/logger"
 )
 
@@ -23,12 +22,17 @@ type SummaryService interface {
 
 type summaryService struct {
 	repo         repository.SummaryRepository
-	geminiClient *gemini.Client
+	geminiClient summaryGenerator
 	gamify       GamificationService
 	quota        AIQuotaService
 }
 
-func NewSummaryService(repo repository.SummaryRepository, geminiClient *gemini.Client, gamify GamificationService, quota AIQuotaService) SummaryService {
+type summaryGenerator interface {
+	SummarizeMateri(ctx context.Context, level, content string) (string, error)
+	SummarizeImageMateri(ctx context.Context, level, imageURL string) (string, error)
+}
+
+func NewSummaryService(repo repository.SummaryRepository, geminiClient summaryGenerator, gamify GamificationService, quota AIQuotaService) SummaryService {
 	return &summaryService{
 		repo:         repo,
 		geminiClient: geminiClient,
@@ -40,13 +44,17 @@ func NewSummaryService(repo repository.SummaryRepository, geminiClient *gemini.C
 func (s *summaryService) CreateSummary(ctx context.Context, userID, level string, req dto.CreateSummaryRequest) (*dto.SummaryResponse, error) {
 	var contentToSummarize string
 
-	if req.SourceType == "text" {
+	switch req.SourceType {
+	case "text":
 		contentToSummarize = req.Content
 		if err := validateSummaryContent(contentToSummarize); err != nil {
 			return nil, err
 		}
-	} else {
-		// TODO: Extract text from PDF or Image (Phase 4)
+	case "image":
+		if err := validateSummaryImageURL(req.FileURL); err != nil {
+			return nil, err
+		}
+	default:
 		return nil, fmt.Errorf("ekstraksi dari %s belum didukung", req.SourceType)
 	}
 
@@ -54,7 +62,13 @@ func (s *summaryService) CreateSummary(ctx context.Context, userID, level string
 		return nil, err
 	}
 
-	summaryText, err := s.geminiClient.SummarizeMateri(ctx, level, contentToSummarize)
+	var summaryText string
+	var err error
+	if req.SourceType == "image" {
+		summaryText, err = s.geminiClient.SummarizeImageMateri(ctx, level, req.FileURL)
+	} else {
+		summaryText, err = s.geminiClient.SummarizeMateri(ctx, level, contentToSummarize)
+	}
 	if err != nil {
 		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSummary), userID, AIFeatureSummary)
 		return nil, err

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -48,6 +49,7 @@ var (
 	ErrExplainQuestionTooLong   = errors.New("explain question exceeds maximum length")
 	ErrSummaryContentRequired   = errors.New("summary content is required")
 	ErrSummaryContentTooLong    = errors.New("summary content exceeds maximum length")
+	ErrSummaryImageURLInvalid   = errors.New("summary image URL is invalid")
 	ErrPracticeSubjectRequired  = errors.New("practice subject is required")
 	ErrPracticeSubjectTooLong   = errors.New("practice subject exceeds maximum length")
 	ErrPracticeSourceTooShort   = errors.New("practice source content is too short")
@@ -87,6 +89,14 @@ func validateSummaryContent(content string) error {
 	}
 	if runeLen(text) > MaxSummaryContentChars {
 		return ErrSummaryContentTooLong
+	}
+	return nil
+}
+
+func validateSummaryImageURL(rawURL string) error {
+	parsedURL, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || parsedURL.Scheme != "https" || parsedURL.Hostname() != "res.cloudinary.com" || parsedURL.Path == "" {
+		return ErrSummaryImageURLInvalid
 	}
 	return nil
 }

@@ -312,7 +312,7 @@ function stripSummaryMarkdown(markdown: string) {
            <div>
              <h1 className="text-sm font-black text-neutral-800 uppercase tracking-widest">Hasil Rangkuman</h1>
              <p className="text-[10px] font-black text-primary uppercase tracking-widest">
-               {detail?.source_type === "text" ? "Dari Teks" : "Dari File"}
+               {detail?.source_type === "image" ? "Dari Foto" : "Dari Teks"}
              </p>
            </div>
          </div>

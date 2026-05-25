@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
- import { useRouter } from "next/navigation";
-import { ChevronLeft, FileText, Sparkles, Clock, Trash2, ArrowRight } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Camera, ChevronLeft, Clock, FileText, Sparkles, Trash2, Type, X } from "lucide-react";
 import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,6 +25,18 @@ interface SummaryHistory {
   summary?: string;
   created_at: string;
 }
+
+interface UploadAttachmentResponse {
+  url?: string;
+  data?: {
+    url?: string;
+  };
+}
+
+type SummarySourceType = "text" | "image";
+
+const MAX_SUMMARY_IMAGE_SIZE = 5 * 1024 * 1024;
+const SUPPORTED_SUMMARY_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function getSummaryPreview(item: SummaryHistory) {
   if (item.title) return cleanSummaryPreviewText(item.title);
@@ -57,9 +70,13 @@ export default function SummaryPage() {
   const [history, setHistory] = useState<SummaryHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sourceType, setSourceType] = useState<SummarySourceType>("text");
   const [text, setText] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const canSubmit = Boolean(text.trim());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canSubmit = sourceType === "text" ? Boolean(text.trim()) : Boolean(imageFile);
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -75,31 +92,88 @@ export default function SummaryPage() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
- 
-   const handleSummarize = async () => {
-     if (isSubmitting) return;
 
-     if (!text.trim()) {
-       addToast("Masukkan teks yang ingin dirangkum ya!", "error");
-       return;
-     }
- 
-     setIsSubmitting(true);
-     try {
-       const response = await api.post("/summary", {
-         source_type: "text",
-         content: text,
-       });
-       addToast("Rangkuman berhasil dibuat!", "success");
-       notifyAIQuotaUpdated();
-       setText("");
-       router.push(`/summary/result/${response.data.id}`);
-     } catch (err: unknown) {
-       addToast(getApiErrorMessage(err, "Gagal membuat rangkuman."), "error");
-     } finally {
-       setIsSubmitting(false);
-     }
-   };
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const clearImage = () => {
+    setImageFile(null);
+    setPreviewUrl((currentUrl) => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      return null;
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!SUPPORTED_SUMMARY_IMAGE_TYPES.includes(file.type)) {
+      addToast("Gunakan foto JPG, PNG, atau WEBP ya.", "error");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_SUMMARY_IMAGE_SIZE) {
+      addToast("Ukuran foto maksimal 5MB ya.", "error");
+      event.target.value = "";
+      return;
+    }
+
+    setImageFile(file);
+    setPreviewUrl((currentUrl) => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const handleSummarize = async () => {
+    if (isSubmitting) return;
+
+    if (sourceType === "text" && !text.trim()) {
+      addToast("Masukkan teks yang ingin dirangkum ya!", "error");
+      return;
+    }
+    if (sourceType === "image" && !imageFile) {
+      addToast("Pilih foto materi yang ingin dirangkum ya!", "error");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let requestBody: { source_type: SummarySourceType; content?: string; file_url?: string };
+      if (sourceType === "image" && imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const uploadResponse = await api.post<UploadAttachmentResponse>("/upload/attachments", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const imageUrl = uploadResponse.data.url || uploadResponse.data.data?.url;
+        if (!imageUrl) {
+          throw new Error("Upload response did not include an image URL");
+        }
+        requestBody = { source_type: "image", file_url: imageUrl };
+      } else {
+        requestBody = { source_type: "text", content: text };
+      }
+
+      const response = await api.post("/summary", requestBody);
+      addToast("Rangkuman berhasil dibuat!", "success");
+      notifyAIQuotaUpdated();
+      setText("");
+      clearImage();
+      router.push(`/summary/result/${response.data.id}`);
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal membuat rangkuman."), "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
  
    const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -163,27 +237,89 @@ export default function SummaryPage() {
                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Sobi Rangkum</p>
              </div>
              <h3 className="text-2xl font-black text-neutral-800 leading-tight mb-6">
-               Tempel materi panjangmu, <br /> biar <span className="text-primary">Sobi ringkas!</span>
+               Kirim materimu, <br /> biar <span className="text-primary">Sobi ringkas!</span>
              </h3>
-             
-             <div className="relative">
-              <AutoGrowTextarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                    e.preventDefault();
-                    handleSummarize();
-                  }
-                }}
-                enterKeyHint="send"
-                placeholder="Tempel teks atau materi di sini..."
-                maxLength={MAX_SUMMARY_CONTENT_CHARS}
-                minRows={7}
-                maxRows={14}
-                className="w-full bg-white/50 border-2 border-primary/5 rounded-3xl p-5 text-sm font-medium leading-relaxed focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all placeholder:text-neutral-300"
-              />
+
+             <div className="mb-5 grid grid-cols-2 rounded-2xl bg-gray-50 p-1.5">
+               <button
+                 type="button"
+                 onClick={() => setSourceType("text")}
+                 className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black transition-all ${
+                   sourceType === "text" ? "bg-white text-primary shadow-sm" : "text-neutral-400"
+                 }`}
+                 aria-pressed={sourceType === "text"}
+               >
+                 <Type size={16} /> Teks
+               </button>
+               <button
+                 type="button"
+                 onClick={() => setSourceType("image")}
+                 className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black transition-all ${
+                   sourceType === "image" ? "bg-white text-primary shadow-sm" : "text-neutral-400"
+                 }`}
+                 aria-pressed={sourceType === "image"}
+               >
+                 <Camera size={16} /> Foto Materi
+               </button>
              </div>
+
+             {sourceType === "text" ? (
+               <div className="relative">
+                 <AutoGrowTextarea
+                   value={text}
+                   onChange={(e) => setText(e.target.value)}
+                   onKeyDown={(e) => {
+                     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                       e.preventDefault();
+                       handleSummarize();
+                     }
+                   }}
+                   enterKeyHint="send"
+                   placeholder="Tempel teks atau materi di sini..."
+                   maxLength={MAX_SUMMARY_CONTENT_CHARS}
+                   minRows={7}
+                   maxRows={14}
+                   className="w-full bg-white/50 border-2 border-primary/5 rounded-3xl p-5 text-sm font-medium leading-relaxed focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all placeholder:text-neutral-300"
+                 />
+               </div>
+             ) : (
+               <div>
+                 <input
+                   ref={fileInputRef}
+                   type="file"
+                   accept="image/jpeg,image/png,image/webp"
+                   onChange={handleFileChange}
+                   className="hidden"
+                 />
+                 {previewUrl ? (
+                   <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border-2 border-primary/10">
+                     <Image src={previewUrl} alt="Pratinjau foto materi" fill unoptimized className="object-cover" />
+                     <button
+                       type="button"
+                       onClick={clearImage}
+                       aria-label="Hapus foto materi"
+                       className="absolute right-3 top-3 rounded-xl bg-white p-2.5 text-red-500 shadow-lg"
+                     >
+                       <X size={18} strokeWidth={3} />
+                     </button>
+                   </div>
+                 ) : (
+                   <button
+                     type="button"
+                     onClick={() => fileInputRef.current?.click()}
+                     className="flex min-h-52 w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-primary/15 bg-primary/[0.02] text-center transition-colors hover:border-primary/35"
+                   >
+                     <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                       <Camera size={30} strokeWidth={2.5} />
+                     </span>
+                     <span>
+                       <span className="block text-sm font-black text-neutral-800">Pilih Foto Materi</span>
+                       <span className="mt-1 block text-xs font-medium text-neutral-400">JPG, PNG, atau WEBP. Maksimal 5MB.</span>
+                     </span>
+                   </button>
+                 )}
+               </div>
+             )}
  
             <Button
               onClick={handleSummarize}
