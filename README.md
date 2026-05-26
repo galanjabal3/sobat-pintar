@@ -39,14 +39,14 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 - **Cloudflare R2** — placeholder storage package
 
 ### Frontend
-- **Next.js 14** (App Router)
+- **Next.js 15.5** (App Router)
 - **TailwindCSS** — styling
 - **Poppins + Plus Jakarta Sans** — typography
 
 ### Infrastructure
-- **Railway** — backend deployment
-- **Vercel** — frontend deployment
-- **Supabase** — managed PostgreSQL
+- **Vercel** — intended frontend deployment
+- **Supabase** — intended managed PostgreSQL
+- **Backend hosting** — to be selected before production deployment
 
 ---
 
@@ -58,6 +58,8 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 - Supabase project with PostgreSQL connection string
 - Redis 7 is not required for the current active runtime
 - Gemini API Key ([get free at Google AI Studio](https://aistudio.google.com))
+- Google OAuth 2.0 Web Client for Google sign-in
+- Cloudinary account for image upload features
 
 ### 1. Clone Repository
 
@@ -73,7 +75,8 @@ cd backend
 
 # Copy env file
 cp .env.example .env
-# Fill DATABASE_URL, GEMINI_API_KEY, and JWT_SECRET in .env
+# Fill DATABASE_URL, GEMINI_API_KEY, JWT_SECRET, Cloudinary, Google OAuth,
+# and SMTP values in .env
 
 # Install dependencies
 go mod tidy
@@ -86,6 +89,19 @@ go run cmd/server/main.go
 ```
 
 Backend will run at `http://localhost:8080`
+
+Important backend development variables:
+
+```env
+APP_BASE_URL=http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+GOOGLE_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-...
+```
+
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` must come from the same
+Google OAuth **Web application** credential. Add `http://localhost:3000`
+to its Authorized JavaScript origins.
 
 ### 3. Setup Frontend
 
@@ -104,6 +120,27 @@ npm run dev
 ```
 
 Frontend will run at `http://localhost:3000`
+
+Required frontend values:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=<same-web-client-id>.apps.googleusercontent.com
+```
+
+### 4. Development Checks
+
+```bash
+# Backend
+cd backend
+go test ./...
+
+# Frontend
+cd ../frontend
+npm run lint
+npx tsc --noEmit
+npm run build
+```
 
 ---
 
@@ -161,7 +198,7 @@ Base URL: `http://localhost:8080/api/v1`
 ```
 POST /auth/register    Register new user
 POST /auth/login       Login
-POST /auth/google      Login/register with Google ID token
+POST /auth/google      Login/register with Google authorization code
 POST /auth/verify-email
 POST /auth/resend-verification
 POST /auth/refresh     Refresh access token
@@ -173,7 +210,8 @@ POST   /explain           Explain a question (text or image)
 GET    /explain/history   Get explanation history
 GET    /explain/:id       Get explanation detail
 POST   /explain/:id/re-explain
-GET    /public/explain/:id
+POST   /explain/:id/share Create private share token
+GET    /public/explain/:token
 ```
 
 ### User
@@ -208,7 +246,8 @@ POST   /summary
 GET    /summary/history
 GET    /summary/:id
 DELETE /summary/:id
-GET    /public/summary/:id
+POST   /summary/:id/share Create private share token
+GET    /public/summary/:token
 ```
 
 ### Jadwal, Upload, dan Gamification
@@ -229,6 +268,26 @@ GET  /gamification/leaderboard
 ```
 GET /ai/usage
 ```
+
+### Health
+```
+GET /health    Readiness check, including database connectivity
+```
+
+Public explanation and summary links use generated share tokens rather than
+database record IDs. A result is not publicly readable until its owner creates
+a share link.
+
+---
+
+## Production Configuration Notes
+
+- Run `go run cmd/migrate/main.go up` against the production database before serving traffic.
+- Set `APP_BASE_URL` and `CORS_ALLOWED_ORIGINS` to the deployed frontend origin.
+- Add the deployed Vercel origin to the same Google OAuth Web Client used by frontend and backend.
+- Set `APP_ENV=production`; internal error details are then omitted from API responses.
+- Provide Cloudinary and SMTP credentials when enabling uploads and email verification.
+- The current rate limiter is in-memory and is intended for a single backend instance. Use shared storage before scaling horizontally.
 
 ---
 
