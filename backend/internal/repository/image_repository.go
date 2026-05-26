@@ -37,3 +37,14 @@ func (r *ImageRepository) GetImageByID(ctx context.Context, id string) (*model.I
 	}
 	return image, nil
 }
+
+func (r *ImageRepository) IsOwnedByUser(ctx context.Context, userID, url, publicID string) (bool, error) {
+	query := `SELECT EXISTS (
+		SELECT 1 FROM images WHERE user_id = $1 AND url = $2 AND public_id = $3
+	)`
+	var owned bool
+	if err := r.db.QueryRow(ctx, query, userID, url, publicID).Scan(&owned); err != nil {
+		return false, fmt.Errorf("failed to validate image owner: %w", err)
+	}
+	return owned, nil
+}

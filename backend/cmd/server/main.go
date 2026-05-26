@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"sobat-pintar/internal/config"
+	"sobat-pintar/internal/dto"
 	"sobat-pintar/internal/handler"
 	"sobat-pintar/internal/repository"
 	"sobat-pintar/internal/router"
@@ -25,6 +26,7 @@ func main() {
 
 	// Load config
 	cfg := config.LoadConfig()
+	dto.SetExposeErrorDetails(cfg.AppEnv != "production")
 
 	// Initialize logger
 	logger.Init(cfg.AppEnv)
@@ -49,13 +51,12 @@ func main() {
 	var cloudinaryClient *cloudinary.Client
 	var uploadService *service.UploadService
 	var uploadHandler *handler.UploadHandler
+	imageRepo := repository.NewImageRepository(db)
 
 	cloudinaryClient, err = cloudinary.NewClient(cfg)
 	if err != nil {
 		logger.Info("Cloudinary client not initialized, upload features will be disabled.")
 	} else {
-		// Initialize ImageRepository
-		imageRepo := repository.NewImageRepository(db)
 		uploadService = service.NewUploadService(cfg, cloudinaryClient, imageRepo)
 		uploadHandler = handler.NewUploadHandler(uploadService)
 	}
@@ -73,7 +74,7 @@ func main() {
 	// Initialize app services
 	gamificationService := service.NewGamificationService(gamificationRepo)
 	aiQuotaService := service.NewAIQuotaService(aiQuotaRepo)
-	authService := service.NewAuthService(userRepo, jwtService, cfg.GoogleClientID, cloudinaryClient, emailSender, cfg.AppBaseURL, cfg.EmailVerificationTTL)
+	authService := service.NewAuthService(userRepo, jwtService, cfg.GoogleClientID, cfg.GoogleClientSecret, cloudinaryClient, imageRepo, emailSender, cfg.AppBaseURL, cfg.EmailVerificationTTL)
 	explainService := service.NewExplainService(explainRepo, geminiClient, gamificationService, aiQuotaService)
 	chatService := service.NewChatService(chatRepo, geminiClient, gamificationService, aiQuotaService)
 	practiceService := service.NewPracticeService(practiceRepo, userRepo, geminiClient, gamificationService, aiQuotaService)
@@ -89,7 +90,7 @@ func main() {
 	summaryHandler := handler.NewSummaryHandler(summaryService)
 	scheduleHandler := handler.NewScheduleHandler(scheduleService)
 	gamificationHandler := handler.NewGamificationHandler(gamificationService)
-	healthHandler := handler.NewHealthHandler()
+	healthHandler := handler.NewHealthHandler(db)
 
 	// Setup router
 	r := router.SetupRouter(
@@ -104,6 +105,7 @@ func main() {
 		healthHandler,
 		jwtService,
 		uploadHandler,
+		cfg.CORSAllowedOrigins,
 	)
 
 	// Start server

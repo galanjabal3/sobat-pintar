@@ -9,5 +9,6 @@ type Explanation struct {
 	ImageURL     string    `json:"image_url"`
 	Level        string    `json:"level"`
 	Answer       string    `json:"answer"`
+	ShareToken   *string   `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 }

@@ -135,6 +135,8 @@ function stripSummaryMarkdown(markdown: string) {
    const [detail, setDetail] = useState<SummaryDetail | null>(null);
    const [isLoading, setIsLoading] = useState(true);
    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+   const [shareUrl, setShareUrl] = useState("");
+   const [isCreatingShare, setIsCreatingShare] = useState(false);
  
    const fetchDetail = useCallback(async () => {
      try {
@@ -179,6 +181,21 @@ function stripSummaryMarkdown(markdown: string) {
       } catch {
         addToast("Gagal menyalin rangkuman.", "error");
       }
+    }
+  };
+
+  const handleShare = async () => {
+    if (isCreatingShare) return;
+
+    setIsCreatingShare(true);
+    try {
+      const response = await api.post(`/summary/${id}/share`);
+      setShareUrl(`${window.location.origin}/share/${response.data.token}`);
+      setIsShareModalOpen(true);
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal membuat tautan berbagi."), "error");
+    } finally {
+      setIsCreatingShare(false);
     }
   };
 
@@ -321,7 +338,7 @@ function stripSummaryMarkdown(markdown: string) {
 	           <button type="button" onClick={handleCopy} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors" aria-label="Salin rangkuman">
 	             <Copy size={18} />
 	           </button>
-	           <button type="button" onClick={() => setIsShareModalOpen(true)} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors" aria-label="Bagikan rangkuman">
+	           <button type="button" onClick={handleShare} disabled={isCreatingShare} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors disabled:opacity-50" aria-label="Bagikan rangkuman">
 	             <Share2 size={18} />
 	           </button>
          </div>
@@ -329,7 +346,7 @@ function stripSummaryMarkdown(markdown: string) {
        <ShareModal
          isOpen={isShareModalOpen}
          onClose={() => setIsShareModalOpen(false)}
-         url={`${typeof window !== "undefined" ? window.location.origin : ""}/share/${id}`}
+         url={shareUrl}
          title="Rangkuman dari Sobi"
          heading="Bagikan Rangkuman"
        />

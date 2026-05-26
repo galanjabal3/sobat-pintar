@@ -11,6 +11,8 @@ type ExplainRepository interface {
 	Create(ctx context.Context, explanation *model.Explanation) error
 	GetByUserID(ctx context.Context, userID string) ([]*model.Explanation, error)
 	GetByID(ctx context.Context, id string) (*model.Explanation, error)
+	GetByShareToken(ctx context.Context, token string) (*model.Explanation, error)
+	SetShareToken(ctx context.Context, id, userID, token string) error
 	Delete(ctx context.Context, id string) error
 }
 
@@ -50,13 +52,29 @@ func (r *explainRepository) GetByUserID(ctx context.Context, userID string) ([]*
 }
 
 func (r *explainRepository) GetByID(ctx context.Context, id string) (*model.Explanation, error) {
-	query := `SELECT id, user_id, question_text, image_url, level, answer, created_at FROM explanations WHERE id = $1`
+	query := `SELECT id, user_id, question_text, image_url, level, answer, share_token, created_at FROM explanations WHERE id = $1`
 	e := &model.Explanation{}
-	err := r.db.QueryRow(ctx, query, id).Scan(&e.ID, &e.UserID, &e.QuestionText, &e.ImageURL, &e.Level, &e.Answer, &e.CreatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&e.ID, &e.UserID, &e.QuestionText, &e.ImageURL, &e.Level, &e.Answer, &e.ShareToken, &e.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return e, nil
+}
+
+func (r *explainRepository) GetByShareToken(ctx context.Context, token string) (*model.Explanation, error) {
+	query := `SELECT id, user_id, question_text, image_url, level, answer, share_token, created_at FROM explanations WHERE share_token = $1`
+	e := &model.Explanation{}
+	err := r.db.QueryRow(ctx, query, token).Scan(&e.ID, &e.UserID, &e.QuestionText, &e.ImageURL, &e.Level, &e.Answer, &e.ShareToken, &e.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return e, nil
+}
+
+func (r *explainRepository) SetShareToken(ctx context.Context, id, userID, token string) error {
+	query := `UPDATE explanations SET share_token = $1 WHERE id = $2 AND user_id = $3`
+	_, err := r.db.Exec(ctx, query, token, id, userID)
+	return err
 }
 
 func (r *explainRepository) Delete(ctx context.Context, id string) error {

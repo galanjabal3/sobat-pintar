@@ -26,6 +26,12 @@ func main() {
 
 	command := os.Args[1]
 	ctx := context.Background()
+	if _, err := db.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (
+		filename TEXT PRIMARY KEY,
+		applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`); err != nil {
+		logger.Fatal(err, "Failed to initialize migration tracking")
+	}
 
 	switch command {
 	case "up":
@@ -44,15 +50,35 @@ func main() {
 		sort.Strings(sqlFiles)
 
 		for _, f := range sqlFiles {
+			var alreadyApplied bool
+			if err := db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE filename = $1)`, f).Scan(&alreadyApplied); err != nil {
+				logger.Fatal(err, "Failed to check migration state", "file", f)
+			}
+			if alreadyApplied {
+				fmt.Printf("Skipping migration already applied: %s\n", f)
+				continue
+			}
+
 			fmt.Printf("Executing migration: %s\n", f)
 			content, err := os.ReadFile(filepath.Join("migrations", f))
 			if err != nil {
 				logger.Fatal(err, "Failed to read migration file", "file", f)
 			}
 
-			_, err = db.Exec(ctx, string(content))
+			tx, err := db.Begin(ctx)
 			if err != nil {
+				logger.Fatal(err, "Failed to begin migration transaction", "file", f)
+			}
+			if _, err = tx.Exec(ctx, string(content)); err != nil {
+				_ = tx.Rollback(ctx)
 				logger.Fatal(err, "Failed to execute migration", "file", f)
+			}
+			if _, err = tx.Exec(ctx, `INSERT INTO schema_migrations (filename) VALUES ($1)`, f); err != nil {
+				_ = tx.Rollback(ctx)
+				logger.Fatal(err, "Failed to record migration", "file", f)
+			}
+			if err = tx.Commit(ctx); err != nil {
+				logger.Fatal(err, "Failed to commit migration", "file", f)
 			}
 		}
 	case "down":

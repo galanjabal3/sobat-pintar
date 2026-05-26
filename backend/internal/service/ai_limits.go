@@ -47,6 +47,7 @@ var (
 	ErrChatMessageTooLong       = errors.New("chat message exceeds maximum length")
 	ErrExplainInputRequired     = errors.New("explain input is required")
 	ErrExplainQuestionTooLong   = errors.New("explain question exceeds maximum length")
+	ErrExplainImageURLInvalid   = errors.New("explain image URL is invalid")
 	ErrSummaryContentRequired   = errors.New("summary content is required")
 	ErrSummaryContentTooLong    = errors.New("summary content exceeds maximum length")
 	ErrSummaryImageURLInvalid   = errors.New("summary image URL is invalid")
@@ -79,6 +80,11 @@ func validateExplainRequest(question, imageURL string) error {
 	if strings.TrimSpace(question) != "" && runeLen(question) > MaxExplainQuestionChars {
 		return ErrExplainQuestionTooLong
 	}
+	if strings.TrimSpace(imageURL) != "" {
+		if !isValidUploadedImageURL(imageURL) {
+			return ErrExplainImageURLInvalid
+		}
+	}
 	return nil
 }
 
@@ -94,11 +100,18 @@ func validateSummaryContent(content string) error {
 }
 
 func validateSummaryImageURL(rawURL string) error {
-	parsedURL, err := url.Parse(strings.TrimSpace(rawURL))
-	if err != nil || parsedURL.Scheme != "https" || parsedURL.Hostname() != "res.cloudinary.com" || parsedURL.Path == "" {
+	if !isValidUploadedImageURL(rawURL) {
 		return ErrSummaryImageURLInvalid
 	}
 	return nil
+}
+
+func isValidUploadedImageURL(rawURL string) bool {
+	parsedURL, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || parsedURL.Scheme != "https" || parsedURL.Hostname() != "res.cloudinary.com" || parsedURL.Path == "" {
+		return false
+	}
+	return true
 }
 
 func validatePracticeSubject(subject string) error {

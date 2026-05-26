@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,11 +10,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/Button";
+import { GoogleOAuthButton } from "@/components/auth/GoogleOAuthButton";
 import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { SOBI_ASSETS } from "@/lib/assets";
 import { useAuthStore } from "@/store/authStore";
-import { GoogleLogin, GoogleOAuthProvider, type CredentialResponse } from "@react-oauth/google";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const loginSchema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -35,8 +36,6 @@ function LoginContent() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
-  const [googleButtonWidth, setGoogleButtonWidth] = useState(0);
-  const googleButtonContainerRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -64,33 +63,16 @@ function LoginContent() {
     }
   }, [isHydrated, user, router]);
 
-  useEffect(() => {
-    const container = googleButtonContainerRef.current;
-    if (!container) return;
-
-    const updateWidth = () => {
-      setGoogleButtonWidth(Math.floor(container.getBoundingClientRect().width));
-    };
-
-    updateWidth();
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(container);
-
-    return () => observer.disconnect();
-  }, []);
-
-  const handleGoogleSuccess = async (response: CredentialResponse) => {
-    if (!response.credential) {
-      setError("Google login gagal. Silakan coba lagi.");
-      return;
-    }
-
+  const handleGoogleSuccess = async (authorizationCode: string) => {
     setIsGoogleLoading(true);
     setError(null);
 
     try {
       const res = await api.post("/auth/google", {
-        id_token: response.credential,
+        authorization_code: authorizationCode,
+        redirect_uri: window.location.origin,
+      }, {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
       });
 
       const { access_token, refresh_token, user } = res.data;
@@ -237,25 +219,13 @@ function LoginContent() {
           <div className="h-px flex-1 bg-gray-100" />
         </div>
 
-        <div
-          ref={googleButtonContainerRef}
-          className="flex min-h-[48px] w-full justify-center overflow-hidden rounded-full"
-        >
-          {isLoading || isGoogleLoading || googleButtonWidth === 0 ? (
-            <div className="flex h-[48px] items-center justify-center">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-primary" />
-            </div>
-          ) : (
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google login gagal. Silakan coba lagi.")}
-              text="signin_with"
-              shape="pill"
-              size="large"
-              width={String(googleButtonWidth)}
-            />
-          )}
-        </div>
+        <GoogleOAuthButton
+          label="Login dengan Google"
+          isLoading={isGoogleLoading}
+          disabled={isLoading}
+          onCode={handleGoogleSuccess}
+          onError={() => setError("Google login gagal. Silakan coba lagi.")}
+        />
       </form>
 
       <div className="mt-auto pt-12 text-center">

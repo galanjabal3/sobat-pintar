@@ -18,6 +18,8 @@ type ExplainService interface {
 	Explain(ctx context.Context, userID, question, imageURL, level string) (*model.Explanation, error)
 	GetHistory(ctx context.Context, userID string) ([]*model.Explanation, error)
 	GetByID(ctx context.Context, id string) (*model.Explanation, error)
+	GetPublicByShareToken(ctx context.Context, token string) (*model.Explanation, error)
+	CreateShareToken(ctx context.Context, userID, id string) (string, error)
 	ReExplain(ctx context.Context, userID, id string) (*model.Explanation, error)
 }
 
@@ -126,6 +128,32 @@ func (s *explainService) GetHistory(ctx context.Context, userID string) ([]*mode
 
 func (s *explainService) GetByID(ctx context.Context, id string) (*model.Explanation, error) {
 	return s.repo.GetByID(ctx, id)
+}
+
+func (s *explainService) GetPublicByShareToken(ctx context.Context, token string) (*model.Explanation, error) {
+	return s.repo.GetByShareToken(ctx, token)
+}
+
+func (s *explainService) CreateShareToken(ctx context.Context, userID, id string) (string, error) {
+	explanation, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	if explanation.UserID != userID {
+		return "", ErrExplanationUnauthorized
+	}
+	if explanation.ShareToken != nil && *explanation.ShareToken != "" {
+		return *explanation.ShareToken, nil
+	}
+
+	token, err := newShareToken()
+	if err != nil {
+		return "", err
+	}
+	if err := s.repo.SetShareToken(ctx, id, userID, token); err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 func (s *explainService) consumeAIQuota(ctx context.Context, userID, feature string, limit int) error {

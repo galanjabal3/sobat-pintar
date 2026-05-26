@@ -11,7 +11,11 @@ import (
 )
 
 type fakeSummaryRepo struct {
-	created *model.Summary
+	created          *model.Summary
+	byID             *model.Summary
+	setShareToken    string
+	setShareTokenID  string
+	setShareTokenUID string
 }
 
 func (r *fakeSummaryRepo) Create(ctx context.Context, summary *model.Summary) error {
@@ -20,7 +24,18 @@ func (r *fakeSummaryRepo) Create(ctx context.Context, summary *model.Summary) er
 }
 
 func (r *fakeSummaryRepo) GetByID(ctx context.Context, id string) (*model.Summary, error) {
+	return r.byID, nil
+}
+
+func (r *fakeSummaryRepo) GetByShareToken(ctx context.Context, token string) (*model.Summary, error) {
 	return nil, nil
+}
+
+func (r *fakeSummaryRepo) SetShareToken(ctx context.Context, id string, userID string, token string) error {
+	r.setShareTokenID = id
+	r.setShareTokenUID = userID
+	r.setShareToken = token
+	return nil
 }
 
 func (r *fakeSummaryRepo) ListByUserID(ctx context.Context, userID string) ([]model.Summary, error) {
@@ -131,5 +146,34 @@ func TestCreateSummaryRejectsQuotaExceeded(t *testing.T) {
 	}
 	if quota.calls != 1 {
 		t.Fatalf("expected quota to be checked once, got %d", quota.calls)
+	}
+}
+
+func TestCreateSummaryShareTokenRequiresOwner(t *testing.T) {
+	repo := &fakeSummaryRepo{byID: &model.Summary{ID: "summary-1", UserID: "owner"}}
+	service := NewSummaryService(repo, nil, nil, nil)
+
+	_, err := service.CreateShareToken(context.Background(), "other-user", "summary-1")
+	if !errors.Is(err, ErrSummaryUnauthorized) {
+		t.Fatalf("expected unauthorized error, got %v", err)
+	}
+	if repo.setShareToken != "" {
+		t.Fatal("expected no token to be saved for a non-owner")
+	}
+}
+
+func TestCreateSummaryShareTokenPersistsOpaqueToken(t *testing.T) {
+	repo := &fakeSummaryRepo{byID: &model.Summary{ID: "summary-1", UserID: "owner"}}
+	service := NewSummaryService(repo, nil, nil, nil)
+
+	token, err := service.CreateShareToken(context.Background(), "owner", "summary-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token == "" || token != repo.setShareToken {
+		t.Fatalf("expected persisted share token, got %q", token)
+	}
+	if repo.setShareTokenID != "summary-1" || repo.setShareTokenUID != "owner" {
+		t.Fatalf("unexpected saved target: %q %q", repo.setShareTokenID, repo.setShareTokenUID)
 	}
 }

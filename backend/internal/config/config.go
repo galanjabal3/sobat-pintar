@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"sobat-pintar/pkg/logger"
@@ -11,8 +12,9 @@ import (
 )
 
 type Config struct {
-	AppPort string
-	AppEnv  string
+	AppPort            string
+	AppEnv             string
+	CORSAllowedOrigins []string
 
 	DatabaseURL string
 	DBHost      string
@@ -38,7 +40,8 @@ type Config struct {
 	CloudinaryAPIKey    string
 	CloudinaryAPISecret string
 
-	GoogleClientID string
+	GoogleClientID     string
+	GoogleClientSecret string
 
 	AppBaseURL           string
 	EmailFrom            string
@@ -83,7 +86,8 @@ func LoadConfig() *Config {
 		CloudinaryAPIKey:    getEnv("CLOUDINARY_API_KEY", ""),
 		CloudinaryAPISecret: getEnv("CLOUDINARY_API_SECRET", ""),
 
-		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
 
 		AppBaseURL:           getEnv("APP_BASE_URL", "http://localhost:3000"),
 		EmailFrom:            getEnv("EMAIL_FROM", ""),
@@ -93,6 +97,7 @@ func LoadConfig() *Config {
 		SMTPPassword:         getEnv("SMTP_PASSWORD", ""),
 		EmailVerificationTTL: getDurationEnv("EMAIL_VERIFICATION_TTL", 24*time.Hour),
 	}
+	cfg.CORSAllowedOrigins = getListEnv("CORS_ALLOWED_ORIGINS", []string{cfg.AppBaseURL})
 
 	// Validate critical environment variables
 	if cfg.GeminiAPIKey == "" {
@@ -113,6 +118,9 @@ func LoadConfig() *Config {
 		}
 	}
 	if cfg.AppEnv == "production" {
+		if cfg.GoogleClientID == "" || cfg.GoogleClientSecret == "" {
+			logger.Fatal(nil, "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set")
+		}
 		if cfg.CloudinaryCloudName == "" {
 			logger.Fatal(nil, "CLOUDINARY_CLOUD_NAME is not set")
 		}
@@ -184,4 +192,23 @@ func getIntEnv(key string, fallback int) int {
 		return fallback
 	}
 	return i
+}
+
+func getListEnv(key string, fallback []string) []string {
+	value := strings.TrimSpace(getEnv(key, ""))
+	if value == "" {
+		return fallback
+	}
+
+	var items []string
+	for _, item := range strings.Split(value, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			items = append(items, item)
+		}
+	}
+	if len(items) == 0 {
+		return fallback
+	}
+	return items
 }

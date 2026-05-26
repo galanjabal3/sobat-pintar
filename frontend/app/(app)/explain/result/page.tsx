@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
  import { ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
+ import { getApiErrorMessage } from "@/lib/apiError";
  import { useToastStore } from "@/store/toastStore";
 import Image from "next/image";
 import { SOBI_ASSETS } from "@/lib/assets";
@@ -30,6 +31,8 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
    const [isLoading, setIsLoading] = useState(true);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isReExplaining, setIsReExplaining] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [isCreatingShare, setIsCreatingShare] = useState(false);
 
   const fetchExplanation = useCallback(async () => {
     if (!id) {
@@ -69,6 +72,21 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
        setIsReExplaining(false);
      }
    };
+
+  const handleShare = async () => {
+    if (!explanation?.id || isCreatingShare) return;
+
+    setIsCreatingShare(true);
+    try {
+      const response = await api.post(`/explain/${explanation.id}/share`);
+      setShareUrl(`${window.location.origin}/share/${response.data.token}`);
+      setIsShareModalOpen(true);
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal membuat tautan berbagi."), "error");
+    } finally {
+      setIsCreatingShare(false);
+    }
+  };
  
    if (isLoading) {
      return (
@@ -124,8 +142,9 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
            <motion.button 
              whileHover={{ scale: 1.1 }}
              whileTap={{ scale: 0.9 }}
-	             onClick={() => setIsShareModalOpen(true)}
-	             className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800"
+	             onClick={handleShare}
+	             disabled={isCreatingShare}
+	             className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800 disabled:opacity-50"
 	             aria-label="Bagikan penjelasan"
            >
              <Share2 size={20} strokeWidth={2.5} />
@@ -135,7 +154,7 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
          <ShareModal 
            isOpen={isShareModalOpen} 
            onClose={() => setIsShareModalOpen(false)} 
-           url={`${typeof window !== 'undefined' ? window.location.origin : ''}/share/${id}`} 
+           url={shareUrl}
          />
  
          <div className="space-y-8">

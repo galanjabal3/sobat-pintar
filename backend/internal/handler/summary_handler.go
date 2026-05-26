@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -94,9 +95,9 @@ func (h *SummaryHandler) GetSummary(c *gin.Context) {
 }
 
 func (h *SummaryHandler) GetPublicSummary(c *gin.Context) {
-	id := c.Param("id")
+	token := c.Param("token")
 
-	res, err := h.service.GetPublicSummaryByID(c.Request.Context(), id)
+	res, err := h.service.GetPublicSummaryByShareToken(c.Request.Context(), token)
 	if err != nil {
 		c.JSON(http.StatusNotFound, dto.ErrorResponse{
 			Success: false,
@@ -109,6 +110,24 @@ func (h *SummaryHandler) GetPublicSummary(c *gin.Context) {
 		Success: true,
 		Message: "Rangkuman berhasil diambil",
 		Data:    res,
+	})
+}
+
+func (h *SummaryHandler) CreateShareLink(c *gin.Context) {
+	token, err := h.service.CreateShareToken(c.Request.Context(), c.GetString("user_id"), c.Param("id"))
+	if err != nil {
+		if errors.Is(err, service.ErrSummaryUnauthorized) {
+			c.JSON(http.StatusForbidden, dto.ErrorResponse{Success: false, Message: "Kamu tidak punya akses ke rangkuman ini"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Success: false, Message: "Gagal membuat tautan berbagi", Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Tautan berbagi berhasil dibuat",
+		Data:    dto.ShareLinkResponse{Token: token},
 	})
 }
 

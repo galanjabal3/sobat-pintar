@@ -39,6 +39,14 @@ type fakeEmailSender struct {
 	sendCount int
 }
 
+type fakeProfileImageRepo struct {
+	owned bool
+}
+
+func (r *fakeProfileImageRepo) IsOwnedByUser(ctx context.Context, userID, url, publicID string) (bool, error) {
+	return r.owned, nil
+}
+
 func newFakeAuthRepo(users ...*model.User) *fakeAuthRepo {
 	repo := &fakeAuthRepo{
 		byEmail: make(map[string]*model.User),
@@ -147,7 +155,7 @@ func TestAuthRegisterRejectsDuplicateEmail(t *testing.T) {
 		Email: "existing@example.com",
 	})
 
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
 
 	_, _, err := service.Register(context.Background(), "User Baru", " Existing@Example.com ", "password123", "SD")
 	if err == nil {
@@ -166,7 +174,7 @@ func TestAuthRegisterRejectsDuplicateEmail(t *testing.T) {
 func TestAuthRegisterStoresUnverifiedUserAndSendsVerificationEmail(t *testing.T) {
 	repo := newFakeAuthRepo()
 	emailSender := &fakeEmailSender{}
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, emailSender, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, nil, emailSender, "http://localhost:3000", 24*time.Hour)
 
 	user, sent, err := service.Register(context.Background(), "Siswa Baru", " Baru@Example.com ", "password123", "SD")
 	if err != nil {
@@ -202,7 +210,7 @@ func TestAuthRegisterStoresUnverifiedUserAndSendsVerificationEmail(t *testing.T)
 func TestAuthRegisterMapsUniqueInsertFailureToDuplicateEmail(t *testing.T) {
 	repo := newFakeAuthRepo()
 	repo.createErr = &pgconn.PgError{Code: "23505"}
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
 
 	_, _, err := service.Register(context.Background(), "Siswa", "siswa@example.com", "password123", "SD")
 	if !errors.Is(err, ErrEmailAlreadyRegistered) {
@@ -230,7 +238,7 @@ func TestAuthLoginIncrementsStreakAndReturnsTokens(t *testing.T) {
 		CreatedAt:      time.Now().AddDate(0, 0, -7),
 	}
 	repo := newFakeAuthRepo(user)
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
 
 	accessToken, refreshToken, loggedInUser, err := service.Login(context.Background(), " SISWA@Example.com ", "password123")
 	if err != nil {
@@ -276,7 +284,7 @@ func TestAuthLoginRejectsUnverifiedEmail(t *testing.T) {
 		CreatedAt:     time.Now().AddDate(0, 0, -7),
 	}
 	repo := newFakeAuthRepo(user)
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
 
 	_, _, _, err = service.Login(context.Background(), "baru@example.com", "password123")
 	if err == nil {
@@ -303,7 +311,7 @@ func TestAuthVerifyEmailMarksUserVerified(t *testing.T) {
 		CreatedAt:                  time.Now().AddDate(0, 0, -7),
 	}
 	repo := newFakeAuthRepo(user)
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
 
 	verifiedUser, err := service.VerifyEmail(context.Background(), token)
 	if err != nil {
@@ -330,7 +338,7 @@ func TestAuthResendVerificationNormalizesEmail(t *testing.T) {
 	}
 	repo := newFakeAuthRepo(user)
 	emailSender := &fakeEmailSender{}
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, emailSender, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, nil, emailSender, "http://localhost:3000", 24*time.Hour)
 
 	sent, err := service.ResendVerificationEmail(context.Background(), " SISWA@Example.com ")
 	if err != nil {
@@ -358,7 +366,7 @@ func TestAuthResendVerificationSkipsRequestWithinCooldown(t *testing.T) {
 	}
 	repo := newFakeAuthRepo(user)
 	emailSender := &fakeEmailSender{}
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, emailSender, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, nil, emailSender, "http://localhost:3000", 24*time.Hour)
 
 	sent, err := service.ResendVerificationEmail(context.Background(), "siswa@example.com")
 	if err != nil {
@@ -389,7 +397,7 @@ func TestAuthUpdateProfileUpdatesStoredUser(t *testing.T) {
 	}
 
 	repo := newFakeAuthRepo(user)
-	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", nil, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, &fakeProfileImageRepo{owned: true}, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
 
 	updatedUser, err := service.UpdateProfile(
 		context.Background(),
@@ -426,6 +434,30 @@ func TestAuthUpdateProfileUpdatesStoredUser(t *testing.T) {
 	}
 	if updatedUser.AvatarURL == nil || *updatedUser.AvatarURL != nextAvatarURL {
 		t.Fatalf("unexpected returned avatar url: %v", updatedUser.AvatarURL)
+	}
+}
+
+func TestAuthUpdateProfileRejectsUnownedAvatar(t *testing.T) {
+	currentAvatarURL := "https://example.com/avatar-old.png"
+	currentAvatarPublicID := "avatar-old"
+	nextAvatarURL := "https://example.com/avatar-not-owned.png"
+	nextAvatarPublicID := "avatar-not-owned"
+	user := &model.User{
+		ID:             "user-1",
+		Name:           "Nama Lama",
+		Level:          "SD",
+		AvatarURL:      &currentAvatarURL,
+		AvatarPublicID: &currentAvatarPublicID,
+	}
+	repo := newFakeAuthRepo(user)
+	service := NewAuthService(repo, jwt.NewJWTService("secret", time.Hour, time.Hour), "", "", nil, &fakeProfileImageRepo{}, &fakeEmailSender{}, "http://localhost:3000", 24*time.Hour)
+
+	_, err := service.UpdateProfile(context.Background(), "user-1", "Nama Baru", "SMP", &nextAvatarURL, &nextAvatarPublicID)
+	if !errors.Is(err, ErrAvatarNotOwned) {
+		t.Fatalf("expected ErrAvatarNotOwned, got %v", err)
+	}
+	if repo.updateProfileCalled {
+		t.Fatal("expected unowned avatar not to update profile")
 	}
 }
 

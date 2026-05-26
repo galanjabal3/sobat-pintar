@@ -18,6 +18,8 @@ func writeAIValidationError(c *gin.Context, err error) bool {
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Berikan pertanyaan teks atau foto soal ya"})
 	case errors.Is(err, service.ErrExplainQuestionTooLong):
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Pertanyaan terlalu panjang. Maksimal 3000 karakter"})
+	case errors.Is(err, service.ErrExplainImageURLInvalid):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Foto soal tidak valid. Unggah ulang fotonya ya"})
 	case errors.Is(err, service.ErrSummaryContentRequired):
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Materi tidak boleh kosong"})
 	case errors.Is(err, service.ErrSummaryContentTooLong):

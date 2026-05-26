@@ -1,6 +1,8 @@
 package modules
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"sobat-pintar/internal/handler"
 	"sobat-pintar/internal/middleware"
@@ -9,14 +11,16 @@ import (
 
 func RegisterPublicRoutes(rg *gin.RouterGroup, explainH *handler.ExplainHandler, summaryH *handler.SummaryHandler) {
 	public := rg.Group("/public")
+	public.Use(middleware.RateLimit(60, time.Minute))
 	{
-		public.GET("/explain/:id", explainH.GetPublicExplanation)
-		public.GET("/summary/:id", summaryH.GetPublicSummary)
+		public.GET("/explain/:token", explainH.GetPublicExplanation)
+		public.GET("/summary/:token", summaryH.GetPublicSummary)
 	}
 }
 
 func RegisterAuthRoutes(rg *gin.RouterGroup, h *handler.AuthHandler) {
 	auth := rg.Group("/auth")
+	auth.Use(middleware.RateLimit(10, time.Minute))
 	{
 		auth.POST("/register", h.Register)
 		auth.POST("/login", h.Login)
@@ -48,6 +52,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 		// Upload routes
 		if uploadH != nil {
 			upload := protected.Group("/upload")
+			upload.Use(middleware.RateLimit(10, time.Minute))
 			{
 				upload.POST("/profile", uploadH.UploadProfileImage)
 				upload.POST("/posts", uploadH.UploadPostImage)
@@ -58,25 +63,26 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 		// Explain routes
 		explain := protected.Group("/explain")
 		{
-			explain.POST("", explainH.Explain)
+			explain.POST("", middleware.RateLimit(8, time.Minute), explainH.Explain)
 			explain.GET("/history", explainH.GetHistory)
 			explain.GET("/:id", explainH.GetExplanation)
-			explain.POST("/:id/re-explain", explainH.ReExplain)
+			explain.POST("/:id/re-explain", middleware.RateLimit(8, time.Minute), explainH.ReExplain)
+			explain.POST("/:id/share", middleware.RateLimit(10, time.Minute), explainH.CreateShareLink)
 		}
 		// Chat routes
 		chat := protected.Group("/chat")
 		{
-			chat.POST("/sessions", chatH.CreateSession)
+			chat.POST("/sessions", middleware.RateLimit(10, time.Minute), chatH.CreateSession)
 			chat.GET("/sessions", chatH.ListSessions)
 			chat.GET("/sessions/:id", chatH.GetSession)
-			chat.POST("/sessions/:id/messages", chatH.SendMessage)
+			chat.POST("/sessions/:id/messages", middleware.RateLimit(10, time.Minute), chatH.SendMessage)
 			chat.DELETE("/sessions/:id", chatH.DeleteSession)
 		}
 
 		// Practice routes
 		practice := protected.Group("/practice")
 		{
-			practice.POST("/start", practiceH.StartSession)
+			practice.POST("/start", middleware.RateLimit(8, time.Minute), practiceH.StartSession)
 			practice.POST("/questions/:id/answer", practiceH.SubmitAnswer)
 			practice.GET("/sessions/:id", practiceH.GetSession)
 			practice.POST("/sessions/:id/finish", practiceH.FinishSession)
@@ -88,16 +94,17 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 		// Summary routes
 		summary := protected.Group("/summary")
 		{
-			summary.POST("", summaryH.CreateSummary)
+			summary.POST("", middleware.RateLimit(8, time.Minute), summaryH.CreateSummary)
 			summary.GET("/history", summaryH.GetHistory)
 			summary.GET("/:id", summaryH.GetSummary)
 			summary.DELETE("/:id", summaryH.DeleteSummary)
+			summary.POST("/:id/share", middleware.RateLimit(10, time.Minute), summaryH.CreateShareLink)
 		}
 
 		// Schedule routes
 		schedule := protected.Group("/schedule")
 		{
-			schedule.POST("/generate", scheduleH.GenerateSchedule)
+			schedule.POST("/generate", middleware.RateLimit(8, time.Minute), scheduleH.GenerateSchedule)
 			schedule.GET("", scheduleH.GetSchedules)
 			schedule.GET("/:id", scheduleH.GetSchedule)
 			schedule.DELETE("/:id", scheduleH.DeleteSchedule)

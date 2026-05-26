@@ -221,6 +221,13 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 
 	user, err := h.authService.UpdateProfile(c.Request.Context(), userID, req.Name, req.Level, req.AvatarURL, req.AvatarPublicID)
 	if err != nil {
+		if errors.Is(err, service.ErrAvatarNotOwned) {
+			c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+				Success: false,
+				Message: "Foto profil tidak valid. Unggah ulang fotonya ya.",
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Success: false,
 			Message: "Gagal memperbarui profil",
@@ -268,16 +275,32 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 
 func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	var req dto.GoogleLoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil || (req.AuthorizationCode == "" && req.IDToken == "") {
 		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
 			Success: false,
-			Message: "ID Token tidak valid",
-			Error:   err.Error(),
+			Message: "Autentikasi Google tidak valid",
 		})
 		return
 	}
+	if req.AuthorizationCode != "" {
+		requestOrigin := c.GetHeader("Origin")
+		if c.GetHeader("X-Requested-With") != "XMLHttpRequest" || req.RedirectURI != requestOrigin {
+			c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+				Success: false,
+				Message: "Autentikasi Google tidak valid",
+			})
+			return
+		}
+	}
 
-	at, rt, user, err := h.authService.GoogleLogin(c.Request.Context(), req.IDToken)
+	var at, rt string
+	var user *model.User
+	var err error
+	if req.AuthorizationCode != "" {
+		at, rt, user, err = h.authService.GoogleCodeLogin(c.Request.Context(), req.AuthorizationCode, req.RedirectURI)
+	} else {
+		at, rt, user, err = h.authService.GoogleLogin(c.Request.Context(), req.IDToken)
+	}
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
 			Success: false,

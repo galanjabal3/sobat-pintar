@@ -7,10 +7,15 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
+)
+
 type JWTService struct {
-	secretKey     string
-	accessTTL     time.Duration
-	refreshTTL    time.Duration
+	secretKey  string
+	accessTTL  time.Duration
+	refreshTTL time.Duration
 }
 
 func NewJWTService(secret string, accessTTL, refreshTTL time.Duration) *JWTService {
@@ -24,8 +29,9 @@ func NewJWTService(secret string, accessTTL, refreshTTL time.Duration) *JWTServi
 func (s *JWTService) GenerateToken(userID string, level string) (string, string, error) {
 	// Access Token
 	accessTokenClaims := &Claims{
-		UserID: userID,
-		Level:  level,
+		UserID:    userID,
+		Level:     level,
+		TokenType: TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.accessTTL)),
 		},
@@ -38,7 +44,8 @@ func (s *JWTService) GenerateToken(userID string, level string) (string, string,
 
 	// Refresh Token
 	refreshTokenClaims := &Claims{
-		UserID: userID,
+		UserID:    userID,
+		TokenType: TokenTypeRefresh,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.refreshTTL)),
 		},
@@ -53,15 +60,23 @@ func (s *JWTService) GenerateToken(userID string, level string) (string, string,
 }
 
 func (s *JWTService) ValidateToken(tokenStr string) (*Claims, error) {
+	return s.validateTokenType(tokenStr, TokenTypeAccess)
+}
+
+func (s *JWTService) ValidateRefreshToken(tokenStr string) (*Claims, error) {
+	return s.validateTokenType(tokenStr, TokenTypeRefresh)
+}
+
+func (s *JWTService) validateTokenType(tokenStr, expectedType string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.secretKey), nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 	if err != nil {
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid && claims.TokenType == expectedType {
 		return claims, nil
 	}
 

@@ -20,11 +20,12 @@ func SetupRouter(
 	healthHandler *handler.HealthHandler,
 	jwtService *jwt.JWTService,
 	uploadHandler *handler.UploadHandler,
+	corsAllowedOrigins []string,
 ) *gin.Engine {
 	r := gin.New()
 
 	// Global Middlewares
-	r.Use(middleware.CORS())
+	r.Use(middleware.CORS(corsAllowedOrigins))
 	r.Use(middleware.Logger())
 	r.Use(middleware.Recovery())
 

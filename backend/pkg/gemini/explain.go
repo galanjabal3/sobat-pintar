@@ -3,8 +3,6 @@ package gemini
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 
 	"google.golang.org/genai"
 )
@@ -42,37 +40,18 @@ Jika gambar tampak seperti ujian atau kuis aktif, jangan berikan jawaban final. 
 
 Soal tambahan: %s`, level, learningSafetyInstruction(), textFormattingInstruction(), question)
 
-	// Fetch image data
-	httpResp, err := http.Get(imageURL)
+	imgData, mimeType, err := fetchUploadedImage(ctx, imageURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch image: %w", err)
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to fetch image: status code %d", httpResp.StatusCode)
+		return "", err
 	}
 
-	imgData, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read image data: %w", err)
-	}
-
-	// Prepare multimodal parts
-	mimeType := httpResp.Header.Get("Content-Type")
-	if mimeType == "" {
-		return "", fmt.Errorf("image content type is missing from response headers")
-	}
-
-	contents := []*genai.Content{
-		{
-			Role: "user",
-			Parts: []*genai.Part{
-				genai.NewPartFromText(prompt),
-				genai.NewPartFromBytes(imgData, mimeType),
-			},
+	contents := []*genai.Content{{
+		Role: "user",
+		Parts: []*genai.Part{
+			genai.NewPartFromText(prompt),
+			genai.NewPartFromBytes(imgData, mimeType),
 		},
-	}
+	}}
 
 	answer, err := c.generateCompleteTextWithRetry(ctx, contents, explainGenerationConfig())
 	if err != nil {

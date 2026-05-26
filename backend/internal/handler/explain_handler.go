@@ -95,8 +95,8 @@ func (h *ExplainHandler) GetHistory(c *gin.Context) {
 }
 
 func (h *ExplainHandler) GetPublicExplanation(c *gin.Context) {
-	id := c.Param("id")
-	explanation, err := h.service.GetByID(c.Request.Context(), id)
+	token := c.Param("token")
+	explanation, err := h.service.GetPublicByShareToken(c.Request.Context(), token)
 	if err != nil {
 		c.JSON(http.StatusNotFound, dto.ErrorResponse{
 			Success: false,
@@ -115,6 +115,24 @@ func (h *ExplainHandler) GetPublicExplanation(c *gin.Context) {
 			Answer:       explanation.Answer,
 			Level:        explanation.Level,
 		},
+	})
+}
+
+func (h *ExplainHandler) CreateShareLink(c *gin.Context) {
+	token, err := h.service.CreateShareToken(c.Request.Context(), c.GetString("user_id"), c.Param("id"))
+	if err != nil {
+		if errors.Is(err, service.ErrExplanationUnauthorized) {
+			c.JSON(http.StatusForbidden, dto.ErrorResponse{Success: false, Message: "Kamu tidak punya akses ke penjelasan ini"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Success: false, Message: "Gagal membuat tautan berbagi", Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Tautan berbagi berhasil dibuat",
+		Data:    dto.ShareLinkResponse{Token: token},
 	})
 }
 

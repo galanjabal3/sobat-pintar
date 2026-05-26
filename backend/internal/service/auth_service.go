@@ -15,6 +15,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
+	googleoauth "golang.org/x/oauth2/google"
 	"google.golang.org/api/idtoken"
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
@@ -28,6 +30,7 @@ type AuthService interface {
 	Register(ctx context.Context, name, email, password, level string) (*model.User, bool, error)
 	Login(ctx context.Context, email, password string) (string, string, *model.User, error)
 	GoogleLogin(ctx context.Context, idToken string) (string, string, *model.User, error)
+	GoogleCodeLogin(ctx context.Context, code, redirectURI string) (string, string, *model.User, error)
 	VerifyEmail(ctx context.Context, token string) (*model.User, error)
 	ResendVerificationEmail(ctx context.Context, email string) (bool, error)
 	GetProfile(ctx context.Context, userID string) (*model.User, error)
@@ -40,15 +43,22 @@ var (
 	ErrEmailNotVerified         = errors.New("email not verified")
 	ErrVerificationTokenInvalid = errors.New("verification token invalid")
 	ErrVerificationTokenExpired = errors.New("verification token expired")
+	ErrAvatarNotOwned           = errors.New("avatar image is not owned by user")
 )
 
 const verificationResendCooldown = time.Minute
+
+type profileImageRepository interface {
+	IsOwnedByUser(ctx context.Context, userID, url, publicID string) (bool, error)
+}
 
 type authService struct {
 	repo            repository.UserRepository
 	jwtService      *jwt.JWTService
 	googleClientID  string
+	googleSecret    string
 	cloudinary      *cloudinary.Client
+	imageRepo       profileImageRepository
 	emailSender     mailer.Sender
 	appBaseURL      string
 	verificationTTL time.Duration
@@ -58,7 +68,9 @@ func NewAuthService(
 	repo repository.UserRepository,
 	jwtService *jwt.JWTService,
 	googleClientID string,
+	googleClientSecret string,
 	cloudinaryClient *cloudinary.Client,
+	imageRepo profileImageRepository,
 	emailSender mailer.Sender,
 	appBaseURL string,
 	verificationTTL time.Duration,
@@ -67,7 +79,9 @@ func NewAuthService(
 		repo:            repo,
 		jwtService:      jwtService,
 		googleClientID:  googleClientID,
+		googleSecret:    googleClientSecret,
 		cloudinary:      cloudinaryClient,
+		imageRepo:       imageRepo,
 		emailSender:     emailSender,
 		appBaseURL:      strings.TrimRight(appBaseURL, "/"),
 		verificationTTL: verificationTTL,
@@ -151,6 +165,35 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 	s.updateStreak(ctx, user)
 
 	return accessToken, refreshToken, user, nil
+}
+
+func (s *authService) GoogleCodeLogin(ctx context.Context, code, redirectURI string) (string, string, *model.User, error) {
+	if strings.TrimSpace(code) == "" || strings.TrimSpace(redirectURI) == "" {
+		return "", "", nil, errors.New("invalid google authorization code")
+	}
+	if s.googleClientID == "" || s.googleSecret == "" {
+		logger.Error(nil, "Google OAuth server credentials are not configured")
+		return "", "", nil, errors.New("google oauth is not configured")
+	}
+
+	oauthConfig := &oauth2.Config{
+		ClientID:     s.googleClientID,
+		ClientSecret: s.googleSecret,
+		RedirectURL:  redirectURI,
+		Scopes:       []string{"openid", "email", "profile"},
+		Endpoint:     googleoauth.Endpoint,
+	}
+	token, err := oauthConfig.Exchange(ctx, code)
+	if err != nil {
+		logger.Error(err, "Failed to exchange Google authorization code", "redirect_uri", redirectURI)
+		return "", "", nil, errors.New("invalid google authorization code")
+	}
+
+	idToken, ok := token.Extra("id_token").(string)
+	if !ok || idToken == "" {
+		return "", "", nil, errors.New("google identity token not returned")
+	}
+	return s.GoogleLogin(ctx, idToken)
 }
 
 func (s *authService) GoogleLogin(ctx context.Context, idToken string) (string, string, *model.User, error) {
@@ -412,6 +455,10 @@ func (s *authService) UpdateProfile(ctx context.Context, userID, name, level str
 		return nil, err
 	}
 
+	if err := s.validateAvatarUpdate(ctx, userID, currentUser, avatarURL, avatarPublicID); err != nil {
+		return nil, err
+	}
+
 	if shouldDeleteAvatar(currentUser.AvatarPublicID, avatarPublicID) {
 		if s.cloudinary == nil {
 			logger.Info("Skipping old avatar deletion because Cloudinary client is not initialized", "user_id", userID)
@@ -427,6 +474,37 @@ func (s *authService) UpdateProfile(ctx context.Context, userID, name, level str
 	return s.repo.GetByID(ctx, userID)
 }
 
+func (s *authService) validateAvatarUpdate(ctx context.Context, userID string, currentUser *model.User, avatarURL, avatarPublicID *string) error {
+	if avatarURL == nil && avatarPublicID == nil {
+		return nil
+	}
+	if avatarURL == nil || avatarPublicID == nil || strings.TrimSpace(*avatarURL) == "" || strings.TrimSpace(*avatarPublicID) == "" {
+		return ErrAvatarNotOwned
+	}
+	if stringPointersEqual(currentUser.AvatarURL, avatarURL) && stringPointersEqual(currentUser.AvatarPublicID, avatarPublicID) {
+		return nil
+	}
+	if s.imageRepo == nil {
+		return ErrAvatarNotOwned
+	}
+
+	owned, err := s.imageRepo.IsOwnedByUser(ctx, userID, *avatarURL, *avatarPublicID)
+	if err != nil {
+		return err
+	}
+	if !owned {
+		return ErrAvatarNotOwned
+	}
+	return nil
+}
+
+func stringPointersEqual(left, right *string) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	return *left == *right
+}
+
 func shouldDeleteAvatar(currentPublicID, nextPublicID *string) bool {
 	if currentPublicID == nil || *currentPublicID == "" {
 		return false
@@ -440,7 +518,7 @@ func shouldDeleteAvatar(currentPublicID, nextPublicID *string) bool {
 }
 
 func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
-	claims, err := s.jwtService.ValidateToken(refreshToken)
+	claims, err := s.jwtService.ValidateRefreshToken(refreshToken)
 	if err != nil {
 		return "", errors.New("invalid refresh token")
 	}

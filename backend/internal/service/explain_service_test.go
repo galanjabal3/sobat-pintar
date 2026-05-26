@@ -18,3 +18,15 @@ func TestExplainRejectsLongQuestion(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestExplainRejectsExternalImageURL(t *testing.T) {
+	service := NewExplainService(nil, nil, nil, nil)
+
+	_, err := service.Explain(context.Background(), "user-1", "", "https://example.com/soal.jpg", "SD")
+	if err == nil {
+		t.Fatal("expected invalid image URL error")
+	}
+	if !errors.Is(err, ErrExplainImageURLInvalid) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

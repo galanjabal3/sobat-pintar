@@ -9,5 +9,6 @@ type Summary struct {
 	FileURL    string    `json:"file_url,omitempty"`
 	Content    string    `json:"content"` // raw text or extracted text
 	Summary    string    `json:"summary"` // generated summary
+	ShareToken *string   `json:"-"`
 	CreatedAt  time.Time `json:"created_at"`
 }

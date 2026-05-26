@@ -61,5 +61,7 @@ type RefreshResponse struct {
 }
 
 type GoogleLoginRequest struct {
-	IDToken string `json:"id_token" binding:"required"`
+	AuthorizationCode string `json:"authorization_code"`
+	RedirectURI       string `json:"redirect_uri"`
+	IDToken           string `json:"id_token"`
 }

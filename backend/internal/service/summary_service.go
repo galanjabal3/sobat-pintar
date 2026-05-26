@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -16,9 +17,12 @@ type SummaryService interface {
 	CreateSummary(ctx context.Context, userID, level string, req dto.CreateSummaryRequest) (*dto.SummaryResponse, error)
 	ListHistory(ctx context.Context, userID string) ([]dto.SummaryHistoryResponse, error)
 	GetSummaryByID(ctx context.Context, id, userID string) (*dto.SummaryHistoryResponse, error)
-	GetPublicSummaryByID(ctx context.Context, id string) (*dto.SummaryHistoryResponse, error)
+	GetPublicSummaryByShareToken(ctx context.Context, token string) (*dto.SummaryHistoryResponse, error)
+	CreateShareToken(ctx context.Context, userID, id string) (string, error)
 	DeleteSummary(ctx context.Context, id, userID string) error
 }
+
+var ErrSummaryUnauthorized = errors.New("unauthorized summary access")
 
 type summaryService struct {
 	repo         repository.SummaryRepository
@@ -128,7 +132,7 @@ func (s *summaryService) GetSummaryByID(ctx context.Context, id, userID string) 
 	}
 
 	if summary.UserID != userID {
-		return nil, fmt.Errorf("unauthorized")
+		return nil, ErrSummaryUnauthorized
 	}
 
 	return &dto.SummaryHistoryResponse{
@@ -139,8 +143,8 @@ func (s *summaryService) GetSummaryByID(ctx context.Context, id, userID string) 
 	}, nil
 }
 
-func (s *summaryService) GetPublicSummaryByID(ctx context.Context, id string) (*dto.SummaryHistoryResponse, error) {
-	summary, err := s.repo.GetByID(ctx, id)
+func (s *summaryService) GetPublicSummaryByShareToken(ctx context.Context, token string) (*dto.SummaryHistoryResponse, error) {
+	summary, err := s.repo.GetByShareToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -151,6 +155,28 @@ func (s *summaryService) GetPublicSummaryByID(ctx context.Context, id string) (*
 		Summary:    summary.Summary,
 		CreatedAt:  summary.CreatedAt,
 	}, nil
+}
+
+func (s *summaryService) CreateShareToken(ctx context.Context, userID, id string) (string, error) {
+	summary, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	if summary.UserID != userID {
+		return "", ErrSummaryUnauthorized
+	}
+	if summary.ShareToken != nil && *summary.ShareToken != "" {
+		return *summary.ShareToken, nil
+	}
+
+	token, err := newShareToken()
+	if err != nil {
+		return "", err
+	}
+	if err := s.repo.SetShareToken(ctx, id, userID, token); err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 func (s *summaryService) DeleteSummary(ctx context.Context, id, userID string) error {

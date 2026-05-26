@@ -1,5 +1,12 @@
 package dto
 
+import (
+	"encoding/json"
+	"sync/atomic"
+)
+
+var exposeErrorDetails atomic.Bool
+
 type BaseResponse struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
@@ -10,6 +17,24 @@ type ErrorResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Error   string `json:"error,omitempty"`
+}
+
+func SetExposeErrorDetails(expose bool) {
+	exposeErrorDetails.Store(expose)
+}
+
+func (r ErrorResponse) MarshalJSON() ([]byte, error) {
+	type response struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Error   string `json:"error,omitempty"`
+	}
+
+	details := ""
+	if exposeErrorDetails.Load() {
+		details = r.Error
+	}
+	return json.Marshal(response{Success: r.Success, Message: r.Message, Error: details})
 }
 
 func SuccessResponse(message string, data interface{}) BaseResponse {
