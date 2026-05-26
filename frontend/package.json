@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "playwright test --grep-invert @integration",
+    "test:e2e:integration": "playwright test --project=chromium --workers=1 --grep @integration"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -31,6 +33,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

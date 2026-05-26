@@ -52,3 +52,8 @@ tmp/
 temp/
 coverage.out
 debug
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/

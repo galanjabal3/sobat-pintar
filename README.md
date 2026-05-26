@@ -115,6 +115,9 @@ cp .env.local.example .env.local
 # Install dependencies
 npm install
 
+# Install browser binary for smoke tests (first setup only)
+npx playwright install chromium
+
 # Start development server
 npm run dev
 ```
@@ -126,6 +129,14 @@ Required frontend values:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=<same-web-client-id>.apps.googleusercontent.com
+```
+
+Optional real-backend integration test account values can be added to the local
+`frontend/.env.local` file. Do not commit real credentials:
+
+```env
+E2E_TEST_EMAIL=<active-test-account-email>
+E2E_TEST_PASSWORD=<active-test-account-password>
 ```
 
 ### 4. Development Checks
@@ -140,7 +151,35 @@ cd ../frontend
 npm run lint
 npx tsc --noEmit
 npm run build
+npm run test:e2e
 ```
+
+Playwright runs headless by default. To watch the smoke tests in Chrome:
+
+```bash
+# Show the browser while tests run
+npm run test:e2e -- --headed
+
+# Open browser with the Playwright debugger
+npm run test:e2e -- --headed --debug
+
+# Open Playwright UI to select and run tests interactively
+npm run test:e2e -- --ui
+```
+
+The smoke tests mock API responses so frontend flows can be tested
+deterministically. Verify the real Google OAuth popup manually with valid local
+credentials when changing sign-in behavior.
+
+To verify email login against the running backend and an active test account:
+
+```bash
+# Requires backend running on the NEXT_PUBLIC_API_URL target and E2E_TEST_* values
+npm run test:e2e:integration -- --headed
+```
+
+The integration login test runs only in desktop Chromium with one worker to
+avoid issuing repeated login requests against the authentication rate limit.
 
 ---
 
