@@ -77,7 +77,7 @@ export default function AppSettingsPage() {
                 Preferensi Notifikasi
               </h2>
               <p className="text-[11px] font-bold text-neutral-400">
-                Fitur ini belum aktif.
+                Belum tersedia di versi development.
               </p>
             </div>
           </div>
@@ -87,17 +87,17 @@ export default function AppSettingsPage() {
               checked={false}
               onChange={() => undefined}
               label="Pengingat Belajar"
-              description="Nanti Sobi bisa mengingatkan jadwal belajarmu."
+              description="Akan diaktifkan setelah sistem notifikasi siap."
               disabled
-              badge="Segera"
+              badge="Belum tersedia"
             />
             <SettingsToggle
               checked={false}
               onChange={() => undefined}
               label="Papan Skor & Tantangan"
-              description="Nanti kamu bisa mendapat update peringkat dan tantangan."
+              description="Akan diaktifkan setelah tantangan belajar siap."
               disabled
-              badge="Segera"
+              badge="Belum tersedia"
             />
           </div>
         </ProfileCard>
@@ -142,7 +142,7 @@ export default function AppSettingsPage() {
                     English
                   </span>
                   <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
-                    Segera
+                    Belum tersedia
                   </span>
                 </button>
               </div>
@@ -157,7 +157,7 @@ export default function AppSettingsPage() {
                   </h3>
                 </div>
                 <span className="shrink-0 rounded-full bg-secondary/15 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-secondary">
-                  Segera
+                  Dalam rencana
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white/70 p-2">
@@ -224,7 +224,7 @@ export default function AppSettingsPage() {
                     {item.label}
                   </span>
                   <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
-                    Segera
+                    Belum tersedia
                   </span>
                 </button>
               );

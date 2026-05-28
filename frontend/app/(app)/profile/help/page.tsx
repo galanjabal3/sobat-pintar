@@ -124,24 +124,24 @@ export default function HelpPage() {
           <button
             type="button"
             disabled
-            className="rounded-[2rem] bg-primary/60 p-5 text-left text-white shadow-xl shadow-primary/10"
+            className="rounded-[2rem] border-2 border-primary/10 bg-primary/5 p-5 text-left text-primary"
           >
             <MessageCircle size={24} strokeWidth={2.5} />
             <p className="mt-4 text-base font-black">WhatsApp Support</p>
-            <p className="mt-1 text-xs font-bold text-white/75">
-              Segera hadir untuk bantuan langsung dari tim Sobi.
+            <p className="mt-1 text-xs font-bold text-neutral-500">
+              Belum tersedia. Untuk sekarang, gunakan FAQ di halaman ini dulu.
             </p>
           </button>
 
           <button
             type="button"
             disabled
-            className="rounded-[2rem] bg-secondary/70 p-5 text-left text-neutral-900 shadow-xl shadow-secondary/10"
+            className="rounded-[2rem] border-2 border-secondary/20 bg-secondary/10 p-5 text-left text-neutral-900"
           >
             <Mail size={24} strokeWidth={2.5} />
             <p className="mt-4 text-base font-black">Email Dukungan</p>
             <p className="mt-1 text-xs font-bold text-neutral-700">
-              Segera hadir untuk kirim detail masalahmu ke tim kami.
+              Belum tersedia. Kontak dukungan akan ditambahkan sebelum rilis publik.
             </p>
           </button>
         </div>
@@ -156,8 +156,8 @@ export default function HelpPage() {
                 Materi bantuan tambahan.
               </p>
             </div>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
-              Segera
+            <span className="rounded-full bg-neutral-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-neutral-400">
+              Disiapkan
             </span>
           </div>
 
@@ -177,7 +177,7 @@ export default function HelpPage() {
                       {item.title}
                     </p>
                     <p className="text-[11px] font-bold text-neutral-400">
-                      {item.meta}
+                      {item.meta} sedang disiapkan
                     </p>
                   </div>
                 </div>
@@ -189,9 +189,9 @@ export default function HelpPage() {
         <div className="rounded-[2rem] bg-primary/10 p-5">
           <p className="text-sm font-black text-primary">Status Sistem</p>
           <div className="mt-2 flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-green-500" />
+            <span className="h-3 w-3 rounded-full bg-neutral-300" />
             <p className="text-xs font-bold text-neutral-600">
-              Status detail segera tersedia.
+              Monitoring status belum terhubung di aplikasi.
             </p>
           </div>
         </div>

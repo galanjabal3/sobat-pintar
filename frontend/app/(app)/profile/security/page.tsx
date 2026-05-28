@@ -34,15 +34,15 @@ export default function SecurityPage() {
               </h2>
             </div>
             <p className="mb-5 flex-1 text-xs font-bold leading-relaxed text-neutral-500">
-              Ganti kata sandi secara berkala untuk menjaga akun dari akses
-              yang tidak diinginkan.
+              Perubahan kata sandi akan tersedia setelah alur reset password
+              email aktif.
             </p>
             <button
               type="button"
               disabled
               className="w-full rounded-2xl border-2 border-neutral-100 bg-gray-50 px-4 py-3 text-sm font-black text-neutral-400"
             >
-              Segera Hadir
+              Belum Tersedia
             </button>
           </ProfileCard>
 
@@ -61,14 +61,15 @@ export default function SecurityPage() {
               </p>
             </div>
             <p className="mb-5 flex-1 text-xs font-bold leading-relaxed text-neutral-500">
-              Tambahkan lapisan keamanan ekstra setiap kali kamu masuk.
+              Verifikasi tambahan akan disiapkan setelah manajemen perangkat
+              dan email keamanan aktif.
             </p>
             <button
               type="button"
               disabled
               className="w-full rounded-2xl border-2 border-neutral-100 bg-gray-50 px-4 py-3 text-sm font-black text-neutral-400"
             >
-              Segera Hadir
+              Belum Tersedia
             </button>
           </ProfileCard>
         </div>
@@ -83,7 +84,7 @@ export default function SecurityPage() {
                 Perangkat yang Masuk
               </h2>
               <p className="text-[11px] font-bold text-neutral-400">
-                Daftar lengkap akan tersedia setelah session device aktif.
+                Saat ini aplikasi hanya menampilkan sesi browser yang sedang dipakai.
               </p>
             </div>
           </div>
