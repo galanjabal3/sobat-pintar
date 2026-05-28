@@ -205,7 +205,7 @@ export default function LeaderboardPage() {
             <h2 className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
               Peringkat Lainnya
             </h2>
-            <span className="text-[9px] font-black text-neutral-300 uppercase tracking-widest">Update 5m ago</span>
+            <span className="text-[9px] font-black text-neutral-300 uppercase tracking-widest">Diperbarui otomatis</span>
           </div>
 
           <div className="space-y-3">

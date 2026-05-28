@@ -27,6 +27,7 @@ func main() {
 	// Load config
 	cfg := config.LoadConfig()
 	dto.SetExposeErrorDetails(cfg.AppEnv != "production")
+	service.SetDailyQuotaLimits(cfg.AIQuota.ChatDaily, cfg.AIQuota.ExplainDaily, cfg.AIQuota.SummaryDaily, cfg.AIQuota.PracticeDaily, cfg.AIQuota.ScheduleDaily)
 
 	// Initialize logger
 	logger.Init(cfg.AppEnv)
@@ -106,6 +107,7 @@ func main() {
 		jwtService,
 		uploadHandler,
 		cfg.CORSAllowedOrigins,
+		cfg.RateLimit,
 	)
 
 	// Start server

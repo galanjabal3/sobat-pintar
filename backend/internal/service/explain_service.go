@@ -34,7 +34,7 @@ func (s *explainService) ReExplain(ctx context.Context, userID, id string) (*mod
 		return nil, ErrExplanationUnauthorized
 	}
 
-	if err := s.consumeAIQuota(ctx, userID, AIFeatureExplain, ExplainDailyQuota); err != nil {
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureExplain, dailyQuotaLimit(AIFeatureExplain)); err != nil {
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func (s *explainService) Explain(ctx context.Context, userID, question, imageURL
 		return nil, err
 	}
 
-	if err := s.consumeAIQuota(ctx, userID, AIFeatureExplain, ExplainDailyQuota); err != nil {
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureExplain, dailyQuotaLimit(AIFeatureExplain)); err != nil {
 		return nil, err
 	}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Laptop, Lock, ShieldCheck, Smartphone, Tablet, Verified } from "lucide-react";
+import { Lock, ShieldCheck, Smartphone, Verified } from "lucide-react";
 
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { ProfileShell } from "@/components/profile/ProfileShell";
@@ -9,21 +9,9 @@ import { ProfileShell } from "@/components/profile/ProfileShell";
 const DEVICES = [
   {
     icon: Smartphone,
-    name: "Perangkat ini",
-    meta: "Aktif sekarang",
+    name: "Sesi saat ini",
+    meta: "Aktif di browser yang sedang kamu gunakan",
     active: true,
-  },
-  {
-    icon: Laptop,
-    name: "Browser desktop",
-    meta: "Riwayat perangkat segera hadir",
-    active: false,
-  },
-  {
-    icon: Tablet,
-    name: "Tablet",
-    meta: "Riwayat perangkat segera hadir",
-    active: false,
   },
 ];
 

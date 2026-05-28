@@ -15,6 +15,8 @@ type Config struct {
 	AppPort            string
 	AppEnv             string
 	CORSAllowedOrigins []string
+	RateLimit          RateLimitConfig
+	AIQuota            AIQuotaConfig
 
 	DatabaseURL string
 	DBHost      string
@@ -52,6 +54,23 @@ type Config struct {
 	EmailVerificationTTL time.Duration
 }
 
+type RateLimitConfig struct {
+	PublicPerMinute  int
+	AuthPerMinute    int
+	UploadPerMinute  int
+	AIWritePerMinute int
+	SharePerMinute   int
+	ChatPerMinute    int
+}
+
+type AIQuotaConfig struct {
+	ChatDaily     int
+	ExplainDaily  int
+	SummaryDaily  int
+	PracticeDaily int
+	ScheduleDaily int
+}
+
 func LoadConfig() *Config {
 	err := godotenv.Load()
 	if err != nil {
@@ -61,6 +80,21 @@ func LoadConfig() *Config {
 	cfg := &Config{
 		AppPort: getEnv("APP_PORT", "8080"),
 		AppEnv:  getEnv("APP_ENV", "development"),
+		RateLimit: RateLimitConfig{
+			PublicPerMinute:  getIntEnv("RATE_LIMIT_PUBLIC_PER_MINUTE", 60),
+			AuthPerMinute:    getIntEnv("RATE_LIMIT_AUTH_PER_MINUTE", 10),
+			UploadPerMinute:  getIntEnv("RATE_LIMIT_UPLOAD_PER_MINUTE", 10),
+			AIWritePerMinute: getIntEnv("RATE_LIMIT_AI_WRITE_PER_MINUTE", 8),
+			SharePerMinute:   getIntEnv("RATE_LIMIT_SHARE_PER_MINUTE", 10),
+			ChatPerMinute:    getIntEnv("RATE_LIMIT_CHAT_PER_MINUTE", 10),
+		},
+		AIQuota: AIQuotaConfig{
+			ChatDaily:     getIntEnv("AI_QUOTA_CHAT_DAILY", 5),
+			ExplainDaily:  getIntEnv("AI_QUOTA_EXPLAIN_DAILY", 2),
+			SummaryDaily:  getIntEnv("AI_QUOTA_SUMMARY_DAILY", 1),
+			PracticeDaily: getIntEnv("AI_QUOTA_PRACTICE_DAILY", 2),
+			ScheduleDaily: getIntEnv("AI_QUOTA_SCHEDULE_DAILY", 1),
+		},
 
 		DatabaseURL: getEnv("DATABASE_URL", ""),
 		DBHost:      getEnv("DB_HOST", "localhost"),

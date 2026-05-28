@@ -97,6 +97,8 @@ APP_BASE_URL=http://localhost:3000
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 GOOGLE_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-...
+RATE_LIMIT_AI_WRITE_PER_MINUTE=8
+AI_QUOTA_CHAT_DAILY=5
 ```
 
 `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` must come from the same
@@ -130,6 +132,8 @@ Required frontend values:
 NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=<same-web-client-id>.apps.googleusercontent.com
 ```
+
+Frontend production builds fail when required public env values are missing.
 
 Optional real-backend integration test account values can be added to the local
 `frontend/.env.local` file. Do not commit real credentials:
@@ -180,6 +184,74 @@ npm run test:e2e:integration -- --headed
 
 The integration login test runs only in desktop Chromium with one worker to
 avoid issuing repeated login requests against the authentication rate limit.
+
+---
+
+## 🚢 Deployment Checklist
+
+### Frontend on Vercel
+
+Set these environment variables before building:
+
+```env
+NEXT_PUBLIC_API_URL=https://<backend-domain>/api/v1
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=<google-web-client-id>.apps.googleusercontent.com
+```
+
+### Backend Hosting
+
+Set these environment variables before starting the server:
+
+```env
+APP_ENV=production
+APP_BASE_URL=https://<frontend-domain>
+CORS_ALLOWED_ORIGINS=https://<frontend-domain>
+DATABASE_URL=postgresql://...
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+JWT_SECRET=<long-random-secret>
+JWT_ACCESS_TTL=15m
+JWT_REFRESH_TTL=168h
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+GOOGLE_CLIENT_ID=<google-web-client-id>.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=...
+EMAIL_FROM=Sobat Pintar <no-reply@your-domain>
+SMTP_HOST=...
+SMTP_PORT=587
+SMTP_USERNAME=...
+SMTP_PASSWORD=...
+```
+
+Optional runtime tuning:
+
+```env
+RATE_LIMIT_PUBLIC_PER_MINUTE=60
+RATE_LIMIT_AUTH_PER_MINUTE=10
+RATE_LIMIT_UPLOAD_PER_MINUTE=10
+RATE_LIMIT_AI_WRITE_PER_MINUTE=8
+RATE_LIMIT_SHARE_PER_MINUTE=10
+RATE_LIMIT_CHAT_PER_MINUTE=10
+AI_QUOTA_CHAT_DAILY=5
+AI_QUOTA_EXPLAIN_DAILY=2
+AI_QUOTA_SUMMARY_DAILY=1
+AI_QUOTA_PRACTICE_DAILY=2
+AI_QUOTA_SCHEDULE_DAILY=1
+```
+
+Google OAuth production setup:
+
+- Add `https://<frontend-domain>` to Authorized JavaScript origins.
+- Keep the backend `GOOGLE_CLIENT_ID` and frontend `NEXT_PUBLIC_GOOGLE_CLIENT_ID` from the same Web application credential.
+- Update `CORS_ALLOWED_ORIGINS` and `APP_BASE_URL` to the frontend domain so HttpOnly auth cookies work over HTTPS.
+
+Run database migrations once before the first production start:
+
+```bash
+cd backend
+go run cmd/migrate/main.go up
+```
 
 ---
 

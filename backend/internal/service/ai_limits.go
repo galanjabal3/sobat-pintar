@@ -42,6 +42,14 @@ var aiDailyQuotaLimits = map[string]int{
 	AIFeatureSchedule: ScheduleDailyQuota,
 }
 
+func SetDailyQuotaLimits(chat, explain, summary, practice, schedule int) {
+	aiDailyQuotaLimits[AIFeatureChat] = positiveOrDefault(chat, ChatDailyQuota)
+	aiDailyQuotaLimits[AIFeatureExplain] = positiveOrDefault(explain, ExplainDailyQuota)
+	aiDailyQuotaLimits[AIFeatureSummary] = positiveOrDefault(summary, SummaryDailyQuota)
+	aiDailyQuotaLimits[AIFeaturePractice] = positiveOrDefault(practice, PracticeDailyQuota)
+	aiDailyQuotaLimits[AIFeatureSchedule] = positiveOrDefault(schedule, ScheduleDailyQuota)
+}
+
 var (
 	ErrChatMessageRequired      = errors.New("chat message is required")
 	ErrChatMessageTooLong       = errors.New("chat message exceeds maximum length")
@@ -203,6 +211,13 @@ func runeLen(value string) int {
 
 func dailyQuotaLimit(feature string) int {
 	return aiDailyQuotaLimits[feature]
+}
+
+func positiveOrDefault(value, fallback int) int {
+	if value <= 0 {
+		return fallback
+	}
+	return value
 }
 
 func dailyQuotaFeatures() []string {

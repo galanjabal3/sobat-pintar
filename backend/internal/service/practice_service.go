@@ -63,7 +63,7 @@ func (s *practiceService) StartSession(ctx context.Context, userID, level string
 	}
 
 	// 1. Generate questions via Gemini
-	if err := s.consumeAIQuota(ctx, userID, AIFeaturePractice, PracticeDailyQuota); err != nil {
+	if err := s.consumeAIQuota(ctx, userID, AIFeaturePractice, dailyQuotaLimit(AIFeaturePractice)); err != nil {
 		return nil, err
 	}
 

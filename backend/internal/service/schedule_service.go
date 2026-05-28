@@ -43,7 +43,7 @@ func (s *scheduleService) GenerateSchedule(ctx context.Context, userID, level st
 		return nil, err
 	}
 
-	if err := s.consumeAIQuota(ctx, userID, AIFeatureSchedule, ScheduleDailyQuota); err != nil {
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureSchedule, dailyQuotaLimit(AIFeatureSchedule)); err != nil {
 		return nil, err
 	}
 

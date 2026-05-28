@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"sobat-pintar/internal/config"
 	"sobat-pintar/internal/handler"
 	"sobat-pintar/internal/middleware"
 	"sobat-pintar/internal/router/modules"
@@ -21,6 +22,7 @@ func SetupRouter(
 	jwtService *jwt.JWTService,
 	uploadHandler *handler.UploadHandler,
 	corsAllowedOrigins []string,
+	rateLimit config.RateLimitConfig,
 ) *gin.Engine {
 	r := gin.New()
 
@@ -35,13 +37,13 @@ func SetupRouter(
 		api.GET("/health", healthHandler.HealthCheck)
 
 		// Auth routes
-		modules.RegisterAuthRoutes(api, authHandler)
+		modules.RegisterAuthRoutes(api, authHandler, rateLimit)
 
 		// Public routes
-		modules.RegisterPublicRoutes(api, explainHandler, summaryHandler)
+		modules.RegisterPublicRoutes(api, explainHandler, summaryHandler, rateLimit)
 
 		// Protected routes
-		modules.RegisterProtectedRoutes(api, jwtService, aiHandler, authHandler, explainHandler, chatHandler, practiceHandler, summaryHandler, scheduleHandler, gamificationHandler, uploadHandler)
+		modules.RegisterProtectedRoutes(api, jwtService, aiHandler, authHandler, explainHandler, chatHandler, practiceHandler, summaryHandler, scheduleHandler, gamificationHandler, uploadHandler, rateLimit)
 	}
 
 	return r

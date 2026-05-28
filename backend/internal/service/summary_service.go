@@ -62,7 +62,7 @@ func (s *summaryService) CreateSummary(ctx context.Context, userID, level string
 		return nil, fmt.Errorf("ekstraksi dari %s belum didukung", req.SourceType)
 	}
 
-	if err := s.consumeAIQuota(ctx, userID, AIFeatureSummary, SummaryDailyQuota); err != nil {
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureSummary, dailyQuotaLimit(AIFeatureSummary)); err != nil {
 		return nil, err
 	}
 

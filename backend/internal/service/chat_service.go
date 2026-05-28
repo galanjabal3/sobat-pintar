@@ -143,7 +143,7 @@ func (s *chatService) SendMessage(ctx context.Context, userID string, sessionID 
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	if err := s.consumeAIQuota(ctx, userID, AIFeatureChat, ChatDailyQuota); err != nil {
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureChat, dailyQuotaLimit(AIFeatureChat)); err != nil {
 		return nil, err
 	}
 
