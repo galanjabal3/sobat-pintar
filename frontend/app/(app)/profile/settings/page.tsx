@@ -10,6 +10,7 @@ import { ProfileCard } from "@/components/profile/ProfileCard";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { SettingsToggle } from "@/components/profile/SettingsToggle";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
 const SETTINGS_STORAGE_KEY = "sobat-pintar-settings";
@@ -48,7 +49,12 @@ export default function AppSettingsPage() {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Local logout should still proceed when the network is unavailable.
+    }
     logout();
     router.push("/login");
   };

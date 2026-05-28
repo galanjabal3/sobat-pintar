@@ -13,9 +13,7 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"`
-	User         UserResponse `json:"user"`
+	User UserResponse `json:"user"`
 }
 
 type RegisterResponse struct {
@@ -57,7 +55,7 @@ type RefreshRequest struct {
 }
 
 type RefreshResponse struct {
-	AccessToken string `json:"access_token"`
+	Refreshed bool `json:"refreshed"`
 }
 
 type GoogleLoginRequest struct {

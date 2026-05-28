@@ -240,8 +240,12 @@ POST /auth/login       Login
 POST /auth/google      Login/register with Google authorization code
 POST /auth/verify-email
 POST /auth/resend-verification
-POST /auth/refresh     Refresh access token
+POST /auth/refresh     Refresh access cookie
+POST /auth/logout      Clear auth cookies
 ```
+
+Email and Google sign-in store session tokens in HttpOnly cookies. Frontend
+requests must include credentials so protected routes can read those cookies.
 
 ### Jelasin Soal
 ```

@@ -75,9 +75,9 @@ function LoginContent() {
         headers: { "X-Requested-With": "XMLHttpRequest" },
       });
 
-      const { access_token, refresh_token, user } = res.data;
+      const { user } = res.data;
 
-      setAuth(user, access_token, refresh_token);
+      setAuth(user);
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, "Google login gagal. Silakan coba lagi."));
@@ -93,9 +93,9 @@ function LoginContent() {
 
     try {
       const response = await api.post("/auth/login", data);
-      const { access_token, refresh_token, user } = response.data;
+      const { user } = response.data;
 
-      setAuth(user, access_token, refresh_token);
+      setAuth(user);
       router.push("/dashboard");
     } catch (err: unknown) {
       const apiError = err as { response?: { status?: number } };

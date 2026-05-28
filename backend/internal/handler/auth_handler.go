@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"sobat-pintar/internal/dto"
@@ -12,11 +13,49 @@ import (
 )
 
 type AuthHandler struct {
-	authService service.AuthService
+	authService      service.AuthService
+	secureCookies    bool
+	accessCookieTTL  time.Duration
+	refreshCookieTTL time.Duration
 }
 
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+const (
+	accessTokenCookieName  = "sobat_access_token"
+	refreshTokenCookieName = "sobat_refresh_token"
+)
+
+func NewAuthHandler(authService service.AuthService, secureCookies bool, accessCookieTTL, refreshCookieTTL time.Duration) *AuthHandler {
+	return &AuthHandler{
+		authService:      authService,
+		secureCookies:    secureCookies,
+		accessCookieTTL:  accessCookieTTL,
+		refreshCookieTTL: refreshCookieTTL,
+	}
+}
+
+func (h *AuthHandler) setAuthCookies(c *gin.Context, accessToken, refreshToken string) {
+	h.setCookieSameSite(c)
+	c.SetCookie(accessTokenCookieName, accessToken, int(h.accessCookieTTL.Seconds()), "/api/v1", "", h.secureCookies, true)
+	c.SetCookie(refreshTokenCookieName, refreshToken, int(h.refreshCookieTTL.Seconds()), "/api/v1/auth", "", h.secureCookies, true)
+}
+
+func (h *AuthHandler) setAccessCookie(c *gin.Context, accessToken string) {
+	h.setCookieSameSite(c)
+	c.SetCookie(accessTokenCookieName, accessToken, int(h.accessCookieTTL.Seconds()), "/api/v1", "", h.secureCookies, true)
+}
+
+func (h *AuthHandler) clearAuthCookies(c *gin.Context) {
+	h.setCookieSameSite(c)
+	c.SetCookie(accessTokenCookieName, "", -1, "/api/v1", "", h.secureCookies, true)
+	c.SetCookie(refreshTokenCookieName, "", -1, "/api/v1/auth", "", h.secureCookies, true)
+}
+
+func (h *AuthHandler) setCookieSameSite(c *gin.Context) {
+	if h.secureCookies {
+		c.SetSameSite(http.SameSiteNoneMode)
+		return
+	}
+	c.SetSameSite(http.SameSiteLaxMode)
 }
 
 func toUserResponse(user *model.User) dto.UserResponse {
@@ -112,14 +151,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		})
 		return
 	}
+	h.setAuthCookies(c, at, rt)
 
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Login berhasil",
 		Data: dto.AuthResponse{
-			AccessToken:  at,
-			RefreshToken: rt,
-			User:         toUserResponse(user),
+			User: toUserResponse(user),
 		},
 	})
 }
@@ -245,11 +283,25 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req dto.RefreshRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if c.Request.ContentLength != 0 {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+				Success: false,
+				Message: "Refresh token tidak valid",
+				Error:   err.Error(),
+			})
+			return
+		}
+	}
+	if req.RefreshToken == "" {
+		if refreshToken, err := c.Cookie(refreshTokenCookieName); err == nil {
+			req.RefreshToken = refreshToken
+		}
+	}
+	if req.RefreshToken == "" {
 		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
 			Success: false,
 			Message: "Refresh token tidak valid",
-			Error:   err.Error(),
 		})
 		return
 	}
@@ -263,13 +315,21 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		})
 		return
 	}
+	h.setAccessCookie(c, accessToken)
 
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Token berhasil diperbarui",
-		Data: dto.RefreshResponse{
-			AccessToken: accessToken,
-		},
+		Data:    dto.RefreshResponse{Refreshed: true},
+	})
+}
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	h.clearAuthCookies(c)
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Logout berhasil",
+		Data:    gin.H{"logged_out": true},
 	})
 }
 
@@ -309,14 +369,13 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 		})
 		return
 	}
+	h.setAuthCookies(c, at, rt)
 
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Login Google berhasil",
 		Data: dto.AuthResponse{
-			AccessToken:  at,
-			RefreshToken: rt,
-			User:         toUserResponse(user),
+			User: toUserResponse(user),
 		},
 	})
 }

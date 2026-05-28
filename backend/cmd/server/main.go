@@ -82,7 +82,7 @@ func main() {
 	scheduleService := service.NewScheduleService(scheduleRepo, geminiClient, aiQuotaService)
 
 	// Initialize handlers
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, cfg.AppEnv == "production", cfg.JWTAccessTTL, cfg.JWTRefreshTTL)
 	aiHandler := handler.NewAIHandler(aiQuotaService)
 	explainHandler := handler.NewExplainHandler(explainService)
 	chatHandler := handler.NewChatHandler(chatService)

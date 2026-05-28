@@ -91,9 +91,9 @@ function RegisterContent() {
         headers: { "X-Requested-With": "XMLHttpRequest" },
       });
 
-      const { access_token, refresh_token, user } = res.data;
+      const { user } = res.data;
 
-      setAuth(user, access_token, refresh_token);
+      setAuth(user);
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, "Google register gagal. Silakan coba lagi."));

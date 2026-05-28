@@ -13,22 +13,36 @@ async function seedSession(page: Page) {
   await page.addInitScript(({ storedUser }) => {
     if (sessionStorage.getItem("test-session-seeded")) return;
     sessionStorage.setItem("test-session-seeded", "true");
-    localStorage.setItem("access_token", "expired-access-token");
-    localStorage.setItem("refresh_token", "refresh-token");
     localStorage.setItem("auth-storage", JSON.stringify({
       state: {
         user: storedUser,
-        accessToken: "expired-access-token",
-        refreshToken: "refresh-token",
       },
       version: 0,
     }));
   }, { storedUser: user });
+  await page.context().addCookies([
+    {
+      name: "sobat_access_token",
+      value: "expired-access-token",
+      domain: "localhost",
+      path: "/api/v1",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+    {
+      name: "sobat_refresh_token",
+      value: "refresh-token",
+      domain: "localhost",
+      path: "/api/v1/auth",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+  ]);
 }
 
-async function mockDashboardRequests(page: Page, onProfileRequest?: (authorization?: string) => void) {
+async function mockDashboardRequests(page: Page, onProfileRequest?: (cookie?: string) => void) {
   await page.route("**/api/v1/user/profile", (route) => {
-    onProfileRequest?.(route.request().headers().authorization);
+    onProfileRequest?.(route.request().headers().cookie);
     return route.fulfill({ json: { success: true, data: user } });
   });
   await page.route("**/api/v1/practice/progress", (route) => route.fulfill({
@@ -58,16 +72,17 @@ test("login page keeps Google button full width", async ({ page }) => {
 });
 
 test("email login stores session and opens dashboard", async ({ page }) => {
-  let profileAuthorization: string | undefined;
-  await mockDashboardRequests(page, (authorization) => {
-    profileAuthorization = authorization;
+  let profileCookie = "";
+  await mockDashboardRequests(page, (cookie) => {
+    profileCookie = cookie || "";
   });
   await page.route("**/api/v1/auth/login", (route) => route.fulfill({
+    headers: {
+      "Set-Cookie": "sobat_access_token=access-token; Path=/api/v1; HttpOnly; SameSite=Lax",
+    },
     json: {
       success: true,
       data: {
-        access_token: "access-token",
-        refresh_token: "refresh-token",
         user,
       },
     },
@@ -79,7 +94,8 @@ test("email login stores session and opens dashboard", async ({ page }) => {
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect.poll(() => profileAuthorization).toBe("Bearer access-token");
+  await expect.poll(() => profileCookie).toContain("sobat_access_token=access-token");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("access_token"))).toBeNull();
 });
 
 test("email login displays an invalid credential message", async ({ page }) => {
@@ -180,7 +196,7 @@ test("expired access token is refreshed for a protected request", async ({ page 
   let renewedProfileRequests = 0;
 
   await page.route("**/api/v1/user/profile", async (route) => {
-    if (route.request().headers().authorization !== "Bearer renewed-access-token") {
+    if (!route.request().headers().cookie?.includes("sobat_access_token=renewed-access-token")) {
       await route.fulfill({ status: 401, json: { success: false, message: "Sesi tidak valid" } });
       return;
     }
@@ -188,7 +204,10 @@ test("expired access token is refreshed for a protected request", async ({ page 
     await route.fulfill({ json: { success: true, data: user } });
   });
   await page.route("**/api/v1/auth/refresh", (route) => route.fulfill({
-    json: { success: true, data: { access_token: "renewed-access-token" } },
+    headers: {
+      "Set-Cookie": "sobat_access_token=renewed-access-token; Path=/api/v1; HttpOnly; SameSite=Lax",
+    },
+    json: { success: true, data: { refreshed: true } },
   }));
   await page.route("**/api/v1/gamification/points", (route) => route.fulfill({
     json: { success: true, data: { points: 12 } },
@@ -197,7 +216,7 @@ test("expired access token is refreshed for a protected request", async ({ page 
   await page.goto("/profile");
 
   await expect(page.getByRole("heading", { name: "Galan Jabal" })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("access_token"))).toBe("renewed-access-token");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("access_token"))).toBeNull();
   await expect.poll(() => renewedProfileRequests).toBeGreaterThan(0);
 });
 
@@ -211,6 +230,9 @@ test("failed refresh clears session and returns to login", async ({ page }) => {
     status: 401,
     json: { success: false, message: "Sesi telah berakhir" },
   }));
+  await page.route("**/api/v1/auth/logout", (route) => route.fulfill({
+    json: { success: true, data: { logged_out: true } },
+  }));
   await page.route("**/api/v1/gamification/points", (route) => route.fulfill({
     json: { success: true, data: { points: 0 } },
   }));
@@ -218,7 +240,7 @@ test("failed refresh clears session and returns to login", async ({ page }) => {
   await page.goto("/profile");
 
   await expect(page).toHaveURL(/\/login$/);
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("refresh_token"))).toBeNull();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("auth-storage") || "")).not.toContain("Galan Jabal");
 });
 
 test("shared explanation loads through its private token", async ({ page }) => {
