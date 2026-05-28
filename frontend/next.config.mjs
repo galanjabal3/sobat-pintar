@@ -4,6 +4,8 @@ const requiredPublicEnv = [
 ];
 
 const missingPublicEnv = requiredPublicEnv.filter((key) => !process.env[key]);
+const cloudinaryCloudName =
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dzzflhq79';
 
 if (missingPublicEnv.length > 0) {
   const message = `Missing required frontend env: ${missingPublicEnv.join(', ')}`;
@@ -36,7 +38,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
-        pathname: '/dzzflhq79/**',
+        pathname: `/${cloudinaryCloudName}/**`,
       },
     ],
   },

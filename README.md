@@ -131,9 +131,12 @@ Required frontend values:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=<same-web-client-id>.apps.googleusercontent.com
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzzflhq79
 ```
 
 Frontend production builds fail when required public env values are missing.
+`NEXT_PUBLIC_SOBI_ASSET_BASE_URL` can be set when Sobi images move to another
+CDN or path.
 
 Optional real-backend integration test account values can be added to the local
 `frontend/.env.local` file. Do not commit real credentials:
@@ -196,6 +199,7 @@ Set these environment variables before building:
 ```env
 NEXT_PUBLIC_API_URL=https://<backend-domain>/api/v1
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=<google-web-client-id>.apps.googleusercontent.com
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzzflhq79
 ```
 
 ### Backend Hosting
