@@ -229,7 +229,7 @@ export default function SummaryPage() {
            initial={{ opacity: 0, scale: 0.95 }}
            animate={{ opacity: 1, scale: 1 }}
            transition={{ delay: 0.1 }}
-           className="bg-white/70 backdrop-blur-2xl border-4 border-white p-8 rounded-[3rem] mb-12 relative overflow-hidden shadow-2xl shadow-primary/5"
+           className="bg-white/70 backdrop-blur-2xl border-4 border-white p-5 rounded-[2rem] mb-12 relative overflow-hidden shadow-2xl shadow-primary/5 sm:p-8 sm:rounded-[3rem]"
          >
            <div className="relative z-10">
              <div className="flex items-center gap-2 mb-4">
@@ -326,6 +326,7 @@ export default function SummaryPage() {
               isLoading={isSubmitting}
               disabled={!canSubmit || isSubmitting}
               className="w-full mt-6 py-6 h-auto text-lg rounded-[2rem] shadow-2xl shadow-primary/20 font-black group"
+              hideChildrenWhenLoading
             >
               <Sparkles size={20} strokeWidth={3} className="mr-3" />
               Buat Rangkuman

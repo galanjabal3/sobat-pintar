@@ -370,7 +370,7 @@ function stripSummaryMarkdown(markdown: string) {
              </div>
            </div>
  
-           <div className="bg-white p-8 rounded-[3rem] border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden">
+           <div className="bg-white p-5 rounded-[2rem] border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden sm:p-8 sm:rounded-[3rem]">
              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
              
              <AIMarkdown
@@ -403,7 +403,7 @@ function stripSummaryMarkdown(markdown: string) {
              initial={{ opacity: 0, scale: 0.9 }}
              animate={{ opacity: 1, scale: 1 }}
              transition={{ delay: 0.2 }}
-             className="bg-primary/5 border-2 border-primary/10 p-6 rounded-[2.5rem] flex items-start gap-5"
+             className="bg-primary/5 border-2 border-primary/10 p-5 rounded-[2rem] flex items-start gap-4 sm:p-6 sm:rounded-[2.5rem] sm:gap-5"
            >
              <div className="w-12 h-12 relative shrink-0">
                <Image
@@ -423,7 +423,7 @@ function stripSummaryMarkdown(markdown: string) {
              </div>
            </motion.div>
  
-           <div className="grid grid-cols-2 gap-4 pt-4">
+           <div className="grid grid-cols-1 gap-3 pt-4 min-[430px]:grid-cols-2 sm:gap-4">
 	             <button type="button" onClick={handleDownloadPdf} className="flex items-center justify-center gap-3 py-5 bg-white border-4 border-white shadow-xl shadow-black/5 rounded-[2rem] font-black text-xs text-neutral-600 uppercase tracking-widest hover:shadow-2xl transition-all">
                <Download size={18} /> Simpan PDF
              </button>

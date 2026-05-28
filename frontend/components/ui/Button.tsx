@@ -4,10 +4,11 @@ import { cn } from "@/lib/utils";
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost";
   isLoading?: boolean;
+  hideChildrenWhenLoading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", isLoading, children, ...props }, ref) => {
+  ({ className, variant = "primary", isLoading, hideChildrenWhenLoading = false, children, ...props }, ref) => {
     const variants = {
       primary: "bg-primary text-white hover:bg-opacity-90",
       secondary: "bg-secondary text-neutral-900 hover:bg-opacity-90",
@@ -27,9 +28,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading ? (
-          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          <div
+            className={cn(
+              "h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent",
+              !hideChildrenWhenLoading && "mr-2"
+            )}
+          />
         ) : null}
-        {children}
+        {isLoading && hideChildrenWhenLoading ? null : children}
       </button>
     );
   }

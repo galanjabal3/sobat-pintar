@@ -119,14 +119,14 @@ function LoginContent() {
       </Link>
 
       <div className="mb-6 flex flex-col items-center pt-8">
-        <div className="relative mb-3 h-36 w-36">
+        <div className="pointer-events-none relative mb-3 h-36 w-36">
           <Image
             src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
             fill
             priority
             sizes="144px"
-            className="object-contain drop-shadow-2xl"
+            className="pointer-events-none object-contain drop-shadow-2xl"
           />
         </div>
 

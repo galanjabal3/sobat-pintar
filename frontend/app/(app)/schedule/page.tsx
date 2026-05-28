@@ -209,7 +209,7 @@ export default function SchedulePage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white/70 backdrop-blur-2xl border-4 border-white p-8 rounded-[3rem] mb-10 relative overflow-hidden shadow-2xl shadow-primary/5"
+          className="bg-white/70 backdrop-blur-2xl border-4 border-white p-5 rounded-[2rem] mb-10 relative overflow-hidden shadow-2xl shadow-primary/5 sm:p-8 sm:rounded-[3rem]"
         >
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
@@ -241,7 +241,7 @@ export default function SchedulePage() {
                       <span className="py-2 text-sm font-bold text-neutral-300">Tambah mata pelajaran...</span>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 min-[420px]:flex-row">
                     <input
                       value={subjectInput}
                       onChange={(event) => {
@@ -269,7 +269,7 @@ export default function SchedulePage() {
                       type="button"
                       onClick={() => addSubject()}
                       disabled={!subjectInput.trim() || subjects.length >= MAX_SCHEDULE_SUBJECT_COUNT}
-                      className="h-12 rounded-2xl bg-primary px-5 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-40"
+                      className="h-12 rounded-2xl bg-primary px-5 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-40 min-[420px]:w-auto"
                     >
                       Tambah
                     </button>
@@ -342,12 +342,13 @@ export default function SchedulePage() {
               onClick={handleGenerate}
               isLoading={isSubmitting}
               disabled={!canSubmit || isSubmitting}
-              className="mt-7 py-6 h-auto px-8 rounded-2xl shadow-xl shadow-primary/20 font-black group"
+              className="mt-7 h-auto w-full rounded-2xl px-6 py-5 font-black shadow-xl shadow-primary/20 group sm:w-auto sm:px-8 sm:py-6"
+              hideChildrenWhenLoading
             >
               Buat Jadwal Baru
               <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <div className="mt-4 max-w-[360px] pr-24 sm:pr-32">
+            <div className="mt-4 max-w-[360px] pr-20 sm:pr-32">
               <QuotaBadge feature="schedule" />
             </div>
           </div>

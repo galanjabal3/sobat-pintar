@@ -196,7 +196,7 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
-             className="bg-white border-2 border-primary/10 rounded-[3rem] p-8 relative shadow-[0_20px_50px_rgba(2,212,143,0.1)]"
+             className="bg-white border-2 border-primary/10 rounded-[2rem] p-5 relative shadow-[0_20px_50px_rgba(2,212,143,0.1)] sm:rounded-[3rem] sm:p-8"
            >
              {/* Mascot Header */}
              <div className="absolute -top-10 left-8 flex items-center gap-3">

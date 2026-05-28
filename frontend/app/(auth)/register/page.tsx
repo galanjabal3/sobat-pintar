@@ -136,14 +136,14 @@ function RegisterContent() {
       </Link>
 
       <div className="mb-5 flex flex-col items-center pt-8">
-        <div className="relative mb-2 h-32 w-32">
+        <div className="pointer-events-none relative mb-2 h-32 w-32">
           <Image
             src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
             fill
             priority
             sizes="128px"
-            className="object-contain drop-shadow-2xl"
+            className="pointer-events-none object-contain drop-shadow-2xl"
           />
         </div>
 

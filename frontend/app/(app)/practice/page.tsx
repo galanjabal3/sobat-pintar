@@ -171,7 +171,7 @@ export default function PracticePage() {
                </div>
              </div>
              
-             <div className="grid grid-cols-2 gap-4">
+             <div className="grid grid-cols-2 gap-3 sm:gap-4">
                {SUBJECTS.map((sub) => (
                  <motion.button
                    key={sub.id}
@@ -179,7 +179,7 @@ export default function PracticePage() {
                    whileTap={{ scale: 0.95 }}
                    onClick={() => setSelectedSubject(sub.id)}
                    className={cn(
-                     "p-6 rounded-[2.5rem] border-4 text-left transition-all relative overflow-hidden group",
+                     "p-4 rounded-[2rem] border-4 text-left transition-all relative overflow-hidden group sm:p-6 sm:rounded-[2.5rem]",
                      selectedSubject === sub.id
                        ? "border-primary bg-white shadow-2xl shadow-primary/10"
                        : "border-white bg-white/50 hover:border-primary/20 shadow-xl shadow-primary/5"
@@ -312,7 +312,7 @@ export default function PracticePage() {
                    <Clock size={14} className="text-secondary" />
                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Timer</p>
                  </div>
-                 <div className="grid grid-cols-4 gap-1.5">
+                 <div className="grid grid-cols-2 gap-2 min-[430px]:grid-cols-4 min-[430px]:gap-1.5">
                    {TIMER_OPTIONS.map((option) => (
                      <button
                        key={option.minutes}
@@ -347,7 +347,8 @@ export default function PracticePage() {
               onClick={handleStart}
               isLoading={isLoading}
               disabled={isLoading}
-              className="w-full py-7 h-auto text-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black group"
+              className="w-full py-5 h-auto text-base rounded-[2rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black group sm:py-7 sm:text-xl sm:rounded-[2.5rem]"
+              hideChildrenWhenLoading
             >
               Mulai Latihan
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />

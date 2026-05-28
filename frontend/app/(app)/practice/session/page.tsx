@@ -346,9 +346,9 @@ function PracticeSessionContent() {
             className="space-y-10"
           >
             {/* Question Card Upgrade */}
-            <div className="bg-white p-8 rounded-[3rem] border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden">
+            <div className="bg-white p-5 rounded-[2rem] border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden sm:p-8 sm:rounded-[3rem]">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
-              <PracticeMarkdown className="text-xl font-black text-neutral-800 leading-relaxed text-center">
+              <PracticeMarkdown className="text-base font-black text-neutral-800 leading-relaxed text-center sm:text-xl">
                 {currentQuestion.question_text}
               </PracticeMarkdown>
             </div>
@@ -389,11 +389,11 @@ function PracticeSessionContent() {
                     disabled={hasSubmitted}
                     onClick={() => setSelectedOption(key)}
                     className={cn(
-                      "w-full p-6 rounded-[2.5rem] border-4 text-left transition-all flex items-center justify-between",
+                      "w-full p-4 rounded-[2rem] border-4 text-left transition-all flex items-center justify-between sm:p-6 sm:rounded-[2.5rem]",
                       optionStyle
                     )}
                   >
-                    <div className="flex items-center gap-5">
+                    <div className="flex items-center gap-3 sm:gap-5">
                       <span className={cn(
                         "w-10 h-10 flex items-center justify-center rounded-2xl text-sm font-black transition-colors",
                         isCorrectOption
@@ -425,7 +425,8 @@ function PracticeSessionContent() {
                 onClick={handleSubmit}
                 disabled={!selectedOption || isSubmitting}
                 isLoading={isSubmitting}
-                className="w-full py-7 h-auto text-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black mt-4"
+                className="w-full py-5 h-auto text-base rounded-[2rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black mt-4 sm:py-7 sm:text-xl sm:rounded-[2.5rem]"
+                hideChildrenWhenLoading
               >
                 Cek Jawaban
               </Button>
@@ -453,7 +454,7 @@ function PracticeSessionContent() {
                 )}
                 <Button
                   onClick={handleNext}
-                  className="w-full py-7 h-auto text-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black group"
+                  className="w-full py-5 h-auto text-base rounded-[2rem] shadow-[0_20px_50px_rgba(2,212,143,0.3)] font-black group sm:py-7 sm:text-xl sm:rounded-[2.5rem]"
                 >
                   {isLastQuestion ? "Lihat Hasil Akhir" : "Soal Berikutnya"}
                   <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />

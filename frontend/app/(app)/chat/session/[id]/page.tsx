@@ -143,7 +143,7 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
    }
 
    return (
-     <div className="flex flex-col h-screen bg-[#FDFEFF] relative overflow-hidden">
+     <div className="flex h-[100dvh] flex-col bg-[#FDFEFF] relative overflow-hidden">
        {/* Premium Header */}
        <header className="bg-white/70 backdrop-blur-xl px-6 pt-12 pb-4 border-b-4 border-white sticky top-0 z-20 shadow-xl shadow-primary/5 flex items-center gap-4">
          <motion.button
@@ -177,7 +177,7 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
        {/* Chat Area */}
        <div
          ref={scrollRef}
-         className="flex-1 overflow-y-auto px-6 py-10 space-y-8 scroll-smooth"
+         className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scroll-smooth sm:px-6 sm:py-10 sm:space-y-8"
        >
          <AnimatePresence initial={false}>
            {(chat?.messages || []).map((msg, idx) => (
@@ -191,7 +191,7 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
                )}
              >
                <div className={cn(
-                 "flex gap-3 max-w-[85%]",
+                 "flex gap-3 max-w-[92%] sm:max-w-[85%]",
                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
                )}>
                  <div className={cn(
@@ -265,15 +265,15 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
        </div>
 
        {/* Input Area */}
-      <div className="p-6 bg-white/70 backdrop-blur-xl border-t-4 border-white shadow-2xl shadow-primary/20">
+      <div className="p-4 bg-white/70 backdrop-blur-xl border-t-4 border-white shadow-2xl shadow-primary/20 sm:p-6">
         <div className="mb-3">
           <QuotaBadge feature="chat" />
         </div>
        <form
          onSubmit={handleSendMessage}
-          className="relative flex items-end gap-3"
+          className="relative"
          >
-           <div className="relative flex-1 group">
+           <div className="relative group">
             <AutoGrowTextarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -288,23 +288,19 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
               maxLength={MAX_CHAT_MESSAGE_CHARS}
               minRows={1}
               maxRows={5}
-              className="max-h-36 w-full bg-gray-50/50 border-2 border-transparent rounded-[2rem] p-5 pr-14 text-sm font-medium leading-relaxed focus:outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all"
+              className="max-h-36 w-full rounded-[1.75rem] border-2 border-primary/5 bg-gray-50/70 p-4 pr-16 text-sm font-medium leading-relaxed transition-all focus:border-primary/20 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 sm:rounded-[2rem] sm:p-5 sm:pr-20"
             />
-             <div className="absolute right-4 top-5 text-primary/30">
-               <Sparkles size={20} />
-             </div>
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
+              type="submit"
+              disabled={!message.trim() || isSending}
+              className="absolute right-2.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/25 transition-all disabled:opacity-50 sm:right-3 sm:h-11 sm:w-11"
+              aria-label="Kirim pesan"
+            >
+              <Send size={18} strokeWidth={2.5} className="sm:size-5" />
+            </motion.button>
            </div>
-
-           <motion.button
-             whileHover={{ scale: 1.05 }}
-             whileTap={{ scale: 0.95 }}
-             type="submit"
-	             disabled={!message.trim() || isSending}
-	             className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white shadow-2xl shadow-primary/30 disabled:opacity-50 transition-all shrink-0"
-	             aria-label="Kirim pesan"
-           >
-             <Send size={24} strokeWidth={2.5} className="ml-1" />
-           </motion.button>
          </form>
        </div>
 

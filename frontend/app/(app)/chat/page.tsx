@@ -134,7 +134,7 @@ export default function ChatPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/70 backdrop-blur-2xl border-4 border-white p-8 rounded-[3rem] mb-10 relative overflow-hidden shadow-2xl shadow-primary/5"
+          className="bg-white/70 backdrop-blur-2xl border-4 border-white p-5 rounded-[2rem] mb-10 relative overflow-hidden shadow-2xl shadow-primary/5 sm:p-8 sm:rounded-[3rem]"
         >
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
@@ -197,7 +197,7 @@ export default function ChatPage() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   layout
                   onClick={() => router.push(`/chat/session/${session.id}`)}
-                  className="bg-white border-2 border-primary/5 p-6 rounded-[2.5rem] shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/10 transition-all cursor-pointer group relative"
+                  className="bg-white border-2 border-primary/5 p-5 rounded-[2rem] shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/10 transition-all cursor-pointer group relative sm:p-6 sm:rounded-[2.5rem]"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-black text-neutral-800 text-sm group-hover:text-primary transition-colors line-clamp-1 pr-10">

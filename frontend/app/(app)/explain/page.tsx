@@ -155,7 +155,7 @@ interface ExplainHistoryPreview {
            initial={{ opacity: 0, scale: 0.95 }}
            animate={{ opacity: 1, scale: 1 }}
            transition={{ delay: 0.1 }}
-           className="bg-white/70 backdrop-blur-2xl border-2 border-white rounded-[3rem] p-8 mb-8 shadow-2xl shadow-primary/5 relative"
+           className="bg-white/70 backdrop-blur-2xl border-2 border-white rounded-[2rem] p-5 mb-8 shadow-2xl shadow-primary/5 relative sm:rounded-[3rem] sm:p-8"
          >
            {/* Decorative Sparkle */}
            <div className="absolute -top-4 -right-4 w-12 h-12 bg-secondary rounded-2xl shadow-lg shadow-secondary/30 flex items-center justify-center text-white rotate-12">
@@ -186,7 +186,7 @@ interface ExplainHistoryPreview {
                  animate={{ opacity: 1, y: 0 }}
                  exit={{ opacity: 0, scale: 0.95 }}
                  onClick={() => fileInputRef.current?.click()}
-                 className="group border-4 border-dashed border-primary/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center gap-6 mb-8 bg-gray-50/30 cursor-pointer hover:bg-white hover:border-primary/30 transition-all duration-500"
+                 className="group border-4 border-dashed border-primary/10 rounded-[2rem] p-6 flex flex-col items-center justify-center gap-5 mb-8 bg-gray-50/30 cursor-pointer hover:bg-white hover:border-primary/30 transition-all duration-500 sm:rounded-[2.5rem] sm:p-10 sm:gap-6"
                >
                  <div className="w-20 h-20 bg-white rounded-3xl shadow-2xl shadow-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500">
                    <Camera size={40} strokeWidth={2.5} />
@@ -254,8 +254,9 @@ interface ExplainHistoryPreview {
           <Button
             onClick={handleExplain}
             disabled={!canSubmit || isLoading}
-            className="w-full py-8 h-auto text-xl font-black rounded-[2rem] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-primary/90 disabled:shadow-none"
+            className="w-full py-5 h-auto text-base font-black rounded-[1.5rem] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all bg-primary hover:bg-primary/90 disabled:shadow-none sm:py-8 sm:text-xl sm:rounded-[2rem]"
             isLoading={isLoading}
+            hideChildrenWhenLoading
           >
             <Sparkles size={24} strokeWidth={3} className="mr-3" />
             Jelasin Sekarang!
