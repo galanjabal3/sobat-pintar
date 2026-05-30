@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
   ChevronDown,
+  Check,
   Home,
+  Copy,
   RotateCcw,
   Sparkles,
   Trophy,
@@ -21,6 +23,7 @@ import { getApiErrorMessage } from "@/lib/apiError";
 import { SOBI_ASSETS } from "@/lib/assets";
 import { cn } from "@/lib/utils";
 import { useToastStore } from "@/store/toastStore";
+import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
 
 type PracticeQuestionResult = {
   id: string;
@@ -379,6 +382,7 @@ export default function PracticeResultPage() {
   const [result, setResult] = useState<PracticeResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedQuestionID, setExpandedQuestionID] = useState<string | null>(null);
+  const [copiedQuestionId, setCopiedQuestionId] = useState<string | null>(null);
 
   const fetchResult = useCallback(async () => {
     if (!id) {
@@ -404,6 +408,21 @@ export default function PracticeResultPage() {
   }, [fetchResult]);
 
   const questions = useMemo(() => result?.questions || [], [result?.questions]);
+
+  const handleCopyQuestion = useCallback(async (question: PracticeQuestionResult) => {
+    const markdown = `**Pertanyaan**\n\n${question.question_text}\n\n**Pembahasan Sobi**\n\n${question.explanation || "Belum ada pembahasan untuk soal ini."}`;
+
+    try {
+      await copyMarkdownToClipboard(markdown);
+      setCopiedQuestionId(question.id);
+      addToast("Pembahasan berhasil disalin.", "success");
+      window.setTimeout(() => {
+        setCopiedQuestionId((current) => (current === question.id ? null : current));
+      }, 1500);
+    } catch {
+      addToast("Gagal menyalin pembahasan.", "error");
+    }
+  }, [addToast]);
 
   if (isLoading) {
     return (
@@ -612,9 +631,20 @@ export default function PracticeResultPage() {
                         </div>
 
                         <div className="mt-3 rounded-2xl bg-primary/5 p-4">
-                          <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-primary">
-                            Pembahasan Sobi
-                          </p>
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-primary">
+                              Pembahasan Sobi
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyQuestion(question)}
+                              className="flex items-center gap-1 rounded-full border border-primary/10 bg-white px-3 py-1 text-[9px] font-black uppercase tracking-widest text-neutral-500 transition-colors hover:text-primary"
+                              aria-label="Salin pembahasan"
+                            >
+                              {copiedQuestionId === question.id ? <Check size={12} /> : <Copy size={12} />}
+                              Salin
+                            </button>
+                          </div>
                           <PracticeMarkdown className="text-xs font-bold leading-relaxed text-neutral-700">
                             {question.explanation || "Belum ada pembahasan untuk soal ini."}
                           </PracticeMarkdown>

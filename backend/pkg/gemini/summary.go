@@ -46,17 +46,18 @@ func summaryPrompt(level, materialInstruction string) string {
 Langsung masuk ke isi rangkuman tanpa salam pembuka atau filler.
 Gunakan format Markdown berikut secara konsisten:
 
-## Poin-poin penting
-- Tulis maksimal 8 bullet pendek.
-- Setiap bullet fokus pada satu ide penting.
+## Poin-poin Penting
+- Tulis 5-8 bullet. Setiap bullet harus informatif dan berdiri sendiri — bukan hanya label, tapi sertakan penjelasan singkat mengapa poin itu penting atau apa implikasinya.
+- Contoh bullet yang kurang baik: "- Fotosintesis menggunakan cahaya matahari."
+- Contoh bullet yang baik: "- Fotosintesis menggunakan energi cahaya matahari untuk mengubah CO₂ dan air menjadi glukosa — inilah cara tumbuhan membuat makanan sendiri."
 - Jangan gunakan numbered list.
 
 ## Kesimpulan
-Tulis 2-3 kalimat singkat yang merangkum inti materi.
+Tulis 2-3 kalimat yang merangkum inti materi dan mengapa materi ini penting atau relevan untuk siswa.
 
 ## Tips Sobi
-- Tulis maksimal 3 bullet tips mengingat materi.
-- Buat tips yang praktis untuk siswa sekolah.
+- Tulis 2-3 tips praktis untuk memahami dan mengingat materi ini.
+- Tips harus spesifik untuk materi yang dirangkum, bukan tips belajar generik.
 
 Jangan membuat rangkuman untuk membantu kecurangan ujian, plagiarisme, atau permintaan di luar konteks belajar sekolah.
 %s

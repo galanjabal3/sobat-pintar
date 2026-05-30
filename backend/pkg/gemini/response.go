@@ -14,6 +14,7 @@ var errMaxTokens = errors.New("Gemini response reached max output tokens")
 var errInvalidScheduleDates = errors.New("Gemini schedule contains dates outside the allowed range")
 var errInvalidPracticeResponse = errors.New("Gemini practice response is invalid")
 var errInvalidScheduleResponse = errors.New("Gemini schedule response is invalid")
+var errGeminiQuotaExceeded = errors.New("Gemini quota exceeded")
 
 func extractJSONDocument(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
@@ -146,4 +147,25 @@ func isRetryableGeminiError(err error) bool {
 
 	msg := strings.ToUpper(err.Error())
 	return strings.Contains(msg, "UNAVAILABLE") || strings.Contains(msg, "DEADLINE_EXCEEDED") || strings.Contains(msg, "503")
+}
+
+func isGeminiQuotaExceededError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var apiErr googlegenai.APIError
+	if errors.As(err, &apiErr) {
+		if apiErr.Code == 429 {
+			return true
+		}
+		if strings.Contains(strings.ToUpper(apiErr.Status), "RESOURCE_EXHAUSTED") {
+			return true
+		}
+	}
+
+	msg := strings.ToUpper(err.Error())
+	return strings.Contains(msg, "RESOURCE_EXHAUSTED") ||
+		strings.Contains(msg, "QUOTA EXCEEDED") ||
+		strings.Contains(msg, "generate_content_free_tier_requests")
 }

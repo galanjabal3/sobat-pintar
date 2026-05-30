@@ -9,16 +9,18 @@ import (
 
 func (c *Client) ExplainQuestion(ctx context.Context, question, level string) (string, error) {
 	prompt := fmt.Sprintf(`Kamu adalah Sobi, teman belajar AI yang friendly dan sabar.
+Jelaskan soal berikut kepada siswa tingkat %s.
 Jawab langsung tanpa salam pembuka, tanpa pengulangan pertanyaan, dan tanpa filler.
-Mulai dari inti konsep, lanjutkan dengan langkah penyelesaian sederhana, lalu berikan jawaban akhir hanya jika dibutuhkan untuk memahami.
-Jika pertanyaannya umum seperti "apa itu kimia", berikan definisi yang ringkas dan jelas terlebih dahulu.
-Jelaskan soal berikut kepada siswa tingkat %s dengan bahasa yang mudah dipahami.
-Gunakan analogi yang sederhana jika perlu.
-Jika soal tampak seperti ujian atau kuis aktif, jangan berikan jawaban final. Berikan konsep, petunjuk, dan langkah belajar untuk soal sejenis.
+
+%s
 %s
 %s
 
-Soal: %s`, level, learningSafetyInstruction(), textFormattingInstruction(), question)
+%s
+%s
+%s
+
+Soal: %s`, level, explainStructurePrompt(), levelTonePrompt(), generalQuestionHintPrompt(), activeExamRefusalPrompt(), learningSafetyInstruction(), textFormattingInstruction(), question)
 
 	answer, err := c.generateCompleteTextWithRetry(ctx, []*genai.Content{genai.NewContentFromText(prompt, "user")}, explainGenerationConfig())
 	if err != nil {
@@ -29,16 +31,23 @@ Soal: %s`, level, learningSafetyInstruction(), textFormattingInstruction(), ques
 }
 
 func (c *Client) ExplainQuestionWithImage(ctx context.Context, question, imageURL, level string) (string, error) {
+	additionalQuestion := ""
+	if question != "" {
+		additionalQuestion = "\nSoal tambahan: " + question
+	}
+
 	prompt := fmt.Sprintf(`Kamu adalah Sobi, teman belajar AI yang friendly dan sabar.
+Jelaskan soal pada gambar berikut kepada siswa tingkat %s.
 Jawab langsung tanpa salam pembuka, tanpa pengulangan pertanyaan, dan tanpa filler.
-Mulai dari inti konsep, lanjutkan dengan langkah penyelesaian sederhana, lalu berikan jawaban akhir hanya jika dibutuhkan untuk memahami.
-Jelaskan soal pada gambar berikut kepada siswa tingkat %s dengan bahasa yang mudah dipahami.
-Gunakan analogi yang sederhana jika perlu.
-Jika gambar tampak seperti ujian atau kuis aktif, jangan berikan jawaban final. Berikan konsep, petunjuk, dan langkah belajar untuk soal sejenis.
+
 %s
 %s
 
-Soal tambahan: %s`, level, learningSafetyInstruction(), textFormattingInstruction(), question)
+Jika gambar tampak seperti ujian atau kuis aktif, jangan berikan jawaban final. Katakan: "Kayaknya ini soal ujian ya? Aku bantu kamu ngerti konsepnya biar bisa jawab sendiri!" lalu berikan konsep dan langkah berpikir.
+%s
+%s
+
+%s`, level, explainStructurePrompt(), levelTonePrompt(), learningSafetyInstruction(), textFormattingInstruction(), additionalQuestion)
 
 	imgData, mimeType, err := fetchUploadedImage(ctx, imageURL)
 	if err != nil {
@@ -64,8 +73,15 @@ Soal tambahan: %s`, level, learningSafetyInstruction(), textFormattingInstructio
 func (c *Client) ReExplainQuestion(ctx context.Context, question, previousExplanation, level string) (string, error) {
 	prompt := fmt.Sprintf(`Kamu adalah Sobi. Siswa tingkat %s masih bingung dengan penjelasan sebelumnya.
 Jawab langsung tanpa salam pembuka, tanpa pengulangan pertanyaan, dan tanpa filler.
-Coba jelaskan dengan cara yang BERBEDA — gunakan analogi lain, contoh nyata dalam kehidupan sehari-hari, atau ilustrasi yang lebih sederhana.
-Jangan bikin siswa merasa bodoh — semangati mereka.
+
+Tugas kamu sekarang adalah menjelaskan ulang dengan cara yang BENAR-BENAR BERBEDA:
+- Gunakan analogi baru yang belum dipakai di penjelasan sebelumnya.
+- Mulai dari sudut pandang yang berbeda — misalnya dari contoh nyata dulu baru ke konsep, atau dari akibat/hasil dulu baru ke sebab.
+- Pecah konsep jadi bagian lebih kecil jika sebelumnya terlalu banyak sekaligus.
+- Gunakan perbandingan atau kontras jika membantu.
+- Jika ada langkah yang mungkin membingungkan, highlight bagian itu dan jelaskan lebih detail.
+
+Jangan bikin siswa merasa bodoh. Buka dengan kalimat yang menyemangati dan wajarkan kebingungan mereka.
 Jika soal tampak seperti ujian atau kuis aktif, jangan berikan jawaban final. Fokus pada konsep dan langkah berpikir.
 %s
 %s

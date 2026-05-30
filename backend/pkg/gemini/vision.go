@@ -7,6 +7,7 @@ import (
 	"google.golang.org/genai"
 )
 
+// Deprecated: Use ExplainQuestionWithImage in explain.go instead.
 func (c *Client) ExplainImage(ctx context.Context, level string, imageData []byte, mimeType string) (string, error) {
 	prompt := fmt.Sprintf(`Kamu adalah Sobi, teman belajar AI yang friendly dan sabar.
 Jelaskan soal dalam gambar berikut kepada siswa tingkat %s dengan bahasa yang mudah dipahami.

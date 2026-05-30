@@ -51,6 +51,31 @@ func TestValidatePracticeResponseAllowsValidQuestions(t *testing.T) {
 	}
 }
 
+func TestNormalizePracticeResponseReplacesCommonLatexSymbols(t *testing.T) {
+	response := PracticeResponse{
+		Questions: []PracticeQuestion{
+			{
+				Question:      "Luas lingkaran adalah 196 \\pi cm^2",
+				Options:       map[string]string{"a": "196 \\pi cm^2", "b": "49 \\pi cm^2", "c": "392 \\pi cm^2", "d": "98 \\pi cm^2"},
+				CorrectAnswer: "b",
+				Explanation:   "Gunakan rumus luas lingkaran.",
+			},
+		},
+	}
+
+	normalizePracticeResponse(&response)
+
+	if response.Questions[0].Question != "Luas lingkaran adalah 196 π cm²" {
+		t.Fatalf("unexpected normalized question: %q", response.Questions[0].Question)
+	}
+	if response.Questions[0].Options["A"] != "196 π cm²" {
+		t.Fatalf("unexpected normalized option: %q", response.Questions[0].Options["A"])
+	}
+	if response.Questions[0].CorrectAnswer != "B" {
+		t.Fatalf("unexpected normalized answer: %q", response.Questions[0].CorrectAnswer)
+	}
+}
+
 func validPracticeQuestion() PracticeQuestion {
 	return PracticeQuestion{
 		Question:      "Berapakah 2 + 2?",

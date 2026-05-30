@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
- import { useRouter, useSearchParams } from "next/navigation";
- import { ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb, Copy, Check } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
  import { getApiErrorMessage } from "@/lib/apiError";
@@ -12,6 +12,7 @@ import { SOBI_ASSETS } from "@/lib/assets";
 import ShareModal from "@/components/ui/ShareModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { AIMarkdown } from "@/components/ai/AIMarkdown";
+import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
  
  interface Explanation {
    id: string;
@@ -33,6 +34,7 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
   const [isReExplaining, setIsReExplaining] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [isCreatingShare, setIsCreatingShare] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const fetchExplanation = useCallback(async () => {
     if (!id) {
@@ -87,6 +89,19 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
       setIsCreatingShare(false);
     }
   };
+
+  const handleCopyAnswer = useCallback(async () => {
+    if (!explanation?.answer) return;
+
+    try {
+      await copyMarkdownToClipboard(explanation.answer);
+      setIsCopied(true);
+      addToast("Penjelasan berhasil disalin.", "success");
+      window.setTimeout(() => setIsCopied(false), 1500);
+    } catch {
+      addToast("Gagal menyalin penjelasan.", "error");
+    }
+  }, [addToast, explanation?.answer]);
  
    if (isLoading) {
      return (
@@ -210,11 +225,20 @@ import { AIMarkdown } from "@/components/ai/AIMarkdown";
                </div>
              </div>
  
-             <div className="pt-12">
-               <div className="flex items-center gap-2 mb-6">
-                 <Lightbulb size={20} className="text-secondary" />
-                 <p className="text-xs font-black text-neutral-400 uppercase tracking-widest">Penjelasan Langkah Demi Langkah</p>
-               </div>
+            <div className="pt-12">
+              <button
+                type="button"
+                onClick={handleCopyAnswer}
+                className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-primary/10 bg-white text-neutral-400 shadow-lg shadow-black/5 transition-colors hover:text-primary"
+                aria-label="Salin penjelasan"
+                title="Salin penjelasan"
+              >
+                {isCopied ? <Check size={18} /> : <Copy size={18} />}
+              </button>
+              <div className="flex items-center gap-2 mb-6">
+                <Lightbulb size={20} className="text-secondary" />
+                <p className="text-xs font-black text-neutral-400 uppercase tracking-widest">Penjelasan Langkah Demi Langkah</p>
+              </div>
                
                <AIMarkdown
                  className="prose prose-sm max-w-none text-neutral-800"

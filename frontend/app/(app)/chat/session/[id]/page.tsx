@@ -3,7 +3,7 @@
  import Image from "next/image";
  import React, { useCallback, useEffect, useState, useRef } from "react";
  import { useRouter, useParams } from "next/navigation";
- import { ChevronLeft, Send, Sparkles, Bot, User, AlertCircle } from "lucide-react";
+import { ChevronLeft, Send, Sparkles, Bot, User, AlertCircle, Copy, Check } from "lucide-react";
  import api from "@/lib/api";
  import { motion, AnimatePresence } from "framer-motion";
  import { useToastStore } from "@/store/toastStore";
@@ -15,6 +15,7 @@ import { MAX_CHAT_MESSAGE_CHARS } from "@/lib/aiLimits";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AIMarkdown } from "@/components/ai/AIMarkdown";
+import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
 
  interface Message {
@@ -45,6 +46,7 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
    const [isLoading, setIsLoading] = useState(true);
    const [message, setMessage] = useState("");
    const [isSending, setIsSending] = useState(false);
+   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
    const scrollRef = useRef<HTMLDivElement>(null);
 
    useEffect(() => {
@@ -74,7 +76,7 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
      fetchProfile();
    }, [fetchChatDetail, fetchProfile]);
 
-   const handleSendMessage = async (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent) => {
      e?.preventDefault();
      if (!message.trim() || isSending) return;
 
@@ -122,10 +124,26 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
            },
          ]
        } : null);
-     } finally {
+    } finally {
        setIsSending(false);
      }
    };
+
+   const handleCopyMessage = useCallback(async (msg: Message) => {
+     const text = msg.content.trim();
+     if (!text) return;
+
+     try {
+       await copyMarkdownToClipboard(text);
+       setCopiedMessageId(msg.id);
+       addToast("Pesan berhasil disalin.", "success");
+       window.setTimeout(() => {
+         setCopiedMessageId((current) => (current === msg.id ? null : current));
+       }, 1500);
+     } catch {
+       addToast("Gagal menyalin pesan.", "error");
+     }
+   }, [addToast]);
 
    if (isLoading) {
      return (
@@ -190,7 +208,7 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
                  msg.role === "user" ? "justify-end" : "justify-start"
                )}
              >
-               <div className={cn(
+                 <div className={cn(
                  "flex gap-3 max-w-[92%] sm:max-w-[85%]",
                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
                )}>
@@ -218,20 +236,36 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
                  </div>
 
                 <div className={cn(
-                  "p-4 rounded-[1.8rem] text-sm font-medium leading-relaxed shadow-xl shadow-primary/5 border-2",
+                  "relative p-4 pr-14 rounded-[1.8rem] text-sm font-medium leading-relaxed shadow-xl shadow-primary/5 border-2",
                   msg.status === "failed"
                     ? "bg-red-50 border-error/15 text-neutral-800 rounded-tl-none"
                     : msg.role === "user"
                       ? "bg-white border-secondary/10 text-neutral-800 rounded-tr-none"
                       : "bg-primary/5 border-primary/10 text-neutral-800 rounded-tl-none"
                 )}>
-                  {msg.role === "assistant" ? (
-                    <AIMarkdown className="prose prose-sm max-w-none prose-p:my-2 prose-p:leading-relaxed prose-strong:text-neutral-900 prose-ol:my-2 prose-ul:my-2 prose-li:my-1 prose-li:pl-1 prose-headings:my-2 prose-headings:text-neutral-900">
-                      {msg.content}
-                    </AIMarkdown>
-                  ) : (
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleCopyMessage(msg)}
+                    className={cn(
+                      "absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
+                      msg.role === "user"
+                        ? "border-secondary/10 bg-white text-neutral-400 hover:text-secondary"
+                        : "border-primary/10 bg-white/80 text-neutral-400 hover:text-primary"
+                    )}
+                    aria-label={msg.role === "user" ? "Salin pesanmu" : "Salin jawaban Sobi"}
+                    title={msg.role === "user" ? "Salin pesanmu" : "Salin jawaban Sobi"}
+                  >
+                    {copiedMessageId === msg.id ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                  <div>
+                    {msg.role === "assistant" ? (
+                      <AIMarkdown className="prose prose-sm max-w-none prose-p:my-2 prose-p:leading-relaxed prose-strong:text-neutral-900 prose-ol:my-2 prose-ul:my-2 prose-li:my-1 prose-li:pl-1 prose-headings:my-2 prose-headings:text-neutral-900">
+                        {msg.content}
+                      </AIMarkdown>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    )}
+                  </div>
                    <p className={cn(
                      "text-[8px] font-black uppercase tracking-widest mt-2",
                      msg.status === "failed" ? "text-error/50" : msg.role === "user" ? "text-secondary/40 text-right" : "text-primary/40"

@@ -2,6 +2,7 @@ package gemini
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -32,18 +33,24 @@ func (c *Client) GenerateStudySchedule(ctx context.Context, level string, subjec
 	}
 	today := todayInJakarta()
 	nearestExamDate := nearestExamDate(examDates)
+	allowedDates := buildAllowedScheduleDates(today, nearestExamDate, availableDays, 7)
+	if len(allowedDates) == 0 {
+		return nil, fmt.Errorf("no available schedule dates before exam")
+	}
 
 	prompt := fmt.Sprintf(`Kamu adalah Sobi. Buatkan jadwal belajar realistis untuk siswa tingkat %s.
 Tanggal hari ini: %s
 Mata pelajaran yang perlu dipelajari: %s
 Tanggal ujian terdekat: %s
 Hari yang tersedia: %s
+Tanggal yang boleh dipilih: %s
 Jam belajar per hari: %d jam
 Buat maksimal 7 hari jadwal. Tanggal jadwal HARUS mulai dari hari ini atau setelahnya, tidak boleh tanggal lampau, dan tidak boleh melewati tanggal ujian terdekat.
-Gunakan hanya hari yang tersedia. Untuk setiap hari, buat sesi belajar yang ringkas dan realistis sesuai jam per hari.
+Gunakan hanya tanggal yang boleh dipilih di atas. Untuk setiap hari, buat sesi belajar yang ringkas dan realistis sesuai jam per hari.
 Total durasi belajar per hari tidak boleh melebihi %d menit.
 Gunakan durasi realistis seperti 30, 45, 60, atau 90 menit.
 Tips maksimal 3 item.
+Tips harus spesifik dan actionable untuk siswa sekolah, bukan saran generik seperti "belajar dengan rajin".
 Jadwal harus membantu belajar sehat dan jujur, bukan strategi mencontek, begadang ekstrem, atau menghindari belajar.
 %s
 
@@ -58,7 +65,7 @@ Format response HANYA JSON, tanpa markdown dan tanpa code fence:
     }
   ],
   "tips": ["tip belajar 1", "tip belajar 2"]
-}`, level, today.Format("2006-01-02"), strings.Join(subjects, ", "), strings.Join(examDatesStr, ", "), strings.Join(availableDays, ", "), hoursPerDay, hoursPerDay*60, learningSafetyInstruction())
+}`, level, today.Format("2006-01-02"), strings.Join(subjects, ", "), strings.Join(examDatesStr, ", "), strings.Join(availableDays, ", "), strings.Join(allowedDates, ", "), hoursPerDay, hoursPerDay*60, learningSafetyInstruction())
 
 	var lastErr error
 	for attempt := 0; attempt < 2; attempt++ {
@@ -80,7 +87,7 @@ Format response HANYA JSON, tanpa markdown dan tanpa code fence:
 
 		var scheduleRes ScheduleResponse
 		if err := decodeGeminiJSON(rawText, &scheduleRes); err == nil {
-			if err := validateScheduleDateBounds(scheduleRes.Schedule, today, nearestExamDate); err != nil {
+			if err := validateScheduleDateBounds(scheduleRes.Schedule, allowedDates); err != nil {
 				lastErr = err
 				continue
 			}
@@ -92,6 +99,10 @@ Format response HANYA JSON, tanpa markdown dan tanpa code fence:
 		} else {
 			lastErr = err
 		}
+	}
+
+	if errors.Is(lastErr, errInvalidScheduleDates) || errors.Is(lastErr, errInvalidScheduleResponse) {
+		return nil, fmt.Errorf("failed to validate Gemini schedule response after retry: %w", lastErr)
 	}
 
 	return nil, fmt.Errorf("failed to parse Gemini response after retry: %w", lastErr)
@@ -146,6 +157,27 @@ func validateScheduleResponse(response ScheduleResponse, subjects, availableDays
 	return nil
 }
 
+func buildAllowedScheduleDates(startDate, endDate time.Time, availableDays []string, maxDays int) []string {
+	allowedDays := make(map[string]struct{}, len(availableDays))
+	for _, day := range availableDays {
+		allowedDays[strings.ToLower(strings.TrimSpace(day))] = struct{}{}
+	}
+
+	location := todayInJakarta().Location()
+	current := dateOnly(startDate).In(location)
+	final := dateOnly(endDate).In(location)
+	allowedDates := make([]string, 0, maxDays)
+
+	for day := current; !day.After(final) && len(allowedDates) < maxDays; day = day.AddDate(0, 0, 1) {
+		weekday := strings.ToLower(indonesianWeekday(day.Weekday()))
+		if _, ok := allowedDays[weekday]; ok {
+			allowedDates = append(allowedDates, day.Format("2006-01-02"))
+		}
+	}
+
+	return allowedDates
+}
+
 func indonesianWeekday(day time.Weekday) string {
 	switch day {
 	case time.Monday:
@@ -190,17 +222,18 @@ func nearestExamDate(examDates []time.Time) time.Time {
 	return dateOnly(nearest)
 }
 
-func validateScheduleDateBounds(schedule []DailySchedule, startDate, endDate time.Time) error {
+func validateScheduleDateBounds(schedule []DailySchedule, allowedDates []string) error {
+	allowed := make(map[string]struct{}, len(allowedDates))
+	for _, date := range allowedDates {
+		allowed[date] = struct{}{}
+	}
 	for _, day := range schedule {
 		scheduleDate, err := time.Parse("2006-01-02", day.Date)
 		if err != nil {
 			return err
 		}
-		scheduleDate = dateOnly(scheduleDate)
-		if scheduleDate.Before(dateOnly(startDate)) {
-			return errInvalidScheduleDates
-		}
-		if !endDate.IsZero() && scheduleDate.After(dateOnly(endDate)) {
+		scheduleKey := scheduleDate.Format("2006-01-02")
+		if _, ok := allowed[scheduleKey]; !ok {
 			return errInvalidScheduleDates
 		}
 	}

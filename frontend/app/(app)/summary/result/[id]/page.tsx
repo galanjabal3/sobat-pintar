@@ -9,10 +9,11 @@
  import { useToastStore } from "@/store/toastStore";
  import Image from "next/image";
  import { SOBI_ASSETS } from "@/lib/assets";
- import { format } from "date-fns";
- import { id as idLocale } from "date-fns/locale";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import ShareModal from "@/components/ui/ShareModal";
 import { AIMarkdown } from "@/components/ai/AIMarkdown";
+import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
  
  interface SummaryDetail {
    id: string;
@@ -157,30 +158,11 @@ function stripSummaryMarkdown(markdown: string) {
   const handleCopy = async () => {
     if (!detail) return;
 
-    const html = `<article>${renderSummaryForPrint(detail.summary)}</article>`;
-    const plainText = stripSummaryMarkdown(detail.summary);
-
     try {
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([plainText], { type: "text/plain" }),
-          }),
-        ]);
-        addToast("Rangkuman berhasil disalin.", "success");
-        return;
-      }
-
-      await navigator.clipboard.writeText(plainText);
+      await copyMarkdownToClipboard(detail.summary);
       addToast("Rangkuman berhasil disalin.", "success");
     } catch {
-      try {
-        await navigator.clipboard.writeText(plainText);
-        addToast("Rangkuman berhasil disalin.", "success");
-      } catch {
-        addToast("Gagal menyalin rangkuman.", "error");
-      }
+      addToast("Gagal menyalin rangkuman.", "error");
     }
   };
 

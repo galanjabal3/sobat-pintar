@@ -7,32 +7,54 @@ import (
 )
 
 func TestValidateScheduleDateBoundsRejectsPastDate(t *testing.T) {
-	startDate := time.Date(2026, 5, 22, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2026, 6, 28, 0, 0, 0, 0, time.UTC)
+	allowedDates := []string{"2026-05-22", "2026-05-23", "2026-05-26", "2026-05-27", "2026-05-29", "2026-05-30", "2026-06-01"}
 
-	err := validateScheduleDateBounds([]DailySchedule{{Date: "2026-05-11"}}, startDate, endDate)
+	err := validateScheduleDateBounds([]DailySchedule{{Date: "2026-05-11"}}, allowedDates)
 	if !errors.Is(err, errInvalidScheduleDates) {
 		t.Fatalf("expected invalid schedule date error, got %v", err)
 	}
 }
 
 func TestValidateScheduleDateBoundsRejectsDateAfterExam(t *testing.T) {
-	startDate := time.Date(2026, 5, 22, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2026, 6, 28, 0, 0, 0, 0, time.UTC)
+	allowedDates := []string{"2026-05-22", "2026-05-23", "2026-05-26", "2026-05-27", "2026-05-29", "2026-05-30", "2026-06-01"}
 
-	err := validateScheduleDateBounds([]DailySchedule{{Date: "2026-06-29"}}, startDate, endDate)
+	err := validateScheduleDateBounds([]DailySchedule{{Date: "2026-06-29"}}, allowedDates)
 	if !errors.Is(err, errInvalidScheduleDates) {
 		t.Fatalf("expected invalid schedule date error, got %v", err)
 	}
 }
 
 func TestValidateScheduleDateBoundsAllowsDateInRange(t *testing.T) {
-	startDate := time.Date(2026, 5, 22, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2026, 6, 28, 0, 0, 0, 0, time.UTC)
+	allowedDates := []string{"2026-06-01"}
 
-	err := validateScheduleDateBounds([]DailySchedule{{Date: "2026-06-01"}}, startDate, endDate)
+	err := validateScheduleDateBounds([]DailySchedule{{Date: "2026-06-01"}}, allowedDates)
 	if err != nil {
 		t.Fatalf("expected schedule date to be valid, got %v", err)
+	}
+}
+
+func TestValidateScheduleDateBoundsAllowsDateEqualToEndDateAcrossTimezones(t *testing.T) {
+	allowedDates := []string{"2026-06-28"}
+
+	err := validateScheduleDateBounds([]DailySchedule{{Date: "2026-06-28"}}, allowedDates)
+	if err != nil {
+		t.Fatalf("expected schedule date equal to end date to be valid across timezones, got %v", err)
+	}
+}
+
+func TestBuildAllowedScheduleDatesReturnsOnlyAllowedDays(t *testing.T) {
+	startDate := time.Date(2026, 5, 22, 0, 0, 0, 0, time.FixedZone("WIB", 7*60*60))
+	endDate := time.Date(2026, 5, 30, 0, 0, 0, 0, time.FixedZone("WIB", 7*60*60))
+
+	dates := buildAllowedScheduleDates(startDate, endDate, []string{"Jumat", "Sabtu"}, 7)
+	want := []string{"2026-05-22", "2026-05-23", "2026-05-29", "2026-05-30"}
+	if len(dates) != len(want) {
+		t.Fatalf("unexpected allowed dates length: got %d want %d (%v)", len(dates), len(want), dates)
+	}
+	for i := range want {
+		if dates[i] != want[i] {
+			t.Fatalf("unexpected allowed date at %d: got %q want %q", i, dates[i], want[i])
+		}
 	}
 }
 
