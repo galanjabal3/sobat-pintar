@@ -12,8 +12,10 @@ import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { motion } from "framer-motion";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
+import { AIProcessNotice } from "@/components/ai/AIProcessNotice";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
+import { useBeforeUnloadWarning } from "@/hooks/useBeforeUnloadWarning";
 import {
   MAX_PRACTICE_SOURCE_CONTENT_CHARS,
   MIN_PRACTICE_SOURCE_CONTENT_CHARS,
@@ -52,6 +54,8 @@ export default function PracticePage() {
    const [selectedTimerMinutes, setSelectedTimerMinutes] = useState<number>(0);
    const [sourceContent, setSourceContent] = useState("");
    const [isLoading, setIsLoading] = useState(false);
+
+   useBeforeUnloadWarning(isLoading);
  
    const handleStart = async () => {
      if (isLoading) return;
@@ -353,6 +357,7 @@ export default function PracticePage() {
               Mulai Latihan
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
+            <AIProcessNotice show={isLoading} />
             <QuotaBadge feature="practice" className="mt-4" />
             <Link
               href="/practice/history"

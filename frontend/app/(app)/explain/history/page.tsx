@@ -7,12 +7,27 @@ import { ChevronLeft, MessageSquare } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import api from "@/lib/api";
 import { useToastStore } from "@/store/toastStore";
+import { cn } from "@/lib/utils";
+import { usePageResumeRefresh } from "@/hooks/usePageResumeRefresh";
 
 interface HistoryItem {
   id: string;
   question_text: string;
   image_url?: string;
+  status?: "processing" | "completed" | "failed";
   created_at: string;
+}
+
+function getStatusLabel(status?: HistoryItem["status"]) {
+  if (status === "processing") return "Diproses";
+  if (status === "failed") return "Gagal";
+  return "Selesai";
+}
+
+function getStatusClassName(status?: HistoryItem["status"]) {
+  if (status === "processing") return "bg-secondary/10 text-secondary";
+  if (status === "failed") return "bg-red-50 text-error";
+  return "bg-primary/10 text-primary";
 }
 
 export default function ExplainHistoryPage() {
@@ -33,9 +48,18 @@ export default function ExplainHistoryPage() {
     }
   }, [addToast]);
 
+  usePageResumeRefresh(fetchHistory);
+
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  useEffect(() => {
+    if (!history.some((item) => item.status === "processing")) return;
+
+    const intervalID = window.setInterval(fetchHistory, 7500);
+    return () => window.clearInterval(intervalID);
+  }, [fetchHistory, history]);
 
   return (
     <div className="px-6 pt-12 pb-24">
@@ -89,9 +113,14 @@ export default function ExplainHistoryPage() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-neutral-700 text-sm font-medium line-clamp-2 mb-1">
-                  {item.question_text || "Lihat Gambar Soal"}
-                </p>
+                <div className="mb-1 flex items-start justify-between gap-3">
+                  <p className="text-neutral-700 text-sm font-medium line-clamp-2">
+                    {item.question_text || "Lihat Gambar Soal"}
+                  </p>
+                  <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest", getStatusClassName(item.status))}>
+                    {getStatusLabel(item.status)}
+                  </span>
+                </div>
                 <p className="text-[10px] text-neutral-400">
                   {new Date(item.created_at).toLocaleDateString("id-ID", {
                     day: "numeric",

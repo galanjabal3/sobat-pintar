@@ -2,7 +2,7 @@
  
  import React, { useCallback, useEffect, useState } from "react";
  import { useRouter, useParams } from "next/navigation";
- import { ChevronLeft, FileText, Sparkles, Copy, Share2, Download, Clock, ArrowRight } from "lucide-react";
+ import { AlertCircle, ChevronLeft, FileText, Sparkles, Copy, Share2, Download, Clock, ArrowRight } from "lucide-react";
  import api from "@/lib/api";
  import { getApiErrorMessage } from "@/lib/apiError";
  import { motion } from "framer-motion";
@@ -19,6 +19,8 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
    id: string;
    source_type: string;
    summary: string;
+   status?: "processing" | "completed" | "failed";
+   error_message?: string;
    created_at: string;
  }
 
@@ -154,6 +156,16 @@ function stripSummaryMarkdown(markdown: string) {
    useEffect(() => {
      fetchDetail();
    }, [fetchDetail]);
+
+  useEffect(() => {
+    if (detail?.status !== "processing") return;
+
+    const intervalID = window.setInterval(() => {
+      fetchDetail();
+    }, 2500);
+
+    return () => window.clearInterval(intervalID);
+  }, [detail?.status, fetchDetail]);
  
   const handleCopy = async () => {
     if (!detail) return;
@@ -291,6 +303,53 @@ function stripSummaryMarkdown(markdown: string) {
        </div>
      );
    }
+
+  if (detail?.status === "processing") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#FDFEFF] p-6 text-center">
+        <button
+          type="button"
+          onClick={() => router.push("/summary")}
+          className="absolute left-6 top-12 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/5 bg-white text-neutral-800 shadow-xl shadow-primary/5"
+          aria-label="Kembali ke Rangkuman"
+        >
+          <ChevronLeft size={24} strokeWidth={2.5} />
+        </button>
+        <motion.div
+          animate={{ scale: [1, 1.1, 1], rotate: [0, 360] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="mb-8 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-primary/10"
+        >
+          <FileText size={32} className="text-primary" />
+        </motion.div>
+        <p className="text-lg font-black text-neutral-800">Sobi sedang merangkum...</p>
+        <p className="mt-2 max-w-xs text-sm font-medium leading-relaxed text-neutral-400">
+          Boleh kembali, hasilnya tetap diproses.
+        </p>
+      </div>
+    );
+  }
+
+  if (detail?.status === "failed") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#FDFEFF] p-6 text-center">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-red-50 text-error">
+          <AlertCircle size={34} />
+        </div>
+        <p className="text-lg font-black text-neutral-800">Sobi gagal membuat rangkuman.</p>
+        <p className="mt-2 max-w-xs text-sm font-medium leading-relaxed text-neutral-400">
+          {detail.error_message || "Coba buat rangkuman lagi sebentar lagi ya."}
+        </p>
+        <button
+          type="button"
+          onClick={() => router.push("/summary")}
+          className="mt-8 rounded-2xl bg-primary px-8 py-4 text-sm font-black text-white shadow-lg shadow-primary/20"
+        >
+          Buat Rangkuman Lagi
+        </button>
+      </div>
+    );
+  }
  
    return (
      <div className="min-h-screen bg-[#FDFEFF] relative overflow-hidden flex flex-col">
@@ -317,10 +376,10 @@ function stripSummaryMarkdown(markdown: string) {
          </div>
          
          <div className="flex gap-2">
-	           <button type="button" onClick={handleCopy} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors" aria-label="Salin rangkuman">
+	           <button type="button" onClick={handleCopy} disabled={!detail?.summary} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors disabled:opacity-50" aria-label="Salin rangkuman">
 	             <Copy size={18} />
 	           </button>
-	           <button type="button" onClick={handleShare} disabled={isCreatingShare} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors disabled:opacity-50" aria-label="Bagikan rangkuman">
+	           <button type="button" onClick={handleShare} disabled={isCreatingShare || detail?.status !== "completed"} className="w-10 h-10 bg-white rounded-xl shadow-lg shadow-black/5 flex items-center justify-center border border-gray-100 text-neutral-400 hover:text-primary transition-colors disabled:opacity-50" aria-label="Bagikan rangkuman">
 	             <Share2 size={18} />
 	           </button>
          </div>

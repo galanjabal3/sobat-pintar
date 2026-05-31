@@ -49,5 +49,23 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
     return "Tidak bisa terhubung ke server. Coba lagi sebentar.";
   }
 
+  if (
+    combinedMessage.includes("file size exceeds") ||
+    combinedMessage.includes("maximum limit of 5mb")
+  ) {
+    return "Ukuran gambar maksimal 5MB ya.";
+  }
+
+  if (combinedMessage.includes("unsupported file type")) {
+    return "Gunakan gambar JPG, PNG, atau WEBP ya.";
+  }
+
+  if (
+    combinedMessage.includes("cloudinary client is not available") ||
+    combinedMessage.includes("failed to upload image")
+  ) {
+    return "Gambar belum bisa diunggah. Coba lagi sebentar.";
+  }
+
   return displayMessage || fallback;
 }

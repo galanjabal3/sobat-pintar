@@ -18,11 +18,14 @@ import { MAX_SUMMARY_CONTENT_CHARS } from "@/lib/aiLimits";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
+import { cn } from "@/lib/utils";
+import { usePageResumeRefresh } from "@/hooks/usePageResumeRefresh";
 
 interface SummaryHistory {
   id: string;
   title?: string;
   summary?: string;
+  status?: "processing" | "completed" | "failed";
   created_at: string;
 }
 
@@ -64,6 +67,18 @@ function isGenericSummaryHeading(text: string) {
   return /^(poin[-\s]?poin penting|kesimpulan|tips sobi|tips untuk mengingat|rangkuman)\s*:?\s*$/i.test(text);
 }
 
+function getSummaryStatusLabel(status?: SummaryHistory["status"]) {
+  if (status === "processing") return "Diproses";
+  if (status === "failed") return "Gagal";
+  return "Selesai";
+}
+
+function getSummaryStatusClassName(status?: SummaryHistory["status"]) {
+  if (status === "processing") return "bg-secondary/10 text-secondary";
+  if (status === "failed") return "bg-red-50 text-error";
+  return "bg-primary/10 text-primary";
+}
+
 export default function SummaryPage() {
   const router = useRouter();
   const { addToast } = useToastStore();
@@ -89,9 +104,18 @@ export default function SummaryPage() {
     }
   }, [addToast]);
 
+  usePageResumeRefresh(fetchHistory);
+
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  useEffect(() => {
+    if (!history.some((item) => item.status === "processing")) return;
+
+    const intervalID = window.setInterval(fetchHistory, 7500);
+    return () => window.clearInterval(intervalID);
+  }, [fetchHistory, history]);
 
   useEffect(() => {
     return () => {
@@ -163,7 +187,7 @@ export default function SummaryPage() {
       }
 
       const response = await api.post("/summary", requestBody);
-      addToast("Rangkuman berhasil dibuat!", "success");
+      addToast("Rangkuman sedang diproses.", "success");
       notifyAIQuotaUpdated();
       setText("");
       clearImage();
@@ -371,10 +395,15 @@ export default function SummaryPage() {
                        <FileText size={24} strokeWidth={2.5} />
                      </div>
                      <div className="flex-1 min-w-0">
-                       <div className="flex justify-between items-start gap-3">
-                         <h4 className="font-black text-neutral-800 text-sm leading-snug line-clamp-2 break-words mb-1">
-                           {getSummaryPreview(item)}
-                         </h4>
+                      <div className="flex justify-between items-start gap-3">
+                         <div className="min-w-0">
+                           <h4 className="font-black text-neutral-800 text-sm leading-snug line-clamp-2 break-words mb-2">
+                             {item.status === "processing" ? "Rangkuman sedang diproses" : getSummaryPreview(item)}
+                           </h4>
+                           <span className={cn("inline-flex rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest", getSummaryStatusClassName(item.status))}>
+                             {getSummaryStatusLabel(item.status)}
+                           </span>
+                         </div>
                          <button
                            type="button"
                            onClick={(e) => handleDelete(e, item.id)}

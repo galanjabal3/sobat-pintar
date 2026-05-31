@@ -49,7 +49,7 @@ func (h *SummaryHandler) CreateSummary(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, dto.BaseResponse{
 		Success: true,
-		Message: "Rangkuman berhasil dibuat",
+		Message: "Rangkuman sedang diproses",
 		Data:    res,
 	})
 }
@@ -118,6 +118,10 @@ func (h *SummaryHandler) CreateShareLink(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, service.ErrSummaryUnauthorized) {
 			c.JSON(http.StatusForbidden, dto.ErrorResponse{Success: false, Message: "Kamu tidak punya akses ke rangkuman ini"})
+			return
+		}
+		if errors.Is(err, service.ErrAIResultNotReady) {
+			c.JSON(http.StatusConflict, dto.ErrorResponse{Success: false, Message: "Rangkuman masih diproses. Tunggu sebentar ya."})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Success: false, Message: "Gagal membuat tautan berbagi", Error: err.Error()})

@@ -24,6 +24,8 @@ type SummaryService interface {
 
 var ErrSummaryUnauthorized = errors.New("unauthorized summary access")
 
+const summaryFailedMessage = "Sobi belum berhasil membuat rangkuman. Coba lagi sebentar lagi ya."
+
 type summaryService struct {
 	repo         repository.SummaryRepository
 	geminiClient summaryGenerator
@@ -66,25 +68,14 @@ func (s *summaryService) CreateSummary(ctx context.Context, userID, level string
 		return nil, err
 	}
 
-	var summaryText string
-	var err error
-	if req.SourceType == "image" {
-		summaryText, err = s.geminiClient.SummarizeImageMateri(ctx, level, req.FileURL)
-	} else {
-		summaryText, err = s.geminiClient.SummarizeMateri(ctx, level, contentToSummarize)
-	}
-	if err != nil {
-		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSummary), userID, AIFeatureSummary)
-		return nil, err
-	}
-
 	summary := &model.Summary{
 		ID:         uuid.New().String(),
 		UserID:     userID,
 		SourceType: req.SourceType,
 		FileURL:    req.FileURL,
 		Content:    contentToSummarize,
-		Summary:    summaryText,
+		Summary:    "",
+		Status:     AIResultStatusProcessing,
 		CreatedAt:  time.Now(),
 	}
 
@@ -93,18 +84,48 @@ func (s *summaryService) CreateSummary(ctx context.Context, userID, level string
 		return nil, err
 	}
 
-	// Award points for creating a summary
-	if s.gamify != nil {
-		if err := s.gamify.AddPoints(ctx, userID, 15, "create_summary"); err != nil {
-			logger.Error(err, "Failed to award summary points", "user_id", userID, "summary_id", summary.ID)
-		}
-	}
+	go s.completeSummary(context.Background(), summary.ID, userID, level, req.SourceType, contentToSummarize, req.FileURL)
 
 	return &dto.SummaryResponse{
 		ID:        summary.ID,
 		Summary:   summary.Summary,
+		Status:    summary.Status,
 		CreatedAt: summary.CreatedAt,
 	}, nil
+}
+
+func (s *summaryService) completeSummary(ctx context.Context, id, userID, level, sourceType, content, fileURL string) {
+	var summaryText string
+	var err error
+	if sourceType == "image" {
+		summaryText, err = s.geminiClient.SummarizeImageMateri(ctx, level, fileURL)
+	} else {
+		summaryText, err = s.geminiClient.SummarizeMateri(ctx, level, content)
+	}
+
+	if err != nil {
+		logger.Error(err, "Failed to generate summary", "user_id", userID, "summary_id", id)
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSummary), userID, AIFeatureSummary)
+		if updateErr := s.repo.Fail(ctx, id, summaryFailedMessage); updateErr != nil {
+			logger.Error(updateErr, "Failed to mark summary as failed", "user_id", userID, "summary_id", id)
+		}
+		return
+	}
+
+	if err := s.repo.Complete(ctx, id, summaryText); err != nil {
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSummary), userID, AIFeatureSummary)
+		logger.Error(err, "Failed to complete summary", "user_id", userID, "summary_id", id)
+		if updateErr := s.repo.Fail(ctx, id, summaryFailedMessage); updateErr != nil {
+			logger.Error(updateErr, "Failed to mark summary as failed after completion error", "user_id", userID, "summary_id", id)
+		}
+		return
+	}
+
+	if s.gamify != nil {
+		if err := s.gamify.AddPoints(ctx, userID, 15, "create_summary"); err != nil {
+			logger.Error(err, "Failed to award summary points", "user_id", userID, "summary_id", id)
+		}
+	}
 }
 
 func (s *summaryService) ListHistory(ctx context.Context, userID string) ([]dto.SummaryHistoryResponse, error) {
@@ -116,10 +137,12 @@ func (s *summaryService) ListHistory(ctx context.Context, userID string) ([]dto.
 	var res []dto.SummaryHistoryResponse
 	for _, s := range summaries {
 		res = append(res, dto.SummaryHistoryResponse{
-			ID:         s.ID,
-			SourceType: s.SourceType,
-			Summary:    s.Summary,
-			CreatedAt:  s.CreatedAt,
+			ID:           s.ID,
+			SourceType:   s.SourceType,
+			Summary:      s.Summary,
+			Status:       s.Status,
+			ErrorMessage: stringValue(s.ErrorMessage),
+			CreatedAt:    s.CreatedAt,
 		})
 	}
 	return res, nil
@@ -136,10 +159,12 @@ func (s *summaryService) GetSummaryByID(ctx context.Context, id, userID string) 
 	}
 
 	return &dto.SummaryHistoryResponse{
-		ID:         summary.ID,
-		SourceType: summary.SourceType,
-		Summary:    summary.Summary,
-		CreatedAt:  summary.CreatedAt,
+		ID:           summary.ID,
+		SourceType:   summary.SourceType,
+		Summary:      summary.Summary,
+		Status:       summary.Status,
+		ErrorMessage: stringValue(summary.ErrorMessage),
+		CreatedAt:    summary.CreatedAt,
 	}, nil
 }
 
@@ -150,11 +175,20 @@ func (s *summaryService) GetPublicSummaryByShareToken(ctx context.Context, token
 	}
 
 	return &dto.SummaryHistoryResponse{
-		ID:         summary.ID,
-		SourceType: summary.SourceType,
-		Summary:    summary.Summary,
-		CreatedAt:  summary.CreatedAt,
+		ID:           summary.ID,
+		SourceType:   summary.SourceType,
+		Summary:      summary.Summary,
+		Status:       summary.Status,
+		ErrorMessage: stringValue(summary.ErrorMessage),
+		CreatedAt:    summary.CreatedAt,
 	}, nil
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func (s *summaryService) CreateShareToken(ctx context.Context, userID, id string) (string, error) {
@@ -164,6 +198,9 @@ func (s *summaryService) CreateShareToken(ctx context.Context, userID, id string
 	}
 	if summary.UserID != userID {
 		return "", ErrSummaryUnauthorized
+	}
+	if summary.Status != AIResultStatusCompleted {
+		return "", ErrAIResultNotReady
 	}
 	if summary.ShareToken != nil && *summary.ShareToken != "" {
 		return *summary.ShareToken, nil

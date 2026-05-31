@@ -12,4 +12,6 @@ type ExplainResponse struct {
 	ImageURL     string `json:"image_url"`
 	Answer       string `json:"answer"`
 	Level        string `json:"level"`
+	Status       string `json:"status"`
+	ErrorMessage string `json:"error_message,omitempty"`
 }

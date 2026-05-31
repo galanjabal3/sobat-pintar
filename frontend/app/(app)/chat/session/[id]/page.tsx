@@ -13,10 +13,12 @@ import { id as idLocale } from "date-fns/locale";
 import { useAuthStore } from "@/store/authStore";
 import { MAX_CHAT_MESSAGE_CHARS } from "@/lib/aiLimits";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
+import { AIProcessNotice } from "@/components/ai/AIProcessNotice";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AIMarkdown } from "@/components/ai/AIMarkdown";
 import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
+import { useBeforeUnloadWarning } from "@/hooks/useBeforeUnloadWarning";
 
  interface Message {
    id: string;
@@ -48,6 +50,8 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
    const [isSending, setIsSending] = useState(false);
    const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
    const scrollRef = useRef<HTMLDivElement>(null);
+
+   useBeforeUnloadWarning(isSending);
 
    useEffect(() => {
      if (scrollRef.current) {
@@ -335,6 +339,7 @@ import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
               <Send size={18} strokeWidth={2.5} className="sm:size-5" />
             </motion.button>
            </div>
+          <AIProcessNotice show={isSending} className="mt-2" />
          </form>
        </div>
 

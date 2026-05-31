@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"sobat-pintar/internal/dto"
+	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/service"
 )
 
@@ -15,6 +16,18 @@ type ExplainHandler struct {
 
 func NewExplainHandler(service service.ExplainService) *ExplainHandler {
 	return &ExplainHandler{service: service}
+}
+
+func toExplainResponse(explanation *model.Explanation) dto.ExplainResponse {
+	return dto.ExplainResponse{
+		ID:           explanation.ID,
+		QuestionText: explanation.QuestionText,
+		ImageURL:     explanation.ImageURL,
+		Answer:       explanation.Answer,
+		Level:        explanation.Level,
+		Status:       explanation.Status,
+		ErrorMessage: stringValue(explanation.ErrorMessage),
+	}
 }
 
 func (h *ExplainHandler) Explain(c *gin.Context) {
@@ -64,14 +77,8 @@ func (h *ExplainHandler) Explain(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
-		Message: "Penjelasan berhasil dibuat",
-		Data: dto.ExplainResponse{
-			ID:           explanation.ID,
-			QuestionText: explanation.QuestionText,
-			ImageURL:     explanation.ImageURL,
-			Answer:       explanation.Answer,
-			Level:        explanation.Level,
-		},
+		Message: "Penjelasan sedang diproses",
+		Data:    toExplainResponse(explanation),
 	})
 }
 
@@ -108,13 +115,7 @@ func (h *ExplainHandler) GetPublicExplanation(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Penjelasan berhasil diambil",
-		Data: dto.ExplainResponse{
-			ID:           explanation.ID,
-			QuestionText: explanation.QuestionText,
-			ImageURL:     explanation.ImageURL,
-			Answer:       explanation.Answer,
-			Level:        explanation.Level,
-		},
+		Data:    toExplainResponse(explanation),
 	})
 }
 
@@ -123,6 +124,10 @@ func (h *ExplainHandler) CreateShareLink(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, service.ErrExplanationUnauthorized) {
 			c.JSON(http.StatusForbidden, dto.ErrorResponse{Success: false, Message: "Kamu tidak punya akses ke penjelasan ini"})
+			return
+		}
+		if errors.Is(err, service.ErrAIResultNotReady) {
+			c.JSON(http.StatusConflict, dto.ErrorResponse{Success: false, Message: "Penjelasan masih diproses. Tunggu sebentar ya."})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Success: false, Message: "Gagal membuat tautan berbagi", Error: err.Error()})
@@ -160,13 +165,7 @@ func (h *ExplainHandler) GetExplanation(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Penjelasan berhasil diambil",
-		Data: dto.ExplainResponse{
-			ID:           explanation.ID,
-			QuestionText: explanation.QuestionText,
-			ImageURL:     explanation.ImageURL,
-			Answer:       explanation.Answer,
-			Level:        explanation.Level,
-		},
+		Data:    toExplainResponse(explanation),
 	})
 }
 
@@ -180,6 +179,13 @@ func (h *ExplainHandler) ReExplain(c *gin.Context) {
 			c.JSON(http.StatusForbidden, dto.ErrorResponse{
 				Success: false,
 				Message: "Kamu tidak punya akses ke penjelasan ini",
+			})
+			return
+		}
+		if errors.Is(err, service.ErrAIResultNotReady) {
+			c.JSON(http.StatusConflict, dto.ErrorResponse{
+				Success: false,
+				Message: "Penjelasan masih diproses. Tunggu sebentar ya.",
 			})
 			return
 		}
@@ -200,12 +206,6 @@ func (h *ExplainHandler) ReExplain(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Penjelasan ulang berhasil",
-		Data: dto.ExplainResponse{
-			ID:           explanation.ID,
-			QuestionText: explanation.QuestionText,
-			ImageURL:     explanation.ImageURL,
-			Answer:       explanation.Answer,
-			Level:        explanation.Level,
-		},
+		Data:    toExplainResponse(explanation),
 	})
 }

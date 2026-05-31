@@ -14,10 +14,12 @@ import { SOBI_ASSETS } from "@/lib/assets";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { AIProcessNotice } from "@/components/ai/AIProcessNotice";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { useToastStore } from "@/store/toastStore";
 import { MAX_SCHEDULE_SUBJECT_CHARS, MAX_SCHEDULE_SUBJECT_COUNT } from "@/lib/aiLimits";
 import { ScheduleResult } from "@/components/schedule/ScheduleView";
+import { useBeforeUnloadWarning } from "@/hooks/useBeforeUnloadWarning";
 
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
@@ -55,6 +57,8 @@ export default function SchedulePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const minExamDate = useMemo(() => todayInputValue(), []);
+
+  useBeforeUnloadWarning(isSubmitting);
 
   const parsedHoursPerDay = Number(hoursPerDay);
   const hasLongSubject = subjects.some((subject) => subject.length > MAX_SCHEDULE_SUBJECT_CHARS);
@@ -348,6 +352,7 @@ export default function SchedulePage() {
               Buat Jadwal Baru
               <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
+            <AIProcessNotice show={isSubmitting} className="mt-3 max-w-[360px] text-left" />
             <div className="mt-4 max-w-[360px] pr-20 sm:pr-32">
               <QuotaBadge feature="schedule" />
             </div>

@@ -1,6 +1,6 @@
 "use client";
  
- import React, { useState, useRef, useEffect } from "react";
+ import React, { useCallback, useEffect, useRef, useState } from "react";
  import { useRouter } from "next/navigation";
  import { Camera, Type, Sparkles, X, ChevronLeft, School } from "lucide-react";
  import { Button } from "@/components/ui/Button";
@@ -16,10 +16,31 @@ import { MAX_EXPLAIN_QUESTION_CHARS } from "@/lib/aiLimits";
 import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
+import { usePageResumeRefresh } from "@/hooks/usePageResumeRefresh";
 
 interface ExplainHistoryPreview {
   id: string;
   question_text?: string;
+  status?: "processing" | "completed" | "failed";
+}
+
+interface UploadAttachmentResponse {
+  url?: string;
+  data?: {
+    url?: string;
+  };
+}
+
+function getHistoryStatusLabel(status?: ExplainHistoryPreview["status"]) {
+  if (status === "processing") return "Sedang Diproses";
+  if (status === "failed") return "Gagal Dianalisis";
+  return "Selesai Dianalisis";
+}
+
+function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
+  if (status === "processing") return "text-secondary";
+  if (status === "failed") return "text-error";
+  return "text-neutral-400";
 }
 
  export default function ExplainPage() {
@@ -35,6 +56,19 @@ interface ExplainHistoryPreview {
 	   const [history, setHistory] = useState<ExplainHistoryPreview[]>([]);
    const userLevel = user?.level || "SD";
    const canSubmit = Boolean(question.trim() || imageFile);
+
+   const fetchHistory = useCallback(async () => {
+     try {
+       const response = await api.get("/explain/history");
+       if (response?.data && Array.isArray(response.data)) {
+         setHistory(response.data.slice(0, 3));
+       }
+     } catch {
+       // History preview is optional on this screen.
+     }
+   }, []);
+
+   usePageResumeRefresh(fetchHistory);
  
    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      if (e.target.files && e.target.files[0]) {
@@ -76,12 +110,15 @@ interface ExplainHistoryPreview {
          const formData = new FormData();
          formData.append("image", imageFile);
          
-         const uploadResponse = await api.post("/upload/attachments", formData, {
+         const uploadResponse = await api.post<UploadAttachmentResponse>("/upload/attachments", formData, {
            headers: {
              "Content-Type": "multipart/form-data",
            },
          });
-         imageUrl = uploadResponse.data.url || uploadResponse.data.data.url;
+         imageUrl = uploadResponse.data.url || uploadResponse.data.data?.url || "";
+         if (!imageUrl) {
+           throw new Error("Upload response did not include an image URL");
+         }
        }
  
       const response = await api.post("/explain", {
@@ -90,6 +127,7 @@ interface ExplainHistoryPreview {
         image_url: imageUrl,
       });
       notifyAIQuotaUpdated();
+      addToast("Penjelasan sedang diproses.", "success");
       router.push(`/explain/result?id=${response.data.id}`);
     } catch (err: unknown) {
       isSubmittingRef.current = false;
@@ -100,19 +138,15 @@ interface ExplainHistoryPreview {
  
    useEffect(() => {
      fetchProfile();
-     
-     const fetchHistory = async () => {
-       try {
-         const response = await api.get("/explain/history");
-         if (response?.data && Array.isArray(response.data)) {
-           setHistory(response.data.slice(0, 3));
-         }
-      } catch {
-        // History preview is optional on this screen.
-      }
-     };
      fetchHistory();
-   }, [fetchProfile]);
+   }, [fetchHistory, fetchProfile]);
+
+   useEffect(() => {
+     if (!history.some((item) => item.status === "processing")) return;
+
+     const intervalID = window.setInterval(fetchHistory, 7500);
+     return () => window.clearInterval(intervalID);
+   }, [fetchHistory, history]);
 
    useEffect(() => {
      return () => {
@@ -312,7 +346,9 @@ interface ExplainHistoryPreview {
                          <p className="text-sm text-neutral-800 font-black leading-snug line-clamp-2 break-words">
                            {item.question_text || "Soal Gambar"}
                          </p>
-                         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-1">Selesai Dianalisis</p>
+                         <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${getHistoryStatusClassName(item.status)}`}>
+                           {getHistoryStatusLabel(item.status)}
+                         </p>
                        </div>
                      </Link>
                    </motion.div>

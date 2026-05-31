@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb, Copy, Check } from "lucide-react";
+import { AlertCircle, ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb, Copy, Check } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
  import { getApiErrorMessage } from "@/lib/apiError";
@@ -20,6 +20,8 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
    image_url?: string;
    answer: string;
    level: string;
+   status?: "processing" | "completed" | "failed";
+   error_message?: string;
  }
  
  export default function ExplainResultPage() {
@@ -58,6 +60,16 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
   useEffect(() => {
     fetchExplanation();
   }, [fetchExplanation]);
+
+  useEffect(() => {
+    if (explanation?.status !== "processing") return;
+
+    const intervalID = window.setInterval(() => {
+      fetchExplanation();
+    }, 2500);
+
+    return () => window.clearInterval(intervalID);
+  }, [explanation?.status, fetchExplanation]);
  
    const handleReExplain = async () => {
      if (!explanation?.id || isReExplaining) return;
@@ -131,6 +143,49 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
        </div>
      );
    }
+
+  if (explanation?.status === "processing") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#FDFEFF] p-6 text-center">
+        <button
+          type="button"
+          onClick={() => router.push("/explain")}
+          className="absolute left-6 top-12 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/5 bg-white text-neutral-800 shadow-xl shadow-primary/5"
+          aria-label="Kembali ke Jelasin Soal"
+        >
+          <ChevronLeft size={24} strokeWidth={2.5} />
+        </button>
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], rotate: [0, 360] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="mb-8 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-primary/10"
+        >
+          <Sparkles size={32} className="text-primary" />
+        </motion.div>
+        <p className="text-lg font-black text-neutral-800">Sobi sedang menjawab...</p>
+        <p className="mt-2 max-w-xs text-sm font-medium leading-relaxed text-neutral-400">
+          Boleh kembali, hasilnya tetap diproses.
+        </p>
+      </div>
+    );
+  }
+
+  if (explanation?.status === "failed") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#FDFEFF] p-6 text-center">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-red-50 text-error">
+          <AlertCircle size={34} />
+        </div>
+        <p className="text-lg font-black text-neutral-800">Sobi gagal memproses jawaban.</p>
+        <p className="mt-2 max-w-xs text-sm font-medium leading-relaxed text-neutral-400">
+          {explanation.error_message || "Coba kirim pertanyaanmu lagi sebentar lagi ya."}
+        </p>
+        <Button onClick={() => router.push("/explain")} className="mt-8 h-auto rounded-2xl px-8 py-4 font-black">
+          Tanya Lagi
+        </Button>
+      </div>
+    );
+  }
  
    return (
      <div className="min-h-screen bg-[#FDFEFF] relative overflow-hidden">
@@ -158,7 +213,7 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
              whileHover={{ scale: 1.1 }}
              whileTap={{ scale: 0.9 }}
 	             onClick={handleShare}
-	             disabled={isCreatingShare}
+	             disabled={isCreatingShare || explanation?.status !== "completed"}
 	             className="w-12 h-12 bg-white rounded-2xl shadow-xl shadow-primary/5 flex items-center justify-center border border-primary/5 text-neutral-800 disabled:opacity-50"
 	             aria-label="Bagikan penjelasan"
            >
@@ -229,6 +284,7 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
               <button
                 type="button"
                 onClick={handleCopyAnswer}
+                disabled={!explanation?.answer}
                 className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-primary/10 bg-white text-neutral-400 shadow-lg shadow-black/5 transition-colors hover:text-primary"
                 aria-label="Salin penjelasan"
                 title="Salin penjelasan"
