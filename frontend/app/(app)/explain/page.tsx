@@ -2,7 +2,7 @@
  
  import React, { useCallback, useEffect, useRef, useState } from "react";
  import { useRouter } from "next/navigation";
- import { Camera, Type, Sparkles, X, ChevronLeft, School } from "lucide-react";
+ import { Camera, Type, Sparkles, X, ChevronLeft } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
  import { getApiErrorMessage } from "@/lib/apiError";
@@ -31,6 +31,8 @@ interface UploadAttachmentResponse {
   };
 }
 
+type ExplainInputMode = "text" | "image";
+
 function getHistoryStatusLabel(status?: ExplainHistoryPreview["status"]) {
   if (status === "processing") return "Sedang Diproses";
   if (status === "failed") return "Gagal Dianalisis";
@@ -51,11 +53,12 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
    const [imageFile, setImageFile] = useState<File | null>(null);
    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
    const [isLoading, setIsLoading] = useState(false);
+   const [inputMode, setInputMode] = useState<ExplainInputMode>("text");
    const fileInputRef = useRef<HTMLInputElement>(null);
    const isSubmittingRef = useRef(false);
 	   const [history, setHistory] = useState<ExplainHistoryPreview[]>([]);
    const userLevel = user?.level || "SD";
-   const canSubmit = Boolean(question.trim() || imageFile);
+   const canSubmit = inputMode === "text" ? Boolean(question.trim()) : Boolean(imageFile);
 
    const fetchHistory = useCallback(async () => {
      try {
@@ -92,12 +95,25 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
        fileInputRef.current.value = "";
      }
    };
+
+   const selectInputMode = (mode: ExplainInputMode) => {
+     setInputMode(mode);
+     if (mode === "text") {
+       clearImage();
+     } else {
+       setQuestion("");
+     }
+   };
  
    const handleExplain = async () => {
      if (isSubmittingRef.current) return;
 
-     if (!question.trim() && !imageFile) {
-       addToast("Harap ketik soal atau pilih gambar!", "error");
+     if (inputMode === "text" && !question.trim()) {
+       addToast("Ketik soal yang ingin dijelaskan ya!", "error");
+       return;
+     }
+     if (inputMode === "image" && !imageFile) {
+       addToast("Pilih foto soal yang ingin dijelaskan ya!", "error");
        return;
      }
  
@@ -106,7 +122,7 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
      try {
        let imageUrl = "";
  
-       if (imageFile) {
+       if (inputMode === "image" && imageFile) {
          const formData = new FormData();
          formData.append("image", imageFile);
          
@@ -122,7 +138,7 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
        }
  
       const response = await api.post("/explain", {
-        question: question,
+        question: inputMode === "text" ? question : "",
         level: userLevel,
         image_url: imageUrl,
       });
@@ -199,11 +215,10 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
            <div className="mb-8">
              <h2 className="text-2xl font-black text-neutral-800 mb-2 leading-tight">Bantu Jelasin, <br/><span className="text-primary">Dong Sobi!</span></h2>
              <p className="text-xs text-neutral-400 font-medium leading-relaxed">
-               Lagi bingung sama soal sekolah? Foto aja, biar Sobi bantuin langkah-langkahnya!
+               Ketik atau foto soalmu, biar Sobi bantu jelasin langkah-langkahnya!
              </p>
            </div>
  
-           {/* Action Selection */}
            <input 
              type="file" 
              accept="image/*" 
@@ -211,78 +226,94 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
              ref={fileInputRef} 
              onChange={handleFileChange} 
            />
-           
+
+           <div className="mb-5 grid grid-cols-2 rounded-2xl bg-gray-50 p-1.5">
+             <button
+               type="button"
+               onClick={() => selectInputMode("text")}
+               className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black transition-all ${
+                 inputMode === "text" ? "bg-white text-primary shadow-sm" : "text-neutral-400"
+               }`}
+               aria-pressed={inputMode === "text"}
+             >
+               <Type size={16} /> Teks
+             </button>
+             <button
+               type="button"
+               onClick={() => selectInputMode("image")}
+               className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black transition-all ${
+                 inputMode === "image" ? "bg-white text-primary shadow-sm" : "text-neutral-400"
+               }`}
+               aria-pressed={inputMode === "image"}
+             >
+               <Camera size={16} /> Foto Soal
+             </button>
+           </div>
+
            <AnimatePresence mode="wait">
-             {!previewUrl ? (
-               <motion.div 
-                 key="upload-empty"
+             {inputMode === "text" ? (
+               <motion.div
+                 key="text-input"
                  initial={{ opacity: 0, y: 10 }}
                  animate={{ opacity: 1, y: 0 }}
-                 exit={{ opacity: 0, scale: 0.95 }}
-                 onClick={() => fileInputRef.current?.click()}
-                 className="group border-4 border-dashed border-primary/10 rounded-[2rem] p-6 flex flex-col items-center justify-center gap-5 mb-8 bg-gray-50/30 cursor-pointer hover:bg-white hover:border-primary/30 transition-all duration-500 sm:rounded-[2.5rem] sm:p-10 sm:gap-6"
+                 exit={{ opacity: 0, scale: 0.98 }}
+                 className="mb-6"
                >
-                 <div className="w-20 h-20 bg-white rounded-3xl shadow-2xl shadow-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500">
-                   <Camera size={40} strokeWidth={2.5} />
-                 </div>
-                 <div className="text-center">
-                   <p className="font-black text-lg text-neutral-800 mb-1">Ambil Foto Soal</p>
-                   <p className="text-xs text-neutral-400 font-medium">Atau pilih dari galeri HP-mu</p>
-                 </div>
+                 <AutoGrowTextarea
+                   value={question}
+                   onChange={(e) => setQuestion(e.target.value)}
+                   onKeyDown={(e) => {
+                     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                       e.preventDefault();
+                       handleExplain();
+                     }
+                   }}
+                   enterKeyHint="send"
+                   placeholder="Ketik soalmu di sini..."
+                   maxLength={MAX_EXPLAIN_QUESTION_CHARS}
+                   minRows={7}
+                   maxRows={14}
+                   className="w-full rounded-3xl border-2 border-primary/5 bg-white/50 p-5 text-sm font-medium leading-relaxed transition-all placeholder:text-neutral-300 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10"
+                 />
                </motion.div>
-             ) : (
-               <motion.div 
-                 key="upload-preview"
+             ) : previewUrl ? (
+               <motion.div
+                 key="image-preview"
                  initial={{ opacity: 0, scale: 0.95 }}
                  animate={{ opacity: 1, scale: 1 }}
-                 className="mb-8 relative rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl aspect-[4/3] group"
+                 exit={{ opacity: 0, scale: 0.98 }}
+                 className="relative mb-6 aspect-[4/3] overflow-hidden rounded-3xl border-2 border-primary/10"
                >
-                 <Image src={previewUrl} alt="Preview" fill className="object-cover" />
-                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                 <motion.button 
-                   whileHover={{ scale: 1.1 }}
-                   whileTap={{ scale: 0.9 }}
+                 <Image src={previewUrl} alt="Pratinjau foto soal" fill className="object-cover" />
+                 <button
+                   type="button"
                    onClick={clearImage}
-                   className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-2xl text-red-500 shadow-xl"
                    aria-label="Hapus foto soal"
+                   className="absolute right-3 top-3 rounded-xl bg-white p-2.5 text-red-500 shadow-lg"
                  >
-                   <X size={20} strokeWidth={3} />
-                 </motion.button>
+                   <X size={18} strokeWidth={3} />
+                 </button>
                </motion.div>
+             ) : (
+               <motion.button
+                 key="image-empty"
+                 type="button"
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 exit={{ opacity: 0, scale: 0.98 }}
+                 onClick={() => fileInputRef.current?.click()}
+                 className="mb-6 flex min-h-52 w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-primary/15 bg-primary/[0.02] text-center transition-colors hover:border-primary/35"
+               >
+                 <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                   <Camera size={30} strokeWidth={2.5} />
+                 </span>
+                 <span>
+                   <span className="block text-sm font-black text-neutral-800">Pilih Foto Soal</span>
+                   <span className="mt-1 block text-xs font-medium text-neutral-400">JPG, PNG, atau WEBP. Maksimal 5MB.</span>
+                 </span>
+               </motion.button>
              )}
            </AnimatePresence>
- 
-           {/* Text Input Upgrade */}
-           <div className="relative mb-8 group">
-             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-neutral-300 group-focus-within:text-primary transition-colors">
-               <Type size={20} strokeWidth={2.5} />
-             </div>
-            <AutoGrowTextarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  handleExplain();
-                }
-              }}
-              enterKeyHint="send"
-              placeholder="Atau ketik soalmu di sini..."
-              maxLength={MAX_EXPLAIN_QUESTION_CHARS}
-              minRows={4}
-              maxRows={10}
-              className="w-full bg-gray-50/50 border-2 border-transparent rounded-[2rem] p-5 pl-14 text-sm font-medium leading-relaxed focus:outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all"
-            />
-           </div>
- 
-           <div className="mb-10 flex justify-center">
-             <div className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-5 py-3 text-primary">
-               <School size={16} strokeWidth={2.5} />
-               <span className="text-[10px] font-black uppercase tracking-widest">
-                 Jenjang {userLevel}
-               </span>
-             </div>
-           </div>
  
            {/* Action Button Upgrade */}
           <Button
