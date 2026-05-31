@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { User, Mail, School, Zap, ChevronRight, Settings, ShieldCheck, HelpCircle, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
+import { AIQuotaOverview } from "@/components/ai/AIQuotaOverview";
 
 export default function ProfilePage() {
   const { user, fetchProfile, updateUser } = useAuthStore();
@@ -122,6 +123,8 @@ export default function ProfilePage() {
             </motion.div>
           </Link>
         </div>
+
+        <AIQuotaOverview />
 
         {/* Menu List */}
         <motion.div 
