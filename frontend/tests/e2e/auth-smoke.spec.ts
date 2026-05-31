@@ -220,6 +220,40 @@ test("expired access token is refreshed for a protected request", async ({ page 
   await expect.poll(() => renewedProfileRequests).toBeGreaterThan(0);
 });
 
+test("parallel expired requests share one refresh call", async ({ page }) => {
+  await seedSession(page);
+  let refreshRequests = 0;
+
+  await page.route("**/api/v1/user/profile", async (route) => {
+    if (!route.request().headers().cookie?.includes("sobat_access_token=renewed-access-token")) {
+      await route.fulfill({ status: 401, json: { success: false, message: "Sesi tidak valid" } });
+      return;
+    }
+    await route.fulfill({ json: { success: true, data: user } });
+  });
+  await page.route("**/api/v1/gamification/points", async (route) => {
+    if (!route.request().headers().cookie?.includes("sobat_access_token=renewed-access-token")) {
+      await route.fulfill({ status: 401, json: { success: false, message: "Sesi tidak valid" } });
+      return;
+    }
+    await route.fulfill({ json: { success: true, data: { points: 12 } } });
+  });
+  await page.route("**/api/v1/auth/refresh", async (route) => {
+    refreshRequests += 1;
+    await route.fulfill({
+      headers: {
+        "Set-Cookie": "sobat_access_token=renewed-access-token; Path=/api/v1; HttpOnly; SameSite=Lax",
+      },
+      json: { success: true, data: { refreshed: true } },
+    });
+  });
+
+  await page.goto("/profile");
+
+  await expect(page.getByRole("heading", { name: "Galan Jabal" })).toBeVisible();
+  await expect.poll(() => refreshRequests).toBe(1);
+});
+
 test("failed refresh clears session and returns to login", async ({ page }) => {
   await seedSession(page);
   await page.route("**/api/v1/user/profile", (route) => route.fulfill({

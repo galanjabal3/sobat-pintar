@@ -10,10 +10,38 @@ const api = axios.create({
   },
 });
 
+let refreshPromise: Promise<void> | null = null;
+let isRedirectingToLogin = false;
+
 function isAuthRequest(url?: string): boolean {
   if (!url) return false;
 
   return url.startsWith("/auth/");
+}
+
+async function refreshSession() {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_URL}/auth/refresh`, undefined, { withCredentials: true })
+      .then(() => undefined)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
+async function clearSessionAndRedirect() {
+  if (isRedirectingToLogin) return;
+
+  isRedirectingToLogin = true;
+  await axios.post(`${API_URL}/auth/logout`, undefined, { withCredentials: true }).catch(() => undefined);
+  const { useAuthStore } = await import("@/store/authStore");
+  useAuthStore.getState().logout();
+  if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
 }
 
 // Response interceptor
@@ -39,15 +67,10 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        await axios.post(`${API_URL}/auth/refresh`, undefined, { withCredentials: true });
+        await refreshSession();
         return api(originalRequest);
-      } catch (refreshError) {
-        await axios.post(`${API_URL}/auth/logout`, undefined, { withCredentials: true }).catch(() => undefined);
-        const { useAuthStore } = await import("@/store/authStore");
-        useAuthStore.getState().logout();
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
+      } catch {
+        await clearSessionAndRedirect();
       }
     }
 
