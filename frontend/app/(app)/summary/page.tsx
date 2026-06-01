@@ -20,6 +20,7 @@ import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
 import { cn } from "@/lib/utils";
 import { usePageResumeRefresh } from "@/hooks/usePageResumeRefresh";
+import { formatAIMarkdownPreview } from "@/lib/aiMarkdown";
 
 interface SummaryHistory {
   id: string;
@@ -53,12 +54,10 @@ function getSummaryPreview(item: SummaryHistory) {
 }
 
 function cleanSummaryPreviewText(text: string) {
-  return text
+  return formatAIMarkdownPreview(text)
     .replace(/^#{1,6}\s+/, "")
     .replace(/^[-*+]\s+/, "")
     .replace(/^\d+[.)]\s+/, "")
-    .replace(/[*_`~]/g, "")
-    .replace(/\[(.*?)\]\(.*?\)/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
 }

@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { useToastStore } from "@/store/toastStore";
 import { cn } from "@/lib/utils";
 import { usePageResumeRefresh } from "@/hooks/usePageResumeRefresh";
+import { formatAIMarkdownPreview } from "@/lib/aiMarkdown";
 
 interface HistoryItem {
   id: string;
@@ -115,7 +116,7 @@ export default function ExplainHistoryPage() {
               <div className="flex-1 min-w-0">
                 <div className="mb-1 flex items-start justify-between gap-3">
                   <p className="text-neutral-700 text-sm font-medium line-clamp-2">
-                    {item.question_text || "Lihat Gambar Soal"}
+                    {item.question_text ? formatAIMarkdownPreview(item.question_text) : "Lihat Gambar Soal"}
                   </p>
                   <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest", getStatusClassName(item.status))}>
                     {getStatusLabel(item.status)}

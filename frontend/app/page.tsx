@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
-import { GraduationCap, BookOpen, Users, School, Camera, MessageCircle, FileText, Sparkles } from "lucide-react";
+import { GraduationCap, BookOpen, Users, School, Camera, MessageCircle, FileText, Sparkles, CalendarDays } from "lucide-react";
 
 export default function LandingPage() {
   const user = useAuthStore((state) => state.user);
@@ -27,14 +27,15 @@ export default function LandingPage() {
   ];
 
   const features = [
-    { label: "Jelasin Soal", icon: Camera, color: "bg-primary/10", text: "text-primary" },
-    { label: "Tanya Sobi", icon: MessageCircle, color: "bg-secondary/15", text: "text-secondary" },
-    { label: "Latihan Soal", icon: BookOpen, color: "bg-orange-50", text: "text-orange-500" },
-    { label: "Rangkuman", icon: FileText, color: "bg-blue-50", text: "text-blue-500" },
+    { label: "Jelasin Soal", description: "Foto soal, dapat langkah jawaban", icon: Camera, color: "bg-primary/10", text: "text-primary" },
+    { label: "Tanya Sobi", description: "Tanya materi kapan saja", icon: MessageCircle, color: "bg-secondary/15", text: "text-secondary" },
+    { label: "Latihan Soal", description: "Belajar lewat soal pilihan", icon: BookOpen, color: "bg-orange-50", text: "text-orange-500" },
+    { label: "Rangkuman", description: "Ringkas materi panjang", icon: FileText, color: "bg-blue-50", text: "text-blue-500" },
+    { label: "Jadwal Belajar", description: "Bikin rencana belajar otomatis", icon: CalendarDays, color: "bg-cyan-50", text: "text-cyan-500", wide: true },
   ];
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[#FDFEFF] px-7 pb-10 pt-12">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[#FDFEFF] px-7 pb-10 pt-10">
       {/* Background decoration */}
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
       <div className="absolute bottom-24 -left-24 w-64 h-64 bg-secondary/5 rounded-full blur-3xl" />
@@ -46,31 +47,31 @@ export default function LandingPage() {
           Teman Belajar AI
         </div>
 
-        <div className="relative mb-3 h-52 w-52">
+        <div className="relative mb-2 h-44 w-44">
           <Image
             src={SOBI_ASSETS.WAVING}
             alt="Sobi"
             fill
             priority
-            sizes="208px"
+            sizes="176px"
             className="object-contain drop-shadow-2xl"
           />
         </div>
 
-        <h1 className="mb-3 text-4xl font-black tracking-tight text-neutral-800">
-          Sobat Pintar
+        <h1 className="mb-3 max-w-sm text-[2.45rem] font-black leading-[1.04] tracking-tight text-neutral-800 min-[420px]:text-5xl">
+          Belajar Bareng Sobi
         </h1>
 
-        <p className="max-w-[280px] text-sm font-bold leading-relaxed text-neutral-500">
-          Teman belajar AI untuk semua pelajar Indonesia
+        <p className="max-w-[320px] text-sm font-bold leading-relaxed text-neutral-500">
+          Foto soal, tanya materi, buat rangkuman, latihan soal, dan susun jadwal belajar dalam satu tempat.
         </p>
       </div>
 
       {/* Main Action Button */}
-      <div className="relative z-10 mt-9 space-y-3">
+      <div className="relative z-10 mt-7 space-y-3">
         <Button
           onClick={() => router.push("/register")}
-          className="group h-auto w-full gap-2 rounded-[1.7rem] bg-secondary py-6 text-lg font-black text-neutral-900 shadow-xl shadow-secondary/30"
+          className="group h-auto w-full gap-2 rounded-[1.7rem] bg-secondary py-5 text-lg font-black text-neutral-900 shadow-xl shadow-secondary/30"
         >
           Mulai Belajar
           <span className="text-xl transition-transform group-hover:translate-x-1">→</span>
@@ -84,20 +85,28 @@ export default function LandingPage() {
         </Link>
       </div>
 
-      <div className="relative z-10 mt-8 grid grid-cols-2 gap-3">
+      <div className="relative z-10 mt-6 grid grid-cols-2 gap-3">
         {features.map((feature) => {
           const Icon = feature.icon;
           return (
             <div
               key={feature.label}
-              className="rounded-[1.5rem] border-2 border-white bg-white/70 p-4 text-center shadow-lg shadow-primary/5"
+              className={[
+                "rounded-[1.5rem] border-2 border-white bg-white/70 p-4 text-center shadow-lg shadow-primary/5",
+                feature.wide ? "col-span-2 flex items-center justify-start gap-4 px-5 text-left" : "",
+              ].join(" ")}
             >
-              <div className={`mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-2xl ${feature.color}`}>
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${feature.wide ? "" : "mx-auto mb-2"} ${feature.color}`}>
                 <Icon size={19} className={feature.text} strokeWidth={3} />
               </div>
-              <p className="text-[11px] font-black leading-tight text-neutral-700">
-                {feature.label}
-              </p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-black leading-tight text-neutral-700">
+                  {feature.label}
+                </p>
+                <p className="mt-1 text-[9px] font-bold leading-snug text-neutral-400">
+                  {feature.description}
+                </p>
+              </div>
             </div>
           );
         })}
@@ -108,7 +117,7 @@ export default function LandingPage() {
         <div className="flex flex-col items-center gap-6">
           <div className="flex items-center gap-3 w-full">
             <div className="h-[1px] bg-gray-100 flex-1" />
-            <p className="text-[10px] font-black text-neutral-300 uppercase tracking-[0.2em]">Pilih Jenjang Kamu</p>
+            <p className="text-[10px] font-black text-neutral-300 uppercase tracking-[0.2em]">Cocok untuk semua jenjang</p>
             <div className="h-[1px] bg-gray-100 flex-1" />
           </div>
           

@@ -55,12 +55,12 @@ export function QuotaBadge({ feature, className }: QuotaBadgeProps) {
   return (
     <div
       className={[
-        "flex items-center justify-between rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-[11px] font-bold text-neutral-600",
+        "flex items-center justify-between gap-3 rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-[11px] font-bold text-neutral-600",
         className || "",
       ].join(" ")}
     >
-      <span>{label}</span>
-      <span className="text-primary">
+      <span className="min-w-0 truncate">{label}</span>
+      <span className="shrink-0 text-primary">
         Sisa hari ini {quota.remaining}/{quota.limit}
       </span>
     </div>

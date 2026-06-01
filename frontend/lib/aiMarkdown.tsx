@@ -64,6 +64,12 @@ export function formatAIMarkdownToPlainText(value: string) {
   return normalized.trim();
 }
 
+export function formatAIMarkdownPreview(value: string) {
+  return formatAIMarkdownToPlainText(value)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function renderAIMarkdownLink(href: string | undefined, children: ReactNode) {
   if (href === "#sobi-underline") {
     return <span className="underline decoration-2 underline-offset-4">{children}</span>;

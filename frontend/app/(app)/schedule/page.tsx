@@ -234,11 +234,11 @@ export default function SchedulePage() {
                         key={subject}
                         type="button"
                         onClick={() => removeSubject(subject)}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/10"
+                        className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/10"
                         aria-label={`Hapus ${subject}`}
                       >
-                        {subject}
-                        <span className="text-sm leading-none">×</span>
+                        <span className="min-w-0 truncate">{subject}</span>
+                        <span className="shrink-0 text-sm leading-none">×</span>
                       </button>
                     ))}
                     {subjects.length === 0 && (

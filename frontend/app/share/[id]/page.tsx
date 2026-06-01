@@ -123,7 +123,9 @@ export default function SharePage() {
               />
             </div>
           )}
-          <p className="text-neutral-700 text-sm font-medium leading-relaxed">{data.question_text}</p>
+          <AIMarkdown className="prose prose-sm max-w-none break-words text-sm font-medium leading-relaxed text-neutral-700 prose-p:my-0">
+            {data.question_text || "Soal Gambar"}
+          </AIMarkdown>
         </div>
 
         {/* AI Answer */}

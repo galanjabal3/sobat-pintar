@@ -213,7 +213,7 @@ import { useBeforeUnloadWarning } from "@/hooks/useBeforeUnloadWarning";
                )}
              >
                  <div className={cn(
-                 "flex gap-3 max-w-[92%] sm:max-w-[85%]",
+                 "flex max-w-[92%] gap-3 sm:max-w-[85%]",
                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
                )}>
                  <div className={cn(
@@ -240,7 +240,7 @@ import { useBeforeUnloadWarning } from "@/hooks/useBeforeUnloadWarning";
                  </div>
 
                 <div className={cn(
-                  "relative p-4 pr-14 rounded-[1.8rem] text-sm font-medium leading-relaxed shadow-xl shadow-primary/5 border-2",
+                  "relative min-w-0 max-w-full break-words p-4 pr-14 rounded-[1.8rem] text-sm font-medium leading-relaxed shadow-xl shadow-primary/5 border-2",
                   msg.status === "failed"
                     ? "bg-red-50 border-error/15 text-neutral-800 rounded-tl-none"
                     : msg.role === "user"
@@ -263,11 +263,11 @@ import { useBeforeUnloadWarning } from "@/hooks/useBeforeUnloadWarning";
                   </button>
                   <div>
                     {msg.role === "assistant" ? (
-                      <AIMarkdown className="prose prose-sm max-w-none prose-p:my-2 prose-p:leading-relaxed prose-strong:text-neutral-900 prose-ol:my-2 prose-ul:my-2 prose-li:my-1 prose-li:pl-1 prose-headings:my-2 prose-headings:text-neutral-900">
+                      <AIMarkdown className="prose prose-sm max-w-none break-words prose-p:my-2 prose-p:leading-relaxed prose-strong:text-neutral-900 prose-ol:my-2 prose-ul:my-2 prose-li:my-1 prose-li:pl-1 prose-headings:my-2 prose-headings:text-neutral-900">
                         {msg.content}
                       </AIMarkdown>
                     ) : (
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                     )}
                   </div>
                    <p className={cn(

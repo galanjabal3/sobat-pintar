@@ -3,11 +3,14 @@
 import React, { useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CalendarDays, Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap, type LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarDays, Camera, BookOpen, MessageCircle, FileText, Flame, CheckCircle2, TrendingUp, Trophy, Zap, Sparkles, type LucideIcon } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { motion } from "framer-motion";
+import { AI_QUOTA_UPDATED_EVENT, AIQuotaResponse } from "@/lib/aiQuota";
+import { AIQuotaDetailModal } from "@/components/ai/AIQuotaOverview";
+import { formatAIMarkdownPreview } from "@/lib/aiMarkdown";
 
 const DAILY_QUESTION_GOAL = 5;
 
@@ -62,9 +65,22 @@ export default function DashboardPage() {
   const [dailyProgress, setDailyProgress] = React.useState(0);
   const [recentActivity, setRecentActivity] = React.useState<RecentActivity | null>(null);
   const [isLoadingRecentActivity, setIsLoadingRecentActivity] = React.useState(true);
+  const [aiQuota, setAIQuota] = React.useState<AIQuotaResponse | null>(null);
+  const [isQuotaModalOpen, setIsQuotaModalOpen] = React.useState(false);
   const hasDailyProgress = dailyProgress > 0;
   const completedDailyGoal = dailyProgress >= DAILY_QUESTION_GOAL;
   const progressPercent = Math.min((dailyProgress / DAILY_QUESTION_GOAL) * 100, 100);
+  const quotaTotal = React.useMemo(() => {
+    if (!aiQuota?.quotas?.length) return null;
+
+    return aiQuota.quotas.reduce(
+      (total, quota) => ({
+        limit: total.limit + quota.limit,
+        remaining: total.remaining + quota.remaining,
+      }),
+      { limit: 0, remaining: 0 }
+    );
+  }, [aiQuota]);
   const progressMessage = completedDailyGoal
     ? "Target harian tercapai. Pertahankan streak-mu!"
     : hasDailyProgress
@@ -97,7 +113,7 @@ export default function DashboardPage() {
       const session = (chatResponse.value.data as ChatHistoryItem[] | undefined)?.[0];
       if (session && isValidTimestamp(session.updated_at)) {
         candidates.push({
-          description: session.last_message || session.title || "Buka kembali obrolan belajarmu.",
+          description: session.last_message ? formatAIMarkdownPreview(session.last_message) : session.title || "Buka kembali obrolan belajarmu.",
           href: `/chat/session/${session.id}`,
           icon: MessageCircle,
           iconColor: "text-secondary",
@@ -142,7 +158,7 @@ export default function DashboardPage() {
       const explanation = (explainResponse.value.data as ExplainHistoryItem[] | undefined)?.[0];
       if (explanation && isValidTimestamp(explanation.created_at)) {
         candidates.push({
-          description: explanation.question_text || "Lihat kembali soal yang sudah dijelaskan.",
+          description: explanation.question_text ? formatAIMarkdownPreview(explanation.question_text) : "Lihat kembali soal yang sudah dijelaskan.",
           href: `/explain/result?id=${explanation.id}`,
           icon: Camera,
           iconColor: "text-primary",
@@ -160,11 +176,29 @@ export default function DashboardPage() {
     setIsLoadingRecentActivity(false);
   }, []);
 
+  const fetchAIQuota = useCallback(async () => {
+    try {
+      const res = await api.get("/ai/usage");
+      setAIQuota(res.data || null);
+    } catch (error) {
+      console.error("Failed to fetch AI quota", error);
+      setAIQuota(null);
+    }
+  }, []);
+
   React.useEffect(() => {
     fetchProfile();
     fetchDailyProgress();
     fetchRecentActivity();
-  }, [fetchDailyProgress, fetchProfile, fetchRecentActivity]);
+    fetchAIQuota();
+  }, [fetchAIQuota, fetchDailyProgress, fetchProfile, fetchRecentActivity]);
+
+  React.useEffect(() => {
+    window.addEventListener(AI_QUOTA_UPDATED_EVENT, fetchAIQuota);
+    return () => {
+      window.removeEventListener(AI_QUOTA_UPDATED_EVENT, fetchAIQuota);
+    };
+  }, [fetchAIQuota]);
 
   const showAll = process.env.NEXT_PUBLIC_DEBUG_MODE === "true";
 
@@ -216,8 +250,17 @@ export default function DashboardPage() {
       color: "bg-[#ECFEFF]", // Soft Cyan
       iconColor: "text-cyan-500",
       cta: "Atur jadwal",
-      wide: true,
       href: "/schedule",
+      enabled: true,
+    },
+    {
+      title: "Kuota AI",
+      desc: quotaTotal ? `Sisa ${quotaTotal.remaining}/${quotaTotal.limit} hari ini` : "Cek sisa pemakaian",
+      icon: Sparkles,
+      color: "bg-[#F0FDF4]", // Soft Green
+      iconColor: "text-primary",
+      cta: "Lihat detail",
+      action: "quota" as const,
       enabled: true,
     },
   ].filter(f => f.enabled || showAll);
@@ -409,39 +452,58 @@ export default function DashboardPage() {
         >
           {features.map((feature) => {
             const Icon = feature.icon;
+            const cardClassName = cn(
+              "group relative flex min-h-[152px] flex-col justify-between overflow-hidden rounded-[1.75rem] border-2 border-white p-4 text-left shadow-xl shadow-primary/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 active:scale-95 min-[430px]:min-h-[160px] min-[430px]:p-5 sm:min-h-[176px] sm:rounded-[2rem]",
+              feature.color
+            );
+            const cardContent = (
+              <>
+                <ArrowRight size={16} strokeWidth={3} className="absolute right-5 top-5 shrink-0 text-neutral-800 transition-transform group-hover:translate-x-1" />
+                <div className="flex min-w-0 flex-1 flex-col justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/5 transition-transform group-hover:rotate-6 min-[430px]:h-14 min-[430px]:w-14">
+                      <Icon size={21} strokeWidth={3} className={cn("min-[430px]:size-[23px]", feature.iconColor)} />
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="mb-1 text-sm font-black leading-tight text-neutral-800 min-[430px]:text-base">{feature.title}</h3>
+                    <p className="text-[11px] font-bold leading-relaxed text-neutral-500 min-[430px]:text-xs">{feature.desc}</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <span className="rounded-full bg-white/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-neutral-700 shadow-sm shadow-black/5">
+                    {feature.cta}
+                  </span>
+                </div>
+              </>
+            );
+
             return (
-              <motion.div key={feature.title} variants={itemVariants} className={cn("min-w-0", feature.wide && "col-span-2")}>
-                <Link
-                  href={feature.href}
-                  className={cn(
-                    "group relative flex min-h-[152px] flex-col justify-between overflow-hidden rounded-[1.75rem] border-2 border-white p-4 shadow-xl shadow-primary/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 active:scale-95 min-[430px]:min-h-[160px] min-[430px]:p-5 sm:min-h-[176px] sm:rounded-[2rem]",
-                    feature.wide && "min-h-[136px] flex-row items-center gap-4 pr-5 sm:min-h-[148px]",
-                    feature.color
-                  )}
-                >
-                  <ArrowRight size={16} strokeWidth={3} className="absolute right-5 top-5 shrink-0 text-neutral-800 transition-transform group-hover:translate-x-1" />
-                  <div className={cn("flex min-w-0 flex-1 flex-col justify-between gap-4", feature.wide && "h-full pr-8")}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/5 transition-transform group-hover:rotate-6 min-[430px]:h-14 min-[430px]:w-14">
-                        <Icon size={21} strokeWidth={3} className={cn("min-[430px]:size-[23px]", feature.iconColor)} />
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="mb-1 text-sm font-black leading-tight text-neutral-800 min-[430px]:text-base">{feature.title}</h3>
-                      <p className="text-[11px] font-bold leading-relaxed text-neutral-500 min-[430px]:text-xs">{feature.desc}</p>
-                    </div>
-                  </div>
-                  <div className={cn("mt-4 flex items-center justify-between gap-2", feature.wide && "mt-0 shrink-0 self-end")}>
-                    <span className="rounded-full bg-white/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-neutral-700 shadow-sm shadow-black/5">
-                      {feature.cta}
-                    </span>
-                  </div>
-                </Link>
+              <motion.div key={feature.title} variants={itemVariants} className="min-w-0">
+                {"action" in feature && feature.action === "quota" ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsQuotaModalOpen(true)}
+                    className={cardClassName}
+                  >
+                    {cardContent}
+                  </button>
+                ) : (
+                  <Link href={feature.href} className={cardClassName}>
+                    {cardContent}
+                  </Link>
+                )}
               </motion.div>
             );
           })}
         </motion.div>
       </div>
+      <AIQuotaDetailModal
+        isLoading={!aiQuota}
+        isOpen={isQuotaModalOpen}
+        onClose={() => setIsQuotaModalOpen(false)}
+        quotas={aiQuota?.quotas || []}
+      />
     </div>
   );
 }

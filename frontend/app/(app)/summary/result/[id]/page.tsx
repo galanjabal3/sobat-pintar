@@ -398,14 +398,14 @@ function stripSummaryMarkdown(markdown: string) {
            animate={{ opacity: 1, y: 0 }}
            className="space-y-8"
          >
-           <div className="flex items-center justify-between px-2">
-             <div className="flex items-center gap-2">
+           <div className="flex flex-wrap items-center justify-between gap-2 px-2">
+             <div className="flex min-w-0 items-center gap-2">
                <Clock size={14} className="text-neutral-400" />
-               <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+               <span className="truncate text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                  {detail && format(new Date(detail.created_at), "d MMMM yyyy • HH:mm", { locale: idLocale })}
                </span>
              </div>
-             <div className="flex items-center gap-1.5">
+             <div className="flex shrink-0 items-center gap-1.5">
                <Sparkles size={14} className="text-secondary" />
                <span className="text-[10px] font-black text-secondary uppercase tracking-widest">AI Summarized</span>
              </div>

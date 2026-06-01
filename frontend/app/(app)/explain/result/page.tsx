@@ -256,9 +256,9 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
                  />
                </motion.div>
              )}
-             <p className="text-neutral-700 text-sm font-bold leading-relaxed px-1">
+             <AIMarkdown className="prose prose-sm max-w-none break-words px-1 text-sm font-bold leading-relaxed text-neutral-700 prose-p:my-0">
                {explanation?.question_text || "Soal Gambar"}
-             </p>
+             </AIMarkdown>
            </motion.div>
  
            {/* AI Answer Card */}

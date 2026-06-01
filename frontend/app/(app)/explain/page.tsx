@@ -17,6 +17,7 @@ import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
 import { usePageResumeRefresh } from "@/hooks/usePageResumeRefresh";
+import { formatAIMarkdownPreview } from "@/lib/aiMarkdown";
 
 interface ExplainHistoryPreview {
   id: string;
@@ -375,7 +376,7 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
                        </div>
                        <div className="flex-1 min-w-0">
                          <p className="text-sm text-neutral-800 font-black leading-snug line-clamp-2 break-words">
-                           {item.question_text || "Soal Gambar"}
+                           {item.question_text ? formatAIMarkdownPreview(item.question_text) : "Soal Gambar"}
                          </p>
                          <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${getHistoryStatusClassName(item.status)}`}>
                            {getHistoryStatusLabel(item.status)}

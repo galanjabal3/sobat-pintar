@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Modal } from "@/components/ui/Modal";
 import { SOBI_ASSETS } from "@/lib/assets";
+import { formatAIMarkdownPreview } from "@/lib/aiMarkdown";
 
 interface ChatSession {
   id: string;
@@ -213,7 +214,7 @@ export default function ChatPage() {
                     </button>
                   </div>
                   <p className="text-xs text-neutral-400 font-medium line-clamp-1 mb-4">
-                    {session.last_message || "Belum ada pesan."}
+                    {session.last_message ? formatAIMarkdownPreview(session.last_message) : "Belum ada pesan."}
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
