@@ -78,7 +78,7 @@ func LoadConfig() *Config {
 	}
 
 	cfg := &Config{
-		AppPort: getEnv("APP_PORT", "8080"),
+		AppPort: getEnv("APP_PORT", getEnv("PORT", "8080")),
 		AppEnv:  getEnv("APP_ENV", "development"),
 		RateLimit: RateLimitConfig{
 			PublicPerMinute:  getIntEnv("RATE_LIMIT_PUBLIC_PER_MINUTE", 60),
