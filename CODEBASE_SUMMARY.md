@@ -1,6 +1,6 @@
 # Sobat Pintar Codebase Summary
 
-Last reviewed: May 24, 2026
+Last reviewed: June 2, 2026
 
 ## Product Context
 
@@ -30,12 +30,12 @@ Backend:
 
 Frontend:
 
-- Next.js 14 App Router
+- Next.js 15 App Router
 - React 18
 - TypeScript
 - TailwindCSS
 - Zustand for auth and toast state
-- Axios API client with token injection and refresh-token retry
+- Axios API client using HttpOnly auth cookies with refresh-token retry
 - Framer Motion for UI animation
 - React Markdown with math support for AI response rendering
 - Lucide React icons
@@ -64,7 +64,7 @@ Backend layout:
 - `backend/pkg/cloudinary`: active Cloudinary upload client
 - `backend/pkg/storage`: Cloudflare R2 placeholder
 - `backend/pkg/fcm`: Firebase notification placeholder
-- `backend/migrations`: SQL migrations `001` through `023`
+- `backend/migrations`: SQL migrations `001` through `026`
 
 Frontend layout:
 
@@ -89,7 +89,10 @@ Auth:
 - `POST /auth/register`
 - `POST /auth/login`
 - `POST /auth/google`
+- `POST /auth/verify-email`
+- `POST /auth/resend-verification`
 - `POST /auth/refresh`
+- `POST /auth/logout`
 
 Protected user:
 
@@ -108,6 +111,7 @@ Protected learning features:
 - `GET /explain/history`
 - `GET /explain/:id`
 - `POST /explain/:id/re-explain`
+- `POST /explain/:id/share`
 - `POST /chat/sessions`
 - `GET /chat/sessions`
 - `GET /chat/sessions/:id`
@@ -124,6 +128,7 @@ Protected learning features:
 - `GET /summary/history`
 - `GET /summary/:id`
 - `DELETE /summary/:id`
+- `POST /summary/:id/share`
 - `POST /schedule/generate`
 - `GET /schedule`
 - `GET /schedule/:id`
@@ -141,6 +146,8 @@ Jelasin Soal:
 - Supports typed question and image URL.
 - Image upload flow depends on Cloudinary being configured.
 - Includes history, detail, re-explain, and public share retrieval.
+- Creates persisted `processing` records and completes work asynchronously, so result pages can recover after refresh.
+- Failed async work stores a safe `error_message` and refunds quota.
 - Awards gamification points after successful explanation.
 
 Tanya Sobi:
@@ -149,6 +156,7 @@ Tanya Sobi:
 - Gemini receives conversation history and current message.
 - Failed AI calls create a user-facing failed assistant message.
 - Frontend has chat list and session detail page.
+- Chat and dashboard history previews strip markdown formatting before rendering one-line summaries.
 - Awards gamification points after successful assistant response.
 
 Latihan Soal:
@@ -163,15 +171,18 @@ Latihan Soal:
 
 Rangkum Materi:
 
-- Active text summarization through Gemini.
+- Active text summarization and image-material summarization through Gemini.
 - History, detail, delete, and public share retrieval are implemented.
-- PDF/image extraction is not implemented yet. Non-text `source_type` returns an explicit error.
+- Creates persisted `processing` records and completes work asynchronously, so result pages can recover after refresh.
+- Failed async work stores a safe `error_message` and refunds quota.
+- PDF extraction is not implemented yet.
 
 Jadwal Belajar:
 
 - Active AI schedule generation from subjects, exam dates, available days, and daily hours.
 - Stores generated sessions and Sobi tips as JSON.
 - Can list, view, and delete previously generated schedules.
+- Current input flow is manual text/date/day/hour input. Image-based schedule upload is planned but not implemented.
 - Reminder repository methods exist, but reminder delivery is not wired into a runtime job.
 
 Gamification:
@@ -181,11 +192,21 @@ Gamification:
 - Default badges are seeded by migration `021_seed_default_badges.sql`.
 - Badge unlock is evaluated automatically after points are added.
 
+AI Quota:
+
+- Active per-feature daily quota enforcement for chat, explain, summary, practice, and schedule.
+- Quota usage is stored in `ai_usage_quotas`.
+- Dashboard shows a `Kuota AI` card with total remaining quota.
+- Profile shows a quota overview.
+- Dashboard and Profile reuse the same quota detail modal.
+- Quota is refunded for failed async explain/summary processing.
+
 Profile and Auth:
 
 - Email/password register and login.
+- Email verification and resend-verification flows.
 - Google login with auto-registration.
-- JWT access and refresh tokens.
+- JWT access and refresh tokens are stored as HttpOnly cookies.
 - Profile read/update.
 - Avatar URL and Cloudinary public ID are supported.
 - Streak is updated on login and Google login.
@@ -212,6 +233,7 @@ Public/auth:
 - `/`: landing page
 - `/login`: email/password and Google login
 - `/register`: registration and Google signup
+- `/verify-email`: email verification and resend flow
 - `/share/[id]`: public explain/summary share page
 
 Protected app:
@@ -260,6 +282,7 @@ Current migrations create or modify:
 - `group_notes`
 - `images`
 - `ai_usage_quotas`
+- `schema_migrations`
 
 Later migrations add:
 
@@ -270,16 +293,18 @@ Later migrations add:
 - `users.avatar_public_id`
 - daily per-user AI usage quotas with `ai_usage_quotas`
 - generated schedule tips stored on `study_schedules`
+- email verification fields on `users`
+- private share tokens for explain and summary
+- async AI result statuses on explanations and summaries
 
-The migration runner applies all `.sql` files in sorted order. It does not track already-applied migrations in a schema migrations table, so SQL files should remain idempotent.
+The migration runner applies all `.sql` files in sorted order and records applied files in `schema_migrations`. Existing SQL files should still avoid unnecessary churn because production migrations are append-only.
 
 ## Important Gaps and Risks
 
 - Group collaboration is scaffolded but not functional.
-- Summary file upload/extraction is not implemented despite older docs claiming PDF support.
+- Summary image upload is implemented through Gemini vision; PDF extraction is not implemented.
 - Cloudflare R2 and FCM are placeholder packages.
-- General rate limiting middleware is a no-op; AI feature quotas are enforced separately through `ai_usage_quotas`.
-- Backend migrations do not use a migration tracking table.
+- General rate limiting middleware is present and configured per route group; AI feature quotas are enforced separately through `ai_usage_quotas`.
 - Practice timer mode is currently a frontend-only preference and is not stored in practice history.
 - Some handlers return raw `gin.H{"error": ...}` while others return `BaseResponse`; the frontend API client partially normalizes only the `BaseResponse` success shape.
 
@@ -291,15 +316,14 @@ Groups/Kolaborasi should be treated as a future feature for now. The existing da
 
 Recommended order:
 
-1. Polish practice history so it exposes the richer result context consistently.
-2. Persist timer configuration and completion timing only if timed practice should appear in history or analytics.
-3. Keep Summary positioned as text-based summarization, or implement PDF/image text extraction before advertising file-based summaries.
-4. Continue adding focused backend tests around AI side effects and authorization paths.
+1. Persist timer configuration and completion timing only if timed practice should appear in history or analytics.
+2. Implement schedule-from-image as a review-first OCR/vision flow if it becomes a priority.
+3. Add backend/API tests around async processing, quota refunds, and authorization paths.
+4. Keep Groups/Kolaborasi documented as scaffolded/future work until the team intentionally starts that feature.
 
 Near-term priority:
 
-- API response consistency, automatic badge unlock, and empty frontend placeholder cleanup are now implemented.
-- Keep Groups/Kolaborasi documented as scaffolded/future work until the team intentionally starts that feature.
+- The current near-term focus is production readiness for Vercel frontend, Railway backend, and Supabase PostgreSQL.
 
 ## Local Development
 
@@ -324,4 +348,8 @@ Checks:
 ```bash
 cd backend && go test ./...
 cd frontend && npx tsc --noEmit
+cd frontend && npm run build
+cd frontend && npm run test:e2e
 ```
+
+Current mocked Playwright smoke coverage includes auth, landing, dashboard/profile AI quota modal, chat markdown previews, share pages, and core feature-page history/quota rendering.

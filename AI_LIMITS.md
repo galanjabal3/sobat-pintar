@@ -8,7 +8,7 @@ This project uses conservative per-feature limits so Gemini requests stay predic
 |---|---:|---|
 | Chat | 2000 characters | User message only |
 | Explain | 3000 characters | Question text; image input stays supported |
-| Summary | 8000 characters | Raw text pasted by user |
+| Summary | 8000 characters | Raw text pasted by user; image input stays supported |
 | Practice | 120 characters | Subject name |
 | Practice source material | 5000 characters | Optional pasted material; minimum 80 characters when used |
 | Practice question count | 15 questions | User can choose 5, 10, or 15 questions |
@@ -26,6 +26,8 @@ This project uses conservative per-feature limits so Gemini requests stay predic
 
 ## Daily quota per user
 
+Backend fallback defaults:
+
 | Feature | Limit | Scope |
 |---|---:|---|
 | Chat | 5 requests/day | Per user |
@@ -34,13 +36,25 @@ This project uses conservative per-feature limits so Gemini requests stay predic
 | Practice | 2 requests/day | Per user |
 | Schedule | 1 request/day | Per user |
 
+Recommended local/free deployment override:
+
+```env
+AI_QUOTA_CHAT_DAILY=10
+AI_QUOTA_EXPLAIN_DAILY=5
+AI_QUOTA_SUMMARY_DAILY=3
+AI_QUOTA_PRACTICE_DAILY=5
+AI_QUOTA_SCHEDULE_DAILY=3
+```
+
 ## Behavior
 
 - Backend is the source of truth for enforcement.
 - Frontend mirrors the same input caps for better UX.
 - UI shows remaining daily quota for active AI features.
+- Dashboard and Profile both surface AI quota; the detailed modal is shared.
 - Chat history is trimmed before being sent to Gemini so the prompt does not grow without bound.
 - Practice and schedule responses are requested as JSON schemas and the backend can recover fenced JSON blocks.
 - Practice and schedule retry once on parse failures to reduce flaky 500s.
 - Transient Gemini 503/UNAVAILABLE responses are retried briefly before failing.
 - Daily quota is stored in `ai_usage_quotas` and resets automatically each day.
+- Explain and Summary refund quota if async processing fails before completion.

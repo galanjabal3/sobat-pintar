@@ -1,7 +1,7 @@
 # Sobat Pintar — GEMINI.md
 
 > AI context file for Gemini CLI
-> Last updated: May 2026
+> Last updated: June 2026
 
 ---
 
@@ -44,11 +44,12 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - Frontend: Chat page + messages UI — done
 - Chat history management — done
 
-### Phase 4 — Rangkum Materi ✅ DONE FOR TEXT
+### Phase 4 — Rangkum Materi ✅ DONE
 - Text summary service + Gemini — done
 - History and detailed view — done
-- Frontend: Summary text input & result pages — done
-- PDF/image text extraction — not implemented yet
+- Frontend: Summary text/image input & result pages — done
+- Image material summarization through Gemini vision — done
+- PDF extraction — not implemented yet
 
 ### Phase 5 — Jadwal Belajar ✅ DONE
 - AI-generated study schedule logic — done
@@ -56,10 +57,11 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 - Frontend: Schedule generator and view pages — done
 - Stored Sobi tips and schedule deletion — done
 
-### Phase 6 — Gamification ✅ DONE
+### Phase 6 — Gamification + AI Quota ✅ DONE
 - Points system and streak tracking — done
 - Badge unlock logic and leaderboard — done
 - Frontend: Points display, badges, leaderboard UI — done
+- Per-feature daily AI quota enforcement and dashboard/profile quota UI — done
 
 ### Phase 7 — Kolaborasi 🚧 SCAFFOLDED
 - Study group models, DTOs, migrations, and UI placeholder/components — scaffolded
@@ -73,7 +75,7 @@ Mascot: **Sobi** — a friendly small robot, teal colored.
 | Layer       | Technology                              |
 |-------------|-----------------------------------------|
 | Backend     | Go 1.26.3 with Gin framework            |
-| Frontend    | Next.js 14 (App Router) + TailwindCSS   |
+| Frontend    | Next.js 15 (App Router) + TailwindCSS   |
 | AI          | Google Gemini API                        |
 | Database    | Supabase PostgreSQL                     |
 | Cache       | Redis helper package, not wired into active runtime |
@@ -127,7 +129,7 @@ sobat-pintar/
 │   │   ├── storage/                   # Cloudflare R2 placeholder
 │   │   ├── cloudinary/                # Cloudinary wrapper
 │   │   └── logger/                    # Structured logger (zerolog)
-│   └── migrations/                    # SQL files (001-023)
+│   └── migrations/                    # SQL files (001-026)
 │
 ├── frontend/
 │   ├── app/
@@ -147,7 +149,10 @@ sobat-pintar/
 POST /api/v1/auth/register
 POST /api/v1/auth/login
 POST /api/v1/auth/google
+POST /api/v1/auth/verify-email
+POST /api/v1/auth/resend-verification
 POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
 GET  /api/v1/user/profile
 PATCH /api/v1/user/profile
 ```
@@ -158,6 +163,7 @@ POST   /api/v1/explain
 GET    /api/v1/explain/history
 GET    /api/v1/explain/:id
 POST   /api/v1/explain/:id/re-explain
+POST   /api/v1/explain/:id/share
 GET    /api/v1/public/explain/:id
 ```
 
@@ -187,6 +193,7 @@ POST   /api/v1/summary
 GET    /api/v1/summary/:id
 GET    /api/v1/summary/history
 DELETE /api/v1/summary/:id
+POST   /api/v1/summary/:id/share
 GET    /api/v1/public/summary/:id
 ```
 

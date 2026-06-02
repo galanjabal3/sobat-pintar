@@ -57,6 +57,7 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
 GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 Notes:
@@ -68,6 +69,7 @@ Notes:
 - The old `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DB_SSL_MODE` variables are still supported only as a fallback when `DATABASE_URL` is empty.
 - Set `APP_BASE_URL` to the frontend origin so the verification link points to the right domain.
 - In production, fill `SMTP_HOST`, `SMTP_PORT`, and `EMAIL_FROM` so register verification emails can be delivered.
+- Google OAuth requires `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from the same Web application credential.
 
 ---
 
@@ -128,6 +130,7 @@ http://localhost:3000
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzzflhq79
 ```
 
 ---
@@ -175,9 +178,14 @@ Frontend:
 cd frontend
 npx tsc --noEmit
 npm run build
+npm run test:e2e
 ```
 
 If `npm run build` fails while fetching Google Fonts, verify network access to `fonts.googleapis.com`.
+
+`npm run test:e2e` runs mocked Playwright smoke tests for auth, landing,
+dashboard/profile quota UI, share pages, and core feature-page rendering. It
+does not consume Gemini quota.
 
 ---
 

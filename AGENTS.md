@@ -1,7 +1,7 @@
 # Sobat Pintar — AGENTS.md
 
 > AI context file for Codex / Continue.dev
-> Last updated: May 2026
+> Last updated: June 2026
 
 ---
 
@@ -71,6 +71,8 @@ Read AGENTS.md first.
 
 Current status:
 - Local development active
+- Supabase PostgreSQL configured through DATABASE_URL
+- Email verification, Google OAuth, AI quota, and async explain/summary flows are active
 - Backend on :8080
 - Frontend on :3000
 

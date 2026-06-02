@@ -13,9 +13,10 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 | 📸 **Jelasin Soal** | Foto atau ketik soal, AI jelaskan sesuai level | ✅ Done |
 | 💬 **Tanya Sobi** | Chat bebas dengan AI tutor | ✅ Done |
 | 📝 **Latihan Soal** | Latihan dari topik atau materi sendiri, lengkap dengan pembahasan | ✅ Done |
-| 📄 **Rangkum Materi** | Teks materi dirangkum otomatis oleh AI | ✅ Done |
+| 📄 **Rangkum Materi** | Teks atau foto materi dirangkum otomatis oleh AI | ✅ Done |
 | 🗓️ **Jadwal Belajar** | AI bantu buat jadwal belajar yang realistis | ✅ Done |
 | 🏆 **Gamification** | Poin, streak harian, badge, leaderboard | ✅ Done |
+| ✨ **Kuota AI** | Sisa kuota harian per fitur tampil di dashboard/profile | ✅ Done |
 | 👥 **Kolaborasi** | Grup belajar, shared notes, diskusi soal | 🚧 Scaffolded |
 
 ---
@@ -46,7 +47,7 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 ### Infrastructure
 - **Vercel** — intended frontend deployment
 - **Supabase** — intended managed PostgreSQL
-- **Backend hosting** — to be selected before production deployment
+- **Railway** — intended backend deployment
 
 ---
 
@@ -64,7 +65,7 @@ Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pel
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/sobat-pintar.git
+git clone https://github.com/galanjabal3/sobat-pintar.git
 cd sobat-pintar
 ```
 
@@ -98,7 +99,11 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000
 GOOGLE_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-...
 RATE_LIMIT_AI_WRITE_PER_MINUTE=8
-AI_QUOTA_CHAT_DAILY=5
+AI_QUOTA_CHAT_DAILY=10
+AI_QUOTA_EXPLAIN_DAILY=5
+AI_QUOTA_SUMMARY_DAILY=3
+AI_QUOTA_PRACTICE_DAILY=5
+AI_QUOTA_SCHEDULE_DAILY=3
 ```
 
 `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` must come from the same
@@ -175,7 +180,10 @@ npm run test:e2e -- --ui
 ```
 
 The smoke tests mock API responses so frontend flows can be tested
-deterministically. Verify the real Google OAuth popup manually with valid local
+deterministically. Current mocked smoke coverage includes auth, landing,
+dashboard/profile AI quota modal, chat markdown previews, share pages, and
+feature-page history/quota rendering for explain, summary, schedule, and
+practice. Verify the real Google OAuth popup manually with valid local
 credentials when changing sign-in behavior.
 
 To verify email login against the running backend and an active test account:
@@ -242,6 +250,17 @@ AI_QUOTA_EXPLAIN_DAILY=2
 AI_QUOTA_SUMMARY_DAILY=1
 AI_QUOTA_PRACTICE_DAILY=2
 AI_QUOTA_SCHEDULE_DAILY=1
+```
+
+The values above are backend fallback defaults. The current recommended free
+deployment configuration is:
+
+```env
+AI_QUOTA_CHAT_DAILY=10
+AI_QUOTA_EXPLAIN_DAILY=5
+AI_QUOTA_SUMMARY_DAILY=3
+AI_QUOTA_PRACTICE_DAILY=5
+AI_QUOTA_SCHEDULE_DAILY=3
 ```
 
 Google OAuth production setup:

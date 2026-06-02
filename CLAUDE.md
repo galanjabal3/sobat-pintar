@@ -1,7 +1,7 @@
 # Sobat Pintar — CLAUDE.md
 
 > AI context file for Claude Code / Continue.dev
-> Last updated: May 2026
+> Last updated: June 2026
 
 ---
 
@@ -73,6 +73,7 @@ Current status:
 - Local development active
 - Supabase PostgreSQL configured through DATABASE_URL
 - Redis helper package exists but is not wired into the current active runtime
+- Email verification, Google OAuth, AI quota, and async explain/summary flows are active
 - Backend on :8080
 - Frontend on :3000
 

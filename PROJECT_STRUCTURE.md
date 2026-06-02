@@ -9,12 +9,15 @@
 ```
 sobat-pintar/
 ├── backend/                  # Go + Gin REST API
-├── frontend/                 # Next.js 14 app
+├── frontend/                 # Next.js 15 app
 ├── README.md                 # Project overview
 ├── SETUP.md                  # Local setup guide
 ├── PROJECT_STRUCTURE.md      # This file
+├── AGENTS.md                 # AI context file for Codex / Continue.dev
 ├── GEMINI.md                 # AI context file for Gemini
 ├── CLAUDE.md                 # AI context file for Claude
+├── AI_LIMITS.md              # AI input/output/quota limits
+├── CODEBASE_SUMMARY.md       # Current feature/API summary
 └── .gitignore
 ```
 
@@ -38,7 +41,7 @@ backend/
 │   ├── repository/           # PostgreSQL queries
 │   ├── router/               # Route registration
 │   └── service/              # Business logic
-├── migrations/               # SQL migrations 001-023
+├── migrations/               # SQL migrations 001-026
 ├── pkg/
 │   ├── cloudinary/           # Cloudinary upload client
 │   ├── fcm/                  # Firebase Cloud Messaging helpers
@@ -73,6 +76,7 @@ frontend/
 ├── lib/                      # API client and utilities
 ├── services/                 # API service wrappers
 ├── store/                    # Zustand stores
+├── tests/e2e/                # Playwright smoke tests
 ├── types/                    # TypeScript types
 ├── .env.local.example        # Frontend env template
 ├── package.json
@@ -111,10 +115,14 @@ Checks:
 ```bash
 cd backend && go test ./...
 cd frontend && npx tsc --noEmit
+cd frontend && npm run build
+cd frontend && npm run test:e2e
 ```
 
 Current implementation notes:
 
 - Collaboration/group files and database tables exist, but the group service/repository methods are placeholders and the group routes are not registered in the active router.
-- Summary currently supports text input. PDF/image text extraction is not implemented yet.
+- Summary supports pasted text and image upload through Gemini vision. PDF extraction is not implemented yet.
+- Explain and Summary use persisted `processing` / `completed` / `failed` statuses so refreshes can recover in-progress work.
+- Dashboard and Profile show AI quota detail using a shared modal component.
 - Redis, Cloudflare R2, and Firebase Cloud Messaging packages are placeholders/helpers. Active image upload uses Cloudinary when credentials are configured.
