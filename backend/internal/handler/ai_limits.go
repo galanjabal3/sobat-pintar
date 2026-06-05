@@ -42,8 +42,24 @@ func writeAIValidationError(c *gin.Context, err error) bool {
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Terlalu banyak mata pelajaran. Maksimal 8 mapel"})
 	case errors.Is(err, service.ErrScheduleSubjectTooLong):
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Nama mata pelajaran terlalu panjang. Maksimal 120 karakter"})
+	case errors.Is(err, service.ErrScheduleExamDateRequired):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Tanggal ujian tidak boleh kosong"})
 	case errors.Is(err, service.ErrScheduleExamDatePast):
 		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Tanggal ujian tidak boleh di masa lalu"})
+	case errors.Is(err, service.ErrScheduleDaysRequired):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Pilih minimal satu hari belajar"})
+	case errors.Is(err, service.ErrScheduleHoursInvalid):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Jam belajar per hari harus antara 1 sampai 8 jam"})
+	case errors.Is(err, service.ErrScheduleSessionsRequired):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Jadwal harus punya minimal satu sesi belajar"})
+	case errors.Is(err, service.ErrScheduleSessionInvalid):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Isi tanggal, mata pelajaran, topik, dan durasi jadwal dengan benar"})
+	case errors.Is(err, service.ErrScheduleTitleRequired):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Nama jadwal tidak boleh kosong"})
+	case errors.Is(err, service.ErrScheduleTitleTooLong):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Nama jadwal maksimal 100 karakter"})
+	case errors.Is(err, service.ErrScheduleImageURLInvalid):
+		c.JSON(400, dto.ErrorResponse{Success: false, Message: "Foto jadwal tidak valid. Unggah ulang fotonya ya"})
 	default:
 		return false
 	}

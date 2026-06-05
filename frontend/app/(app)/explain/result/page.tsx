@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ChevronLeft, RotateCcw, Share2, Sparkles, BookOpen, Lightbulb, Copy, Check } from "lucide-react";
  import { Button } from "@/components/ui/Button";
@@ -13,6 +13,7 @@ import ShareModal from "@/components/ui/ShareModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { AIMarkdown } from "@/components/ai/AIMarkdown";
 import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
+import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
  
  interface Explanation {
    id: string;
@@ -37,6 +38,7 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
   const [shareUrl, setShareUrl] = useState("");
   const [isCreatingShare, setIsCreatingShare] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const previousStatusRef = useRef<Explanation["status"] | undefined>(undefined);
 
   const fetchExplanation = useCallback(async () => {
     if (!id) {
@@ -46,8 +48,16 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
 
     try {
       const resById = await api.get(`/explain/${id}`);
-      if (resById.data) setExplanation(resById.data);
-      else router.push("/explain");
+      if (resById.data) {
+        const nextExplanation = resById.data as Explanation;
+        if (previousStatusRef.current === "processing" && nextExplanation.status !== "processing") {
+          notifyAIQuotaUpdated();
+        }
+        previousStatusRef.current = nextExplanation.status;
+        setExplanation(nextExplanation);
+      } else {
+        router.push("/explain");
+      }
     } catch (err) {
       console.error(err);
       addToast("Gagal memuat hasil Jelasin AI.", "error");
@@ -77,6 +87,7 @@ import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
      setIsReExplaining(true);
      try {
        const response = await api.post(`/explain/${explanation.id}/re-explain`);
+       notifyAIQuotaUpdated();
        addToast("Sobi sudah menjelaskan dengan cara baru!", "success");
        router.push(`/explain/result?id=${response.data.id}`);
      } catch (err) {

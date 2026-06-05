@@ -26,6 +26,7 @@ const (
 
 	MaxScheduleSubjectCount = 8
 	MaxScheduleSubjectChars = 120
+	MaxScheduleTitleChars   = 100
 
 	ChatDailyQuota     = 5
 	ExplainDailyQuota  = 2
@@ -67,7 +68,15 @@ var (
 	ErrScheduleSubjectsRequired = errors.New("schedule subjects are required")
 	ErrScheduleTooManySubjects  = errors.New("schedule has too many subjects")
 	ErrScheduleSubjectTooLong   = errors.New("schedule subject exceeds maximum length")
+	ErrScheduleExamDateRequired = errors.New("schedule exam date is required")
 	ErrScheduleExamDatePast     = errors.New("schedule exam date cannot be in the past")
+	ErrScheduleDaysRequired     = errors.New("schedule available days are required")
+	ErrScheduleHoursInvalid     = errors.New("schedule hours per day is invalid")
+	ErrScheduleSessionsRequired = errors.New("schedule sessions are required")
+	ErrScheduleSessionInvalid   = errors.New("schedule session is invalid")
+	ErrScheduleTitleRequired    = errors.New("schedule title is required")
+	ErrScheduleTitleTooLong     = errors.New("schedule title exceeds maximum length")
+	ErrScheduleImageURLInvalid  = errors.New("schedule image URL is invalid")
 )
 
 func validateChatMessage(message string) error {
@@ -174,12 +183,51 @@ func validateScheduleSubjects(subjects []string) error {
 	return nil
 }
 
+func validateScheduleImageURL(rawURL string) error {
+	if !isValidUploadedImageURL(rawURL) {
+		return ErrScheduleImageURLInvalid
+	}
+	return nil
+}
+
+func validateScheduleTitle(title string) error {
+	if runeLen(strings.TrimSpace(title)) > MaxScheduleTitleChars {
+		return ErrScheduleTitleTooLong
+	}
+	return nil
+}
+
 func validateScheduleExamDates(examDates []time.Time) error {
+	if len(examDates) == 0 {
+		return ErrScheduleExamDateRequired
+	}
+
 	today := todayInLocation("Asia/Jakarta")
 	for _, examDate := range examDates {
 		if dateOnlyInLocation(examDate, today.Location()).Before(today) {
 			return ErrScheduleExamDatePast
 		}
+	}
+	return nil
+}
+
+func validateScheduleAvailableDays(availableDays []string) error {
+	if len(availableDays) == 0 {
+		return ErrScheduleDaysRequired
+	}
+
+	for _, day := range availableDays {
+		if strings.TrimSpace(day) != "" {
+			return nil
+		}
+	}
+
+	return ErrScheduleDaysRequired
+}
+
+func validateScheduleHoursPerDay(hoursPerDay int) error {
+	if hoursPerDay < 1 || hoursPerDay > 8 {
+		return ErrScheduleHoursInvalid
 	}
 	return nil
 }

@@ -3,10 +3,19 @@ package dto
 import "time"
 
 type GenerateScheduleRequest struct {
-	Subjects      []string    `json:"subjects" binding:"required"`
-	ExamDates     []time.Time `json:"exam_dates" binding:"required"`
-	AvailableDays []string    `json:"available_days" binding:"required"`
-	HoursPerDay   int         `json:"hours_per_day" binding:"required,min=1"`
+	Title         string      `json:"title,omitempty"`
+	Subjects      []string    `json:"subjects"`
+	ExamDates     []time.Time `json:"exam_dates"`
+	AvailableDays []string    `json:"available_days"`
+	HoursPerDay   int         `json:"hours_per_day"`
+	SourceType    string      `json:"source_type,omitempty"`
+	ImageURL      string      `json:"image_url,omitempty"`
+}
+
+type UpdateScheduleRequest struct {
+	Title    string          `json:"title" binding:"required"`
+	Schedule []DailySchedule `json:"schedule" binding:"required"`
+	Tips     []string        `json:"tips"`
 }
 
 type StudySession struct {
@@ -21,8 +30,11 @@ type DailySchedule struct {
 }
 
 type ScheduleResponse struct {
-	ID       string          `json:"id"`
-	ExamDate string          `json:"exam_date,omitempty"`
-	Schedule []DailySchedule `json:"schedule"`
-	Tips     []string        `json:"tips"`
+	ID           string          `json:"id"`
+	Title        string          `json:"title"`
+	ExamDate     string          `json:"exam_date,omitempty"`
+	Schedule     []DailySchedule `json:"schedule"`
+	Tips         []string        `json:"tips"`
+	Status       string          `json:"status"`
+	ErrorMessage string          `json:"error_message,omitempty"`
 }

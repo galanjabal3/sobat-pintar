@@ -1,6 +1,6 @@
 "use client";
  
- import React, { useCallback, useEffect, useState } from "react";
+ import React, { useCallback, useEffect, useRef, useState } from "react";
  import { useRouter, useParams } from "next/navigation";
  import { AlertCircle, ChevronLeft, FileText, Sparkles, Copy, Share2, Download, Clock, ArrowRight } from "lucide-react";
  import api from "@/lib/api";
@@ -14,6 +14,7 @@ import { id as idLocale } from "date-fns/locale";
 import ShareModal from "@/components/ui/ShareModal";
 import { AIMarkdown } from "@/components/ai/AIMarkdown";
 import { copyMarkdownToClipboard } from "@/lib/clipboardMarkdown";
+import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
  
  interface SummaryDetail {
    id: string;
@@ -140,11 +141,18 @@ function stripSummaryMarkdown(markdown: string) {
    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
    const [shareUrl, setShareUrl] = useState("");
    const [isCreatingShare, setIsCreatingShare] = useState(false);
+   const [isRetrying, setIsRetrying] = useState(false);
+   const previousStatusRef = useRef<SummaryDetail["status"] | undefined>(undefined);
  
    const fetchDetail = useCallback(async () => {
      try {
        const response = await api.get(`/summary/${id}`);
-       setDetail(response.data);
+       const nextDetail = response.data as SummaryDetail;
+       if (previousStatusRef.current === "processing" && nextDetail.status !== "processing") {
+         notifyAIQuotaUpdated();
+       }
+       previousStatusRef.current = nextDetail.status;
+       setDetail(nextDetail);
      } catch (err: unknown) {
        addToast(getApiErrorMessage(err, "Gagal mengambil detail rangkuman."), "error");
        router.push("/summary");
@@ -190,6 +198,22 @@ function stripSummaryMarkdown(markdown: string) {
       addToast(getApiErrorMessage(err, "Gagal membuat tautan berbagi."), "error");
     } finally {
       setIsCreatingShare(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (isRetrying) return;
+
+    setIsRetrying(true);
+    try {
+      const response = await api.post(`/summary/${id}/re-summary`);
+      notifyAIQuotaUpdated();
+      addToast("Rangkuman ulang sedang diproses.", "success");
+      router.push(`/summary/result/${response.data.id}`);
+    } catch (err: unknown) {
+      addToast(getApiErrorMessage(err, "Gagal membuat ulang rangkuman."), "error");
+    } finally {
+      setIsRetrying(false);
     }
   };
 
@@ -340,13 +364,23 @@ function stripSummaryMarkdown(markdown: string) {
         <p className="mt-2 max-w-xs text-sm font-medium leading-relaxed text-neutral-400">
           {detail.error_message || "Coba buat rangkuman lagi sebentar lagi ya."}
         </p>
-        <button
-          type="button"
-          onClick={() => router.push("/summary")}
-          className="mt-8 rounded-2xl bg-primary px-8 py-4 text-sm font-black text-white shadow-lg shadow-primary/20"
-        >
-          Buat Rangkuman Lagi
-        </button>
+        <div className="mt-8 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={handleRetry}
+            disabled={isRetrying}
+            className="rounded-2xl bg-primary px-8 py-4 text-sm font-black text-white shadow-lg shadow-primary/20 disabled:opacity-60"
+          >
+            {isRetrying ? "Memproses..." : "Coba Ringkas Ulang"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/summary")}
+            className="rounded-2xl bg-primary/5 px-8 py-4 text-sm font-black text-primary"
+          >
+            Buat dari Materi Baru
+          </button>
+        </div>
       </div>
     );
   }

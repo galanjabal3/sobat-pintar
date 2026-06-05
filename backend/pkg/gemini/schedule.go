@@ -22,6 +22,7 @@ type DailySchedule struct {
 }
 
 type ScheduleResponse struct {
+	Title    string          `json:"title"`
 	Schedule []DailySchedule `json:"schedule"`
 	Tips     []string        `json:"tips"`
 }
@@ -108,6 +109,104 @@ Format response HANYA JSON, tanpa markdown dan tanpa code fence:
 	return nil, fmt.Errorf("failed to parse Gemini response after retry: %w", lastErr)
 }
 
+func (c *Client) ImportStudyScheduleFromImage(ctx context.Context, level, imageURL string) (*ScheduleResponse, error) {
+	imgData, mimeType, err := fetchUploadedImage(ctx, imageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	today := todayInJakarta()
+	prompt := fmt.Sprintf(`Kamu adalah Sobi. Baca jadwal belajar pada gambar untuk siswa tingkat %s, lalu ubah menjadi jadwal belajar digital.
+Tanggal hari ini: %s
+
+Instruksi:
+- Ambil judul utama jadwal dari gambar jika ada, misalnya "Jadwal UTS Semester 2", "Tryout Matematika", atau "Jadwal Belajar Rafi". Jika tidak ada judul yang jelas, isi title dengan string kosong.
+- Ambil hanya aktivitas belajar, les, review materi, latihan soal, atau persiapan ujian yang terlihat pada gambar.
+- Jika ada tanggal lengkap, gunakan tanggal itu dalam format YYYY-MM-DD.
+- Jika hanya ada nama hari tanpa tanggal, pakai tanggal berikutnya yang cocok mulai dari tanggal hari ini.
+- Jika ada jam mulai-selesai, hitung durasi menitnya. Jika durasi tidak jelas, pakai 60 menit.
+- Jika mata pelajaran tidak tertulis jelas, isi subject dengan "Belajar" dan topic dengan aktivitas yang terbaca.
+- Jangan membuat jadwal fiktif yang tidak ada di gambar.
+- Maksimal 14 hari jadwal dan maksimal 6 sesi per hari.
+- Jika gambar bukan jadwal belajar atau teks jadwal tidak terbaca, kembalikan schedule kosong dan tips berisi saran mengunggah foto yang lebih jelas.
+- Tips maksimal 3 item, singkat dan actionable dalam Bahasa Indonesia.
+
+Format response HANYA JSON, tanpa markdown dan tanpa code fence:
+{
+  "title": "Jadwal UTS Semester 2",
+  "schedule": [
+    {
+      "date": "YYYY-MM-DD",
+      "sessions": [
+        { "subject": "Matematika", "duration_minutes": 60, "topic": "Aljabar" }
+      ]
+    }
+  ],
+  "tips": ["tip 1", "tip 2"]
+}
+%s`, level, today.Format("2006-01-02"), learningSafetyInstruction())
+
+	contents := []*genai.Content{{
+		Role: "user",
+		Parts: []*genai.Part{
+			genai.NewPartFromText(prompt),
+			genai.NewPartFromBytes(imgData, mimeType),
+		},
+	}}
+
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		config := scheduleGenerationConfig()
+		if attempt > 0 {
+			config.MaxOutputTokens += int32(1800 * attempt)
+		}
+
+		resp, err := c.generateContentWithRetry(ctx, contents, config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate content: %w", err)
+		}
+		if len(resp.Candidates) > 0 && resp.Candidates[0].FinishReason == genai.FinishReasonMaxTokens {
+			lastErr = errMaxTokens
+			continue
+		}
+
+		var scheduleRes ScheduleResponse
+		if err := decodeGeminiJSON(resp.Text(), &scheduleRes); err != nil {
+			lastErr = err
+			continue
+		}
+		if err := validateImportedScheduleResponse(scheduleRes); err != nil {
+			lastErr = err
+			continue
+		}
+
+		if scheduleRes.Schedule == nil {
+			scheduleRes.Schedule = []DailySchedule{}
+		}
+		if scheduleRes.Tips == nil {
+			scheduleRes.Tips = []string{}
+		}
+		return &scheduleRes, nil
+	}
+
+	return fallbackImportedSchedule(lastErr), nil
+}
+
+func fallbackImportedSchedule(err error) *ScheduleResponse {
+	tips := []string{
+		"Foto jadwal belum terbaca jelas. Coba unggah ulang dengan pencahayaan lebih terang.",
+		"Pastikan tulisan jadwal tidak terpotong dan terlihat lurus di dalam foto.",
+	}
+	if errors.Is(err, errMaxTokens) {
+		tips[0] = "Jadwal pada foto terlalu panjang untuk dibaca sekaligus. Coba foto bagian jadwal yang paling penting dulu."
+	}
+	return &ScheduleResponse{
+		Title:    "",
+		Schedule: []DailySchedule{},
+		Tips:     tips,
+	}
+}
+
 func validateScheduleResponse(response ScheduleResponse, subjects, availableDays []string, hoursPerDay int) error {
 	if len(response.Schedule) == 0 || len(response.Schedule) > 7 || len(response.Tips) > 3 {
 		return errInvalidScheduleResponse
@@ -151,6 +250,31 @@ func validateScheduleResponse(response ScheduleResponse, subjects, availableDays
 
 		if totalMinutes > maxMinutesPerDay {
 			return errInvalidScheduleResponse
+		}
+	}
+
+	return nil
+}
+
+func validateImportedScheduleResponse(response ScheduleResponse) error {
+	if len(response.Schedule) > 14 || len(response.Tips) > 3 {
+		return errInvalidScheduleResponse
+	}
+
+	for _, day := range response.Schedule {
+		if strings.TrimSpace(day.Date) == "" || len(day.Sessions) == 0 || len(day.Sessions) > 6 {
+			return errInvalidScheduleResponse
+		}
+		if _, err := time.Parse("2006-01-02", day.Date); err != nil {
+			return err
+		}
+		for _, session := range day.Sessions {
+			if strings.TrimSpace(session.Subject) == "" || strings.TrimSpace(session.Topic) == "" {
+				return errInvalidScheduleResponse
+			}
+			if session.DurationMinutes <= 0 || session.DurationMinutes > 8*60 {
+				return errInvalidScheduleResponse
+			}
 		}
 	}
 

@@ -48,7 +48,7 @@ func (h *ScheduleHandler) GenerateSchedule(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
-		Message: "Jadwal belajar berhasil dibuat",
+		Message: "Jadwal belajar sedang diproses",
 		Data:    res,
 	})
 }
@@ -89,6 +89,40 @@ func (h *ScheduleHandler) GetSchedule(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
 		Message: "Jadwal belajar berhasil diambil",
+		Data:    res,
+	})
+}
+
+func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
+	userID := c.GetString("user_id")
+	id := c.Param("id")
+
+	var req dto.UpdateScheduleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Success: false,
+			Message: "Format data tidak valid",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	res, err := h.service.UpdateSchedule(c.Request.Context(), userID, id, req)
+	if err != nil {
+		if writeAIValidationError(c, err) {
+			return
+		}
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Success: false,
+			Message: "Gagal menyimpan jadwal belajar",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.BaseResponse{
+		Success: true,
+		Message: "Jadwal belajar berhasil disimpan",
 		Data:    res,
 	})
 }

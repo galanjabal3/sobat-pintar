@@ -9,6 +9,10 @@ import (
 
 type ScheduleRepository interface {
 	CreateSchedule(ctx context.Context, schedule *model.StudySchedule) error
+	CompleteSchedule(ctx context.Context, id string, sessions string, tips string) error
+	CompleteScheduleWithTitle(ctx context.Context, id string, title string, sessions string, tips string) error
+	FailSchedule(ctx context.Context, id string, message string) error
+	UpdateSchedule(ctx context.Context, id, userID, title, sessions, tips string) error
 	GetScheduleByUserID(ctx context.Context, userID string) ([]model.StudySchedule, error)
 	GetScheduleByID(ctx context.Context, id string) (*model.StudySchedule, error)
 	DeleteSchedule(ctx context.Context, id, userID string) error
@@ -26,14 +30,38 @@ func NewScheduleRepository(db *pgxpool.Pool) ScheduleRepository {
 }
 
 func (r *scheduleRepository) CreateSchedule(ctx context.Context, schedule *model.StudySchedule) error {
-	query := `INSERT INTO study_schedules (id, user_id, subject, exam_date, sessions, tips, created_at) 
-			  VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := r.db.Exec(ctx, query, schedule.ID, schedule.UserID, schedule.Subject, schedule.ExamDate, schedule.Sessions, schedule.Tips, schedule.CreatedAt)
+	query := `INSERT INTO study_schedules (id, user_id, subject, exam_date, sessions, tips, status, error_message, created_at, completed_at) 
+			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := r.db.Exec(ctx, query, schedule.ID, schedule.UserID, schedule.Subject, schedule.ExamDate, schedule.Sessions, schedule.Tips, schedule.Status, schedule.ErrorMessage, schedule.CreatedAt, schedule.CompletedAt)
+	return err
+}
+
+func (r *scheduleRepository) CompleteSchedule(ctx context.Context, id string, sessions string, tips string) error {
+	query := `UPDATE study_schedules SET sessions = $1, tips = $2, status = 'completed', error_message = NULL, completed_at = NOW() WHERE id = $3`
+	_, err := r.db.Exec(ctx, query, sessions, tips, id)
+	return err
+}
+
+func (r *scheduleRepository) CompleteScheduleWithTitle(ctx context.Context, id string, title string, sessions string, tips string) error {
+	query := `UPDATE study_schedules SET subject = $1, sessions = $2, tips = $3, status = 'completed', error_message = NULL, completed_at = NOW() WHERE id = $4`
+	_, err := r.db.Exec(ctx, query, title, sessions, tips, id)
+	return err
+}
+
+func (r *scheduleRepository) FailSchedule(ctx context.Context, id string, message string) error {
+	query := `UPDATE study_schedules SET status = 'failed', error_message = $1, completed_at = NOW() WHERE id = $2`
+	_, err := r.db.Exec(ctx, query, message, id)
+	return err
+}
+
+func (r *scheduleRepository) UpdateSchedule(ctx context.Context, id, userID, title, sessions, tips string) error {
+	query := `UPDATE study_schedules SET subject = $1, sessions = $2, tips = $3 WHERE id = $4 AND user_id = $5 AND status = 'completed'`
+	_, err := r.db.Exec(ctx, query, title, sessions, tips, id, userID)
 	return err
 }
 
 func (r *scheduleRepository) GetScheduleByUserID(ctx context.Context, userID string) ([]model.StudySchedule, error) {
-	query := `SELECT id, user_id, subject, exam_date, sessions, tips, created_at FROM study_schedules WHERE user_id = $1 ORDER BY created_at DESC`
+	query := `SELECT id, user_id, subject, exam_date, sessions, tips, status, error_message, created_at, completed_at FROM study_schedules WHERE user_id = $1 ORDER BY created_at DESC`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -43,7 +71,7 @@ func (r *scheduleRepository) GetScheduleByUserID(ctx context.Context, userID str
 	var schedules []model.StudySchedule
 	for rows.Next() {
 		var s model.StudySchedule
-		err := rows.Scan(&s.ID, &s.UserID, &s.Subject, &s.ExamDate, &s.Sessions, &s.Tips, &s.CreatedAt)
+		err := rows.Scan(&s.ID, &s.UserID, &s.Subject, &s.ExamDate, &s.Sessions, &s.Tips, &s.Status, &s.ErrorMessage, &s.CreatedAt, &s.CompletedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -53,9 +81,9 @@ func (r *scheduleRepository) GetScheduleByUserID(ctx context.Context, userID str
 }
 
 func (r *scheduleRepository) GetScheduleByID(ctx context.Context, id string) (*model.StudySchedule, error) {
-	query := `SELECT id, user_id, subject, exam_date, sessions, tips, created_at FROM study_schedules WHERE id = $1`
+	query := `SELECT id, user_id, subject, exam_date, sessions, tips, status, error_message, created_at, completed_at FROM study_schedules WHERE id = $1`
 	var schedule model.StudySchedule
-	err := r.db.QueryRow(ctx, query, id).Scan(&schedule.ID, &schedule.UserID, &schedule.Subject, &schedule.ExamDate, &schedule.Sessions, &schedule.Tips, &schedule.CreatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&schedule.ID, &schedule.UserID, &schedule.Subject, &schedule.ExamDate, &schedule.Sessions, &schedule.Tips, &schedule.Status, &schedule.ErrorMessage, &schedule.CreatedAt, &schedule.CompletedAt)
 	if err != nil {
 		return nil, err
 	}

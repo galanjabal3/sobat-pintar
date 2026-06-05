@@ -135,6 +135,34 @@ func (h *SummaryHandler) CreateShareLink(c *gin.Context) {
 	})
 }
 
+func (h *SummaryHandler) ReSummarize(c *gin.Context) {
+	userID := c.GetString("user_id")
+	level := c.GetString("level")
+
+	res, err := h.service.ReSummarize(c.Request.Context(), userID, level, c.Param("id"))
+	if err != nil {
+		if errors.Is(err, service.ErrSummaryUnauthorized) {
+			c.JSON(http.StatusForbidden, dto.ErrorResponse{Success: false, Message: "Kamu tidak punya akses ke rangkuman ini"})
+			return
+		}
+		if errors.Is(err, service.ErrAIResultNotReady) {
+			c.JSON(http.StatusConflict, dto.ErrorResponse{Success: false, Message: "Rangkuman masih diproses. Tunggu sebentar ya."})
+			return
+		}
+		if writeAIQuotaError(c, err) {
+			return
+		}
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Success: false, Message: "Gagal membuat ulang rangkuman", Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, dto.BaseResponse{
+		Success: true,
+		Message: "Rangkuman ulang sedang diproses",
+		Data:    res,
+	})
+}
+
 func (h *SummaryHandler) DeleteSummary(c *gin.Context) {
 	userID := c.GetString("user_id")
 	id := c.Param("id")

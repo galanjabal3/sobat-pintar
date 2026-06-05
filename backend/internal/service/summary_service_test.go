@@ -252,3 +252,63 @@ func TestCreateSummaryShareTokenPersistsOpaqueToken(t *testing.T) {
 		t.Fatalf("unexpected saved target: %q %q", repo.setShareTokenID, repo.setShareTokenUID)
 	}
 }
+
+func TestReSummarizeRequiresOwner(t *testing.T) {
+	repo := &fakeSummaryRepo{byID: &model.Summary{ID: "summary-1", UserID: "owner", Status: AIResultStatusFailed, SourceType: "text", Content: "Materi lama"}}
+	service := NewSummaryService(repo, &fakeSummaryGenerator{}, nil, nil)
+
+	_, err := service.ReSummarize(context.Background(), "other-user", "SD", "summary-1")
+	if !errors.Is(err, ErrSummaryUnauthorized) {
+		t.Fatalf("expected unauthorized error, got %v", err)
+	}
+	if repo.created != nil {
+		t.Fatal("expected no retry summary to be created for a non-owner")
+	}
+}
+
+func TestReSummarizeRejectsProcessingSummary(t *testing.T) {
+	repo := &fakeSummaryRepo{byID: &model.Summary{ID: "summary-1", UserID: "owner", Status: AIResultStatusProcessing, SourceType: "text", Content: "Materi lama"}}
+	service := NewSummaryService(repo, &fakeSummaryGenerator{}, nil, nil)
+
+	_, err := service.ReSummarize(context.Background(), "owner", "SD", "summary-1")
+	if !errors.Is(err, ErrAIResultNotReady) {
+		t.Fatalf("expected result not ready error, got %v", err)
+	}
+	if repo.created != nil {
+		t.Fatal("expected no retry summary to be created while original is processing")
+	}
+}
+
+func TestReSummarizeCreatesNewProcessingSummary(t *testing.T) {
+	repo := &fakeSummaryRepo{
+		byID:       &model.Summary{ID: "summary-1", UserID: "owner", Status: AIResultStatusFailed, SourceType: "text", Content: "Materi lama"},
+		completeCh: make(chan struct{}),
+	}
+	service := NewSummaryService(repo, &fakeSummaryGenerator{}, nil, nil)
+
+	response, err := service.ReSummarize(context.Background(), "owner", "SMP", "summary-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if response.ID == "" || response.ID == "summary-1" {
+		t.Fatalf("expected new summary id, got %q", response.ID)
+	}
+	if response.Status != AIResultStatusProcessing {
+		t.Fatalf("expected processing response, got %+v", response)
+	}
+	if repo.created == nil {
+		t.Fatal("expected retry summary to be created")
+	}
+	if repo.created.ID != response.ID || repo.created.Content != "Materi lama" || repo.created.SourceType != "text" {
+		t.Fatalf("unexpected retry summary: %+v", repo.created)
+	}
+
+	select {
+	case <-repo.completeCh:
+	case <-time.After(time.Second):
+		t.Fatal("expected async retry summary worker to complete")
+	}
+	if repo.completedID != response.ID || repo.completedSummary != "ringkasan teks" {
+		t.Fatalf("expected retry summary to complete, got id=%q summary=%q", repo.completedID, repo.completedSummary)
+	}
+}

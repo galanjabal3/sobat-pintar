@@ -157,7 +157,7 @@ test("feature pages render mocked histories and quota badges", async ({ page }) 
   await page.route("**/api/v1/schedule", (route) => route.fulfill({
     json: {
       success: true,
-      data: [{ id: "schedule-1", exam_date: "2026-06-10", schedule: [{ date: "2026-06-03" }] }],
+      data: [{ id: "schedule-1", title: "Jadwal Ujian IPA", exam_date: "2026-06-10", status: "completed", schedule: [{ date: "2026-06-03" }] }],
     },
   }));
 
@@ -171,7 +171,7 @@ test("feature pages render mocked histories and quota badges", async ({ page }) 
   await expect(page.getByText("Sisa hari ini 2/3")).toBeVisible();
 
   await page.goto("/schedule");
-  await expect(page.getByText("Ujian 10 Juni 2026")).toBeVisible();
+  await expect(page.getByText("Jadwal Ujian IPA")).toBeVisible();
   await expect(page.getByText("Sisa hari ini 3/3")).toBeVisible();
 
   await page.goto("/practice");

@@ -19,6 +19,7 @@ type SummaryService interface {
 	GetSummaryByID(ctx context.Context, id, userID string) (*dto.SummaryHistoryResponse, error)
 	GetPublicSummaryByShareToken(ctx context.Context, token string) (*dto.SummaryHistoryResponse, error)
 	CreateShareToken(ctx context.Context, userID, id string) (string, error)
+	ReSummarize(ctx context.Context, userID, level, id string) (*dto.SummaryResponse, error)
 	DeleteSummary(ctx context.Context, id, userID string) error
 }
 
@@ -214,6 +215,48 @@ func (s *summaryService) CreateShareToken(ctx context.Context, userID, id string
 		return "", err
 	}
 	return token, nil
+}
+
+func (s *summaryService) ReSummarize(ctx context.Context, userID, level, id string) (*dto.SummaryResponse, error) {
+	original, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if original.UserID != userID {
+		return nil, ErrSummaryUnauthorized
+	}
+	if original.Status == AIResultStatusProcessing {
+		return nil, ErrAIResultNotReady
+	}
+
+	if err := s.consumeAIQuota(ctx, userID, AIFeatureSummary, dailyQuotaLimit(AIFeatureSummary)); err != nil {
+		return nil, err
+	}
+
+	summary := &model.Summary{
+		ID:         uuid.New().String(),
+		UserID:     userID,
+		SourceType: original.SourceType,
+		FileURL:    original.FileURL,
+		Content:    original.Content,
+		Summary:    "",
+		Status:     AIResultStatusProcessing,
+		CreatedAt:  time.Now(),
+	}
+
+	if err := s.repo.Create(ctx, summary); err != nil {
+		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSummary), userID, AIFeatureSummary)
+		return nil, err
+	}
+
+	go s.completeSummary(context.Background(), summary.ID, userID, level, summary.SourceType, summary.Content, summary.FileURL)
+
+	return &dto.SummaryResponse{
+		ID:        summary.ID,
+		Summary:   summary.Summary,
+		Status:    summary.Status,
+		CreatedAt: summary.CreatedAt,
+	}, nil
 }
 
 func (s *summaryService) DeleteSummary(ctx context.Context, id, userID string) error {

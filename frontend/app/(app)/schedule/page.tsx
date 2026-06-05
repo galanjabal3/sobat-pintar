@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Calendar, ChevronLeft, Trash2, Zap } from "lucide-react";
+import { ArrowRight, Calendar, Camera, ChevronLeft, Trash2, Type, X, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -22,6 +22,17 @@ import { ScheduleResult } from "@/components/schedule/ScheduleView";
 import { useBeforeUnloadWarning } from "@/hooks/useBeforeUnloadWarning";
 
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
+const MAX_SCHEDULE_IMAGE_SIZE = 5 * 1024 * 1024;
+const SUPPORTED_SCHEDULE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+type ScheduleSourceType = "manual" | "image";
+
+interface UploadAttachmentResponse {
+  url?: string;
+  data?: {
+    url?: string;
+  };
+}
 
 function todayInputValue() {
   const now = new Date();
@@ -44,9 +55,22 @@ function formatScheduleDate(date?: string) {
   return format(parsedDate, "d MMMM yyyy", { locale: idLocale });
 }
 
+function getScheduleStatusLabel(status?: ScheduleResult["status"]) {
+  if (status === "processing") return "Diproses";
+  if (status === "failed") return "Gagal";
+  return "Selesai";
+}
+
+function getScheduleStatusClassName(status?: ScheduleResult["status"]) {
+  if (status === "processing") return "bg-secondary/10 text-secondary";
+  if (status === "failed") return "bg-red-50 text-error";
+  return "bg-primary/10 text-primary";
+}
+
 export default function SchedulePage() {
   const router = useRouter();
   const { addToast } = useToastStore();
+  const [title, setTitle] = useState("");
   const [subjectInput, setSubjectInput] = useState("");
   const [subjects, setSubjects] = useState<string[]>([]);
   const [examDate, setExamDate] = useState("");
@@ -56,13 +80,17 @@ export default function SchedulePage() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [sourceType, setSourceType] = useState<ScheduleSourceType>("manual");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const minExamDate = useMemo(() => todayInputValue(), []);
 
   useBeforeUnloadWarning(isSubmitting);
 
   const parsedHoursPerDay = Number(hoursPerDay);
   const hasLongSubject = subjects.some((subject) => subject.length > MAX_SCHEDULE_SUBJECT_CHARS);
-  const canSubmit =
+  const canSubmitManual =
     subjects.length > 0 &&
     subjects.length <= MAX_SCHEDULE_SUBJECT_COUNT &&
     !hasLongSubject &&
@@ -71,26 +99,67 @@ export default function SchedulePage() {
     Number.isFinite(parsedHoursPerDay) &&
     parsedHoursPerDay >= 1 &&
     parsedHoursPerDay <= 8;
+  const canSubmit = sourceType === "image" ? Boolean(imageFile) : canSubmitManual;
+
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const response = await api.get("/schedule");
+      setHistory(response.data || []);
+    } catch {
+      setHistory([]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchSchedules = async () => {
-      try {
-        const response = await api.get("/schedule");
-        setHistory(response.data || []);
-      } catch {
-        setHistory([]);
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    };
-
     fetchSchedules();
-  }, []);
+  }, [fetchSchedules]);
+
+  useEffect(() => {
+    if (!history.some((item) => item.status === "processing")) return;
+
+    const intervalID = window.setInterval(fetchSchedules, 7500);
+    return () => window.clearInterval(intervalID);
+  }, [fetchSchedules, history]);
 
   const toggleDay = (day: string) => {
     setAvailableDays((current) =>
       current.includes(day) ? current.filter((item) => item !== day) : [...current, day]
     );
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setPreviewUrl((currentUrl) => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      return null;
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!SUPPORTED_SCHEDULE_IMAGE_TYPES.includes(file.type)) {
+      addToast("Gunakan foto JPG, PNG, atau WEBP ya.", "error");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_SCHEDULE_IMAGE_SIZE) {
+      addToast("Ukuran foto maksimal 5MB ya.", "error");
+      event.target.value = "";
+      return;
+    }
+
+    setImageFile(file);
+    setPreviewUrl((currentUrl) => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      return URL.createObjectURL(file);
+    });
   };
 
   const addSubject = (rawValue = subjectInput) => {
@@ -149,6 +218,10 @@ export default function SchedulePage() {
     if (isSubmitting) return;
 
     if (!canSubmit) {
+      if (sourceType === "image") {
+        addToast("Pilih foto jadwal belajar dulu ya.", "error");
+        return;
+      }
       if (subjects.length > MAX_SCHEDULE_SUBJECT_COUNT) {
         addToast(`Maksimal ${MAX_SCHEDULE_SUBJECT_COUNT} mata pelajaran ya.`, "error");
       } else if (hasLongSubject) {
@@ -161,21 +234,45 @@ export default function SchedulePage() {
 
     setIsSubmitting(true);
     try {
-      const response = await api.post("/schedule/generate", {
-        subjects,
-        exam_dates: [toExamDate(examDate)],
-        available_days: availableDays,
-        hours_per_day: parsedHoursPerDay,
-      });
+      let requestBody;
+      if (sourceType === "image" && imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const uploadResponse = await api.post<UploadAttachmentResponse>("/upload/attachments", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const imageUrl = uploadResponse.data.url || uploadResponse.data.data?.url;
+        if (!imageUrl) {
+          throw new Error("Upload response did not include an image URL");
+        }
+        requestBody = {
+          source_type: "image",
+          title: title.trim(),
+          image_url: imageUrl,
+        };
+      } else {
+        requestBody = {
+          source_type: "manual",
+          title: title.trim(),
+          subjects,
+          exam_dates: [toExamDate(examDate)],
+          available_days: availableDays,
+          hours_per_day: parsedHoursPerDay,
+        };
+      }
+
+      const response = await api.post("/schedule/generate", requestBody);
 
       setHistory((current) => [response.data, ...current.filter((item) => item.id !== response.data.id)]);
       setSubjectInput("");
+      setTitle("");
       setSubjects([]);
       setExamDate("");
       setAvailableDays(["Senin", "Rabu", "Jumat"]);
       setHoursPerDay("2");
+      clearImage();
       notifyAIQuotaUpdated();
-      addToast("Jadwal belajar berhasil dibuat!", "success");
+      addToast(sourceType === "image" ? "Foto jadwal sedang discan." : "Jadwal belajar sedang dibuat.", "success");
       router.push(`/schedule/result/${response.data.id}`);
     } catch (err: unknown) {
       addToast(getApiErrorMessage(err, "Gagal membuat jadwal belajar."), "error");
@@ -183,6 +280,12 @@ export default function SchedulePage() {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   return (
     <div className="min-h-screen bg-[#FDFEFF] relative overflow-hidden">
@@ -224,122 +327,199 @@ export default function SchedulePage() {
               Bikin jadwal belajar <br /> otomatis bareng <span className="text-primary">Sobi!</span>
             </h3>
 
+            <div className="mb-5 grid grid-cols-2 rounded-2xl bg-gray-50 p-1.5">
+              <button
+                type="button"
+                onClick={() => setSourceType("manual")}
+                className={`flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-[11px] font-black transition-all ${
+                  sourceType === "manual" ? "bg-white text-primary shadow-sm" : "text-neutral-400"
+                }`}
+                aria-pressed={sourceType === "manual"}
+              >
+                <Type size={16} /> Buat Manual
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourceType("image")}
+                className={`flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-[11px] font-black transition-all ${
+                  sourceType === "image" ? "bg-white text-primary shadow-sm" : "text-neutral-400"
+                }`}
+                aria-pressed={sourceType === "image"}
+              >
+                <Camera size={16} /> Scan Foto
+              </button>
+            </div>
+
             <div className="space-y-5">
               <label className="block">
-                <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Mata Pelajaran</span>
-                <div className="rounded-3xl border-2 border-primary/5 bg-white/70 p-4 transition-all focus-within:border-primary/20 focus-within:ring-4 focus-within:ring-primary/5">
-                  <div className="mb-3 flex min-h-12 flex-wrap gap-2">
-                    {subjects.map((subject) => (
-                      <button
-                        key={subject}
-                        type="button"
-                        onClick={() => removeSubject(subject)}
-                        className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/10"
-                        aria-label={`Hapus ${subject}`}
-                      >
-                        <span className="min-w-0 truncate">{subject}</span>
-                        <span className="shrink-0 text-sm leading-none">×</span>
-                      </button>
-                    ))}
-                    {subjects.length === 0 && (
-                      <span className="py-2 text-sm font-bold text-neutral-300">Tambah mata pelajaran...</span>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2 min-[420px]:flex-row">
-                    <input
-                      value={subjectInput}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        if (value.includes(",")) {
-                          addSubject(value);
-                        } else {
-                          setSubjectInput(value);
-                        }
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-                          event.preventDefault();
-                          addSubject();
-                        } else if (event.key === "Backspace" && !subjectInput && subjects.length > 0) {
-                          removeSubject(subjects[subjects.length - 1]);
-                        }
-                      }}
-                      onBlur={() => addSubject()}
-                      maxLength={MAX_SCHEDULE_SUBJECT_CHARS}
-                      placeholder="Ketik lalu tekan Enter"
-                      className="h-12 min-w-0 flex-1 rounded-2xl bg-primary/5 px-4 text-sm font-bold text-neutral-700 outline-none placeholder:text-neutral-300"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addSubject()}
-                      disabled={!subjectInput.trim() || subjects.length >= MAX_SCHEDULE_SUBJECT_COUNT}
-                      className="h-12 rounded-2xl bg-primary px-5 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-40 min-[420px]:w-auto"
-                    >
-                      Tambah
-                    </button>
-                  </div>
-                </div>
-                <span className="mt-2 block text-[10px] font-bold text-neutral-300">
-                  {subjects.length}/{MAX_SCHEDULE_SUBJECT_COUNT} mata pelajaran
-                </span>
+                <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Nama Jadwal</span>
+                <input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  maxLength={100}
+                  placeholder={sourceType === "image" ? "Contoh: Jadwal UTS Semester 2" : "Opsional, contoh: Persiapan Ujian IPA"}
+                  className="h-14 w-full rounded-2xl border-2 border-primary/5 bg-white/70 px-4 text-sm font-bold text-neutral-700 outline-none transition-all placeholder:text-neutral-300 focus:border-primary/20 focus:ring-4 focus:ring-primary/5"
+                />
               </label>
 
-              <div className="grid grid-cols-1 gap-4 min-[760px]:grid-cols-2">
-                <label className="block min-w-0">
-                  <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Tanggal Ujian</span>
+              {sourceType === "image" ? (
+                <div>
                   <input
-                    type="date"
-                    min={minExamDate}
-                    value={examDate}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setExamDate(value && value < minExamDate ? minExamDate : value);
-                    }}
-                    className="h-14 w-full min-w-0 rounded-2xl border-2 border-primary/5 bg-white/70 px-3 text-[12px] font-bold text-neutral-700 outline-none transition-all focus:border-primary/20 focus:ring-4 focus:ring-primary/5 min-[380px]:px-4"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
-                </label>
-
-                <label className="block min-w-0">
-                  <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Jam per Hari</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={8}
-                    value={hoursPerDay}
-                    onChange={(event) => setHoursPerDay(event.target.value)}
-                    onBlur={() => {
-                      if (!hoursPerDay) return;
-                      const nextValue = Math.min(Math.max(Number(hoursPerDay), 1), 8);
-                      setHoursPerDay(String(nextValue));
-                    }}
-                    className="h-14 w-full min-w-0 rounded-2xl border-2 border-primary/5 bg-white/70 px-3 text-sm font-black text-neutral-700 outline-none transition-all focus:border-primary/20 focus:ring-4 focus:ring-primary/5 min-[380px]:px-4"
-                  />
-                </label>
-              </div>
-
-              <div>
-                <span className="mb-3 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Hari Belajar</span>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {DAYS.map((day) => {
-                    const active = availableDays.includes(day);
-                    return (
+                  {previewUrl ? (
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border-2 border-primary/10">
+                      <Image src={previewUrl} alt="Pratinjau foto jadwal" fill unoptimized className="object-cover" />
                       <button
-                        key={day}
                         type="button"
-                        onClick={() => toggleDay(day)}
-                        className={[
-                          "rounded-2xl border-2 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
-                          active
-                            ? "border-primary bg-primary text-white shadow-lg shadow-primary/20"
-                            : "border-primary/5 bg-white/70 text-neutral-400",
-                        ].join(" ")}
+                        onClick={clearImage}
+                        aria-label="Hapus foto jadwal"
+                        className="absolute right-3 top-3 rounded-xl bg-white p-2.5 text-red-500 shadow-lg"
                       >
-                        {day}
+                        <X size={18} strokeWidth={3} />
                       </button>
-                    );
-                  })}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex min-h-52 w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-primary/15 bg-primary/[0.02] px-5 text-center transition-colors hover:border-primary/35"
+                    >
+                      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <Camera size={30} strokeWidth={2.5} />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-black text-neutral-800">Pilih Foto Jadwal</span>
+                        <span className="mt-1 block text-xs font-medium leading-relaxed text-neutral-400">
+                          Scan jadwal cetak, screenshot, atau jadwal yang dibagikan. JPG, PNG, atau WEBP. Maksimal 5MB.
+                        </span>
+                      </span>
+                    </button>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <>
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Mata Pelajaran</span>
+                    <div className="rounded-3xl border-2 border-primary/5 bg-white/70 p-4 transition-all focus-within:border-primary/20 focus-within:ring-4 focus-within:ring-primary/5">
+                      <div className="mb-3 flex min-h-12 flex-wrap gap-2">
+                        {subjects.map((subject) => (
+                          <button
+                            key={subject}
+                            type="button"
+                            onClick={() => removeSubject(subject)}
+                            className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/10"
+                            aria-label={`Hapus ${subject}`}
+                          >
+                            <span className="min-w-0 truncate">{subject}</span>
+                            <span className="shrink-0 text-sm leading-none">×</span>
+                          </button>
+                        ))}
+                        {subjects.length === 0 && (
+                          <span className="py-2 text-sm font-bold text-neutral-300">Tambah mata pelajaran...</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 min-[420px]:flex-row">
+                        <input
+                          value={subjectInput}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            if (value.includes(",")) {
+                              addSubject(value);
+                            } else {
+                              setSubjectInput(value);
+                            }
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                              event.preventDefault();
+                              addSubject();
+                            } else if (event.key === "Backspace" && !subjectInput && subjects.length > 0) {
+                              removeSubject(subjects[subjects.length - 1]);
+                            }
+                          }}
+                          onBlur={() => addSubject()}
+                          maxLength={MAX_SCHEDULE_SUBJECT_CHARS}
+                          placeholder="Ketik lalu tekan Enter"
+                          className="h-12 min-w-0 flex-1 rounded-2xl bg-primary/5 px-4 text-sm font-bold text-neutral-700 outline-none placeholder:text-neutral-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => addSubject()}
+                          disabled={!subjectInput.trim() || subjects.length >= MAX_SCHEDULE_SUBJECT_COUNT}
+                          className="h-12 rounded-2xl bg-primary px-5 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-40 min-[420px]:w-auto"
+                        >
+                          Tambah
+                        </button>
+                      </div>
+                    </div>
+                    <span className="mt-2 block text-[10px] font-bold text-neutral-300">
+                      {subjects.length}/{MAX_SCHEDULE_SUBJECT_COUNT} mata pelajaran
+                    </span>
+                  </label>
+
+                  <div className="grid grid-cols-1 gap-4 min-[760px]:grid-cols-2">
+                    <label className="block min-w-0">
+                      <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Tanggal Ujian</span>
+                      <input
+                        type="date"
+                        min={minExamDate}
+                        value={examDate}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setExamDate(value && value < minExamDate ? minExamDate : value);
+                        }}
+                        className="h-14 w-full min-w-0 rounded-2xl border-2 border-primary/5 bg-white/70 px-3 text-[12px] font-bold text-neutral-700 outline-none transition-all focus:border-primary/20 focus:ring-4 focus:ring-primary/5 min-[380px]:px-4"
+                      />
+                    </label>
+
+                    <label className="block min-w-0">
+                      <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Jam per Hari</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={8}
+                        value={hoursPerDay}
+                        onChange={(event) => setHoursPerDay(event.target.value)}
+                        onBlur={() => {
+                          if (!hoursPerDay) return;
+                          const nextValue = Math.min(Math.max(Number(hoursPerDay), 1), 8);
+                          setHoursPerDay(String(nextValue));
+                        }}
+                        className="h-14 w-full min-w-0 rounded-2xl border-2 border-primary/5 bg-white/70 px-3 text-sm font-black text-neutral-700 outline-none transition-all focus:border-primary/20 focus:ring-4 focus:ring-primary/5 min-[380px]:px-4"
+                      />
+                    </label>
+                  </div>
+
+                  <div>
+                    <span className="mb-3 block text-[10px] font-black uppercase tracking-widest text-neutral-400">Hari Belajar</span>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {DAYS.map((day) => {
+                        const active = availableDays.includes(day);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => toggleDay(day)}
+                            className={[
+                              "rounded-2xl border-2 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all",
+                              active
+                                ? "border-primary bg-primary text-white shadow-lg shadow-primary/20"
+                                : "border-primary/5 bg-white/70 text-neutral-400",
+                            ].join(" ")}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <Button
@@ -349,7 +529,7 @@ export default function SchedulePage() {
               className="mt-7 h-auto w-full rounded-2xl px-6 py-5 font-black shadow-xl shadow-primary/20 group sm:w-auto sm:px-8 sm:py-6"
               hideChildrenWhenLoading
             >
-              Buat Jadwal Baru
+              {sourceType === "image" ? "Scan Jadwal" : "Buat Jadwal Baru"}
               <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
             <AIProcessNotice show={isSubmitting} className="mt-3 max-w-[360px] text-left" />
@@ -400,14 +580,25 @@ export default function SchedulePage() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-neutral-800">
-                        Ujian {formatScheduleDate(item.exam_date)}
-                      </p>
+                      <div className="mb-2 flex min-w-0 flex-col items-start gap-2 min-[420px]:flex-row min-[420px]:items-center">
+                        <p className="line-clamp-2 min-w-0 break-words text-sm font-black leading-snug text-neutral-800">
+                          {item.title || "Jadwal Belajar"}
+                        </p>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest ${getScheduleStatusClassName(item.status)}`}>
+                          {getScheduleStatusLabel(item.status)}
+                        </span>
+                      </div>
                       <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-300">
-                        Mulai {formatScheduleDate(item.schedule?.[0]?.date)} • {item.schedule?.length || 0} hari belajar
+                        {item.status === "processing"
+                          ? "Sedang diproses"
+                          : item.status === "failed"
+                            ? "Gagal dibuat"
+                            : item.schedule?.length
+                              ? `Mulai ${formatScheduleDate(item.schedule?.[0]?.date)} • ${item.schedule.length} hari belajar`
+                              : "Belum ada sesi belajar"}
                       </p>
                       <p className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-                        Buka Jadwal <ArrowRight size={12} strokeWidth={3} />
+                        {item.status === "processing" ? "Lihat Proses" : "Buka Jadwal"} <ArrowRight size={12} strokeWidth={3} />
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">

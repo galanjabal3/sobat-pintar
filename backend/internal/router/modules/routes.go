@@ -101,6 +101,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 			summary.GET("/history", summaryH.GetHistory)
 			summary.GET("/:id", summaryH.GetSummary)
 			summary.DELETE("/:id", summaryH.DeleteSummary)
+			summary.POST("/:id/re-summary", middleware.RateLimit(rateLimit.AIWritePerMinute, time.Minute), summaryH.ReSummarize)
 			summary.POST("/:id/share", middleware.RateLimit(rateLimit.SharePerMinute, time.Minute), summaryH.CreateShareLink)
 		}
 
@@ -110,6 +111,7 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, jwtService *jwt.JWTService,
 			schedule.POST("/generate", middleware.RateLimit(rateLimit.AIWritePerMinute, time.Minute), scheduleH.GenerateSchedule)
 			schedule.GET("", scheduleH.GetSchedules)
 			schedule.GET("/:id", scheduleH.GetSchedule)
+			schedule.PATCH("/:id", scheduleH.UpdateSchedule)
 			schedule.DELETE("/:id", scheduleH.DeleteSchedule)
 		}
 

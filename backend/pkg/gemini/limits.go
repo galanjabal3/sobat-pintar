@@ -88,6 +88,7 @@ func scheduleResponseJSONSchema() map[string]any {
 	return map[string]any{
 		"type": "object",
 		"properties": map[string]any{
+			"title": map[string]any{"type": "string"},
 			"schedule": map[string]any{
 				"type": "array",
 				"items": map[string]any{
