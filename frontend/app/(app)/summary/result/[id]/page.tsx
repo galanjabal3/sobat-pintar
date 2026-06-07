@@ -150,6 +150,12 @@ function stripSummaryMarkdown(markdown: string) {
        const nextDetail = response.data as SummaryDetail;
        if (previousStatusRef.current === "processing" && nextDetail.status !== "processing") {
          notifyAIQuotaUpdated();
+         addToast(
+           nextDetail.status === "completed"
+             ? "Rangkuman sudah selesai diproses."
+             : "Rangkuman gagal diproses.",
+           nextDetail.status === "completed" ? "success" : "error"
+         );
        }
        previousStatusRef.current = nextDetail.status;
        setDetail(nextDetail);
@@ -206,10 +212,16 @@ function stripSummaryMarkdown(markdown: string) {
 
     setIsRetrying(true);
     try {
-      const response = await api.post(`/summary/${id}/re-summary`);
+      await api.post(`/summary/${id}/re-summary`);
       notifyAIQuotaUpdated();
       addToast("Rangkuman ulang sedang diproses.", "success");
-      router.push(`/summary/result/${response.data.id}`);
+      previousStatusRef.current = "processing";
+      setDetail((current) => current ? {
+        ...current,
+        summary: "",
+        status: "processing",
+        error_message: "",
+      } : current);
     } catch (err: unknown) {
       addToast(getApiErrorMessage(err, "Gagal membuat ulang rangkuman."), "error");
     } finally {
@@ -355,6 +367,8 @@ function stripSummaryMarkdown(markdown: string) {
   }
 
   if (detail?.status === "failed") {
+    const retryInputHref = detail.source_type === "image" ? "/summary?mode=image" : "/summary?mode=text";
+
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#FDFEFF] p-6 text-center">
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-red-50 text-error">
@@ -375,10 +389,10 @@ function stripSummaryMarkdown(markdown: string) {
           </button>
           <button
             type="button"
-            onClick={() => router.push("/summary")}
+            onClick={() => router.push(retryInputHref)}
             className="rounded-2xl bg-primary/5 px-8 py-4 text-sm font-black text-primary"
           >
-            Buat dari Materi Baru
+            {detail.source_type === "image" ? "Upload Foto Baru" : "Tulis Materi Baru"}
           </button>
         </div>
       </div>

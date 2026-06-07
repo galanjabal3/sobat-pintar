@@ -31,7 +31,7 @@ export function GoogleOAuthButton({
       onClick={() => openGoogleLogin()}
       disabled={disabled || isLoading}
       className="relative flex min-h-[56px] w-full min-w-full max-w-none items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 text-base font-bold text-neutral-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-      style={{ maxWidth: "none" }}
+      style={{ width: "100%", maxWidth: "100%" }}
     >
       {isLoading ? (
         <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-primary" />

@@ -14,6 +14,7 @@ import (
 type fakeSummaryRepo struct {
 	created          *model.Summary
 	byID             *model.Summary
+	retriedID        string
 	completedID      string
 	completedSummary string
 	failedID         string
@@ -26,6 +27,11 @@ type fakeSummaryRepo struct {
 
 func (r *fakeSummaryRepo) Create(ctx context.Context, summary *model.Summary) error {
 	r.created = summary
+	return nil
+}
+
+func (r *fakeSummaryRepo) Retry(ctx context.Context, id, userID string) error {
+	r.retriedID = id
 	return nil
 }
 
@@ -279,7 +285,7 @@ func TestReSummarizeRejectsProcessingSummary(t *testing.T) {
 	}
 }
 
-func TestReSummarizeCreatesNewProcessingSummary(t *testing.T) {
+func TestReSummarizeRetriesSameProcessingSummary(t *testing.T) {
 	repo := &fakeSummaryRepo{
 		byID:       &model.Summary{ID: "summary-1", UserID: "owner", Status: AIResultStatusFailed, SourceType: "text", Content: "Materi lama"},
 		completeCh: make(chan struct{}),
@@ -290,17 +296,17 @@ func TestReSummarizeCreatesNewProcessingSummary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if response.ID == "" || response.ID == "summary-1" {
-		t.Fatalf("expected new summary id, got %q", response.ID)
+	if response.ID != "summary-1" {
+		t.Fatalf("expected original summary id, got %q", response.ID)
 	}
 	if response.Status != AIResultStatusProcessing {
 		t.Fatalf("expected processing response, got %+v", response)
 	}
-	if repo.created == nil {
-		t.Fatal("expected retry summary to be created")
+	if repo.retriedID != "summary-1" {
+		t.Fatalf("expected original summary to be retried, got %q", repo.retriedID)
 	}
-	if repo.created.ID != response.ID || repo.created.Content != "Materi lama" || repo.created.SourceType != "text" {
-		t.Fatalf("unexpected retry summary: %+v", repo.created)
+	if repo.created != nil {
+		t.Fatal("expected retry not to create a duplicate summary")
 	}
 
 	select {

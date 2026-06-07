@@ -168,15 +168,16 @@ export default function VerifyEmailClient() {
         <ChevronLeft size={28} />
       </Link>
 
-      <div className="mb-6 flex flex-col items-center pt-8">
-        <div className="pointer-events-none relative mb-3 h-36 w-36">
+      <div className="pointer-events-none relative z-0 mb-6 flex flex-col items-center pt-8">
+        <div className="pointer-events-none mb-3 h-36 w-36">
           <Image
             src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
-            fill
-            priority
+            width={144}
+            height={144}
+            unoptimized
             sizes="144px"
-            className="pointer-events-none object-contain drop-shadow-2xl"
+            className="h-full w-full object-contain drop-shadow-2xl"
           />
         </div>
 
@@ -189,7 +190,7 @@ export default function VerifyEmailClient() {
         </p>
       </div>
 
-      <div className="space-y-5 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5">
+      <div className="relative z-10 space-y-5 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5">
         {state === "verifying" ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">

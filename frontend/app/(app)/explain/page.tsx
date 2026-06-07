@@ -1,7 +1,7 @@
 "use client";
  
  import React, { useCallback, useEffect, useRef, useState } from "react";
- import { useRouter } from "next/navigation";
+ import { useRouter, useSearchParams } from "next/navigation";
  import { Camera, Type, Sparkles, X, ChevronLeft } from "lucide-react";
  import { Button } from "@/components/ui/Button";
  import api from "@/lib/api";
@@ -17,6 +17,7 @@ import { QuotaBadge } from "@/components/ai/QuotaBadge";
 import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
 import { usePageResumeRefresh } from "@/hooks/usePageResumeRefresh";
+import { useAsyncStatusToasts } from "@/hooks/useAsyncStatusToasts";
 import { formatAIMarkdownPreview } from "@/lib/aiMarkdown";
 
 interface ExplainHistoryPreview {
@@ -48,6 +49,7 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
 
  export default function ExplainPage() {
    const router = useRouter();
+   const searchParams = useSearchParams();
    const { user, fetchProfile } = useAuthStore();
    const { addToast } = useToastStore();
    const [question, setQuestion] = useState("");
@@ -60,6 +62,20 @@ function getHistoryStatusClassName(status?: ExplainHistoryPreview["status"]) {
 	   const [history, setHistory] = useState<ExplainHistoryPreview[]>([]);
    const userLevel = user?.level || "SD";
    const canSubmit = inputMode === "text" ? Boolean(question.trim()) : Boolean(imageFile);
+
+   useAsyncStatusToasts(history, {
+     completedMessage: () => "Penjelasan Sobi sudah selesai diproses.",
+     failedMessage: () => "Penjelasan Sobi gagal diproses.",
+     onStatusSettled: notifyAIQuotaUpdated,
+     showToast: addToast,
+   });
+
+   useEffect(() => {
+     const mode = searchParams.get("mode");
+     if (mode === "image" || mode === "text") {
+       setInputMode(mode);
+     }
+   }, [searchParams]);
 
    const fetchHistory = useCallback(async () => {
      try {

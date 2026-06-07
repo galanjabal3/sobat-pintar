@@ -52,6 +52,12 @@ import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
         const nextExplanation = resById.data as Explanation;
         if (previousStatusRef.current === "processing" && nextExplanation.status !== "processing") {
           notifyAIQuotaUpdated();
+          addToast(
+            nextExplanation.status === "completed"
+              ? "Penjelasan Sobi sudah selesai."
+              : "Penjelasan Sobi gagal diproses.",
+            nextExplanation.status === "completed" ? "success" : "error"
+          );
         }
         previousStatusRef.current = nextExplanation.status;
         setExplanation(nextExplanation);
@@ -88,8 +94,9 @@ import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
      try {
        const response = await api.post(`/explain/${explanation.id}/re-explain`);
        notifyAIQuotaUpdated();
-       addToast("Sobi sudah menjelaskan dengan cara baru!", "success");
-       router.push(`/explain/result?id=${response.data.id}`);
+       addToast("Penjelasan ulang sedang diproses.", "success");
+       previousStatusRef.current = "processing";
+       setExplanation(response.data as Explanation);
      } catch (err) {
        console.error(err);
        addToast("Gagal meminta penjelasan ulang. Coba lagi ya!", "error");
@@ -182,6 +189,8 @@ import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
   }
 
   if (explanation?.status === "failed") {
+    const retryInputHref = explanation.image_url ? "/explain?mode=image" : "/explain?mode=text";
+
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#FDFEFF] p-6 text-center">
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-red-50 text-error">
@@ -191,9 +200,23 @@ import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
         <p className="mt-2 max-w-xs text-sm font-medium leading-relaxed text-neutral-400">
           {explanation.error_message || "Coba kirim pertanyaanmu lagi sebentar lagi ya."}
         </p>
-        <Button onClick={() => router.push("/explain")} className="mt-8 h-auto rounded-2xl px-8 py-4 font-black">
-          Tanya Lagi
-        </Button>
+        <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
+          <Button
+            onClick={handleReExplain}
+            isLoading={isReExplaining}
+            disabled={isReExplaining}
+            className="h-auto rounded-2xl px-8 py-4 font-black"
+          >
+            Coba Jelaskan Ulang
+          </Button>
+          <button
+            type="button"
+            onClick={() => router.push(retryInputHref)}
+            className="rounded-2xl bg-primary/5 px-8 py-4 text-sm font-black text-primary"
+          >
+            {explanation.image_url ? "Upload Foto Lagi" : "Tulis Soal Lagi"}
+          </button>
+        </div>
       </div>
     );
   }

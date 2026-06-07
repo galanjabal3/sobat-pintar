@@ -233,29 +233,23 @@ func (s *summaryService) ReSummarize(ctx context.Context, userID, level, id stri
 		return nil, err
 	}
 
-	summary := &model.Summary{
-		ID:         uuid.New().String(),
-		UserID:     userID,
-		SourceType: original.SourceType,
-		FileURL:    original.FileURL,
-		Content:    original.Content,
-		Summary:    "",
-		Status:     AIResultStatusProcessing,
-		CreatedAt:  time.Now(),
-	}
-
-	if err := s.repo.Create(ctx, summary); err != nil {
+	if err := s.repo.Retry(ctx, original.ID, userID); err != nil {
 		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureSummary), userID, AIFeatureSummary)
 		return nil, err
 	}
 
-	go s.completeSummary(context.Background(), summary.ID, userID, level, summary.SourceType, summary.Content, summary.FileURL)
+	original.Summary = ""
+	original.Status = AIResultStatusProcessing
+	original.ErrorMessage = nil
+	original.CompletedAt = nil
+
+	go s.completeSummary(context.Background(), original.ID, userID, level, original.SourceType, original.Content, original.FileURL)
 
 	return &dto.SummaryResponse{
-		ID:        summary.ID,
-		Summary:   summary.Summary,
-		Status:    summary.Status,
-		CreatedAt: summary.CreatedAt,
+		ID:        original.ID,
+		Summary:   original.Summary,
+		Status:    original.Status,
+		CreatedAt: original.CreatedAt,
 	}, nil
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Calendar, Camera, ChevronLeft, Trash2, Type, X, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -20,6 +20,7 @@ import { useToastStore } from "@/store/toastStore";
 import { MAX_SCHEDULE_SUBJECT_CHARS, MAX_SCHEDULE_SUBJECT_COUNT } from "@/lib/aiLimits";
 import { ScheduleResult } from "@/components/schedule/ScheduleView";
 import { useBeforeUnloadWarning } from "@/hooks/useBeforeUnloadWarning";
+import { useAsyncStatusToasts } from "@/hooks/useAsyncStatusToasts";
 
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 const MAX_SCHEDULE_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -69,6 +70,7 @@ function getScheduleStatusClassName(status?: ScheduleResult["status"]) {
 
 export default function SchedulePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToastStore();
   const [title, setTitle] = useState("");
   const [subjectInput, setSubjectInput] = useState("");
@@ -100,6 +102,22 @@ export default function SchedulePage() {
     parsedHoursPerDay >= 1 &&
     parsedHoursPerDay <= 8;
   const canSubmit = sourceType === "image" ? Boolean(imageFile) : canSubmitManual;
+
+  useAsyncStatusToasts(history, {
+    completedMessage: (item) => `${item.title || "Jadwal Belajar"} sudah selesai dibuat.`,
+    failedMessage: (item) => `${item.title || "Jadwal Belajar"} gagal dibuat.`,
+    onStatusSettled: notifyAIQuotaUpdated,
+    showToast: addToast,
+  });
+
+  useEffect(() => {
+    const mode = searchParams.get("mode");
+    if (mode === "image") {
+      setSourceType("image");
+    } else if (mode === "manual") {
+      setSourceType("manual");
+    }
+  }, [searchParams]);
 
   const fetchSchedules = useCallback(async () => {
     try {

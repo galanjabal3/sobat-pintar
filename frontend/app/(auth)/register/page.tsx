@@ -135,15 +135,16 @@ function RegisterContent() {
         <ChevronLeft size={28} />
       </Link>
 
-      <div className="mb-5 flex flex-col items-center pt-8">
-        <div className="pointer-events-none relative mb-2 h-32 w-32">
+      <div className="pointer-events-none relative z-0 mb-5 flex flex-col items-center pt-8">
+        <div className="pointer-events-none mb-2 h-32 w-32">
           <Image
             src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
-            fill
-            priority
+            width={128}
+            height={128}
+            unoptimized
             sizes="128px"
-            className="pointer-events-none object-contain drop-shadow-2xl"
+            className="h-full w-full object-contain drop-shadow-2xl"
           />
         </div>
 
@@ -158,7 +159,7 @@ function RegisterContent() {
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-4 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5"
+        className="relative z-10 space-y-4 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5"
       >
         <div>
           <input
@@ -310,7 +311,7 @@ function RegisterContent() {
         />
       </form>
 
-      <div className="mt-auto pt-10 text-center">
+      <div className="relative z-10 mt-auto pt-10 text-center">
         <p className="text-sm font-medium text-neutral-400">
           Sudah punya akun?{" "}
           <Link href="/login" className="font-black text-primary">

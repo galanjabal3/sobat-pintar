@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Camera, ChevronLeft, Clock, FileText, Sparkles, Trash2, Type, X } from "lucide-react";
 import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/apiError";
@@ -20,6 +20,7 @@ import { notifyAIQuotaUpdated } from "@/lib/aiQuota";
 import { AutoGrowTextarea } from "@/components/ui/AutoGrowTextarea";
 import { cn } from "@/lib/utils";
 import { usePageResumeRefresh } from "@/hooks/usePageResumeRefresh";
+import { useAsyncStatusToasts } from "@/hooks/useAsyncStatusToasts";
 import { formatAIMarkdownPreview } from "@/lib/aiMarkdown";
 
 interface SummaryHistory {
@@ -80,6 +81,7 @@ function getSummaryStatusClassName(status?: SummaryHistory["status"]) {
 
 export default function SummaryPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToastStore();
   const [history, setHistory] = useState<SummaryHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,6 +93,20 @@ export default function SummaryPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canSubmit = sourceType === "text" ? Boolean(text.trim()) : Boolean(imageFile);
+
+  useAsyncStatusToasts(history, {
+    completedMessage: (item) => `${item.title || "Rangkuman"} sudah selesai diproses.`,
+    failedMessage: (item) => `${item.title || "Rangkuman"} gagal diproses.`,
+    onStatusSettled: notifyAIQuotaUpdated,
+    showToast: addToast,
+  });
+
+  useEffect(() => {
+    const mode = searchParams.get("mode");
+    if (mode === "image" || mode === "text") {
+      setSourceType(mode);
+    }
+  }, [searchParams]);
 
   const fetchHistory = useCallback(async () => {
     try {

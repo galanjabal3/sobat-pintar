@@ -118,15 +118,16 @@ function LoginContent() {
         <ChevronLeft size={28} />
       </Link>
 
-      <div className="mb-6 flex flex-col items-center pt-8">
-        <div className="pointer-events-none relative mb-3 h-36 w-36">
+      <div className="pointer-events-none relative z-0 mb-6 flex flex-col items-center pt-8">
+        <div className="pointer-events-none mb-3 h-36 w-36">
           <Image
             src={SOBI_ASSETS.WAVING}
             alt="Sobi Mascot"
-            fill
-            priority
+            width={144}
+            height={144}
+            unoptimized
             sizes="144px"
-            className="pointer-events-none object-contain drop-shadow-2xl"
+            className="h-full w-full object-contain drop-shadow-2xl"
           />
         </div>
 
@@ -141,7 +142,7 @@ function LoginContent() {
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-5 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5"
+        className="relative z-10 space-y-5 rounded-[2.2rem] border-4 border-white bg-white/70 p-5 shadow-2xl shadow-primary/5"
       >
         <div>
           <input
@@ -228,7 +229,7 @@ function LoginContent() {
         />
       </form>
 
-      <div className="mt-auto pt-12 text-center">
+      <div className="relative z-10 mt-auto pt-12 text-center">
         <p className="text-sm font-medium text-neutral-400">
           Belum punya akun?{" "}
           <Link href="/register" className="font-black text-primary">

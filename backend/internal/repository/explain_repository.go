@@ -9,6 +9,7 @@ import (
 
 type ExplainRepository interface {
 	Create(ctx context.Context, explanation *model.Explanation) error
+	Retry(ctx context.Context, id, userID string) error
 	Complete(ctx context.Context, id string, answer string) error
 	Fail(ctx context.Context, id string, message string) error
 	GetByUserID(ctx context.Context, userID string) ([]*model.Explanation, error)
@@ -30,6 +31,14 @@ func (r *explainRepository) Create(ctx context.Context, e *model.Explanation) er
 	query := `INSERT INTO explanations (id, user_id, question_text, image_url, level, answer, status, error_message, created_at, completed_at)
 			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 	_, err := r.db.Exec(ctx, query, e.ID, e.UserID, e.QuestionText, e.ImageURL, e.Level, e.Answer, e.Status, e.ErrorMessage, e.CreatedAt, e.CompletedAt)
+	return err
+}
+
+func (r *explainRepository) Retry(ctx context.Context, id, userID string) error {
+	query := `UPDATE explanations
+			  SET status = 'processing', error_message = NULL, completed_at = NULL
+			  WHERE id = $1 AND user_id = $2`
+	_, err := r.db.Exec(ctx, query, id, userID)
 	return err
 }
 

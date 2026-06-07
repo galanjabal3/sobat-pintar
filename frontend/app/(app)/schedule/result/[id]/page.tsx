@@ -45,6 +45,12 @@ export default function ScheduleResultPage() {
       const nextResult = response.data as ScheduleResult;
       if (previousStatusRef.current === "processing" && nextResult.status !== "processing") {
         notifyAIQuotaUpdated();
+        addToast(
+          nextResult.status === "completed"
+            ? "Jadwal belajar sudah selesai dibuat."
+            : "Jadwal belajar gagal dibuat.",
+          nextResult.status === "completed" ? "success" : "error"
+        );
       }
       previousStatusRef.current = nextResult.status;
       setResult(nextResult);
@@ -205,13 +211,22 @@ export default function ScheduleResultPage() {
         <p className="mt-2 max-w-xs text-sm font-medium leading-relaxed text-neutral-400">
           {result.error_message || "Coba buat jadwal lagi sebentar lagi ya."}
         </p>
-        <button
-          type="button"
-          onClick={() => router.push("/schedule")}
-          className="mt-8 rounded-2xl bg-primary px-8 py-4 text-sm font-black text-white shadow-lg shadow-primary/20"
-        >
-          Buat Jadwal Lagi
-        </button>
+        <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => router.push("/schedule?mode=image")}
+            className="rounded-2xl bg-primary px-8 py-4 text-sm font-black text-white shadow-lg shadow-primary/20"
+          >
+            Scan Foto Lagi
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/schedule?mode=manual")}
+            className="rounded-2xl bg-primary/5 px-8 py-4 text-sm font-black text-primary"
+          >
+            Buat Manual
+          </button>
+        </div>
       </div>
     );
   }

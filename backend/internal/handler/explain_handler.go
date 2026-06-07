@@ -205,7 +205,7 @@ func (h *ExplainHandler) ReExplain(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.BaseResponse{
 		Success: true,
-		Message: "Penjelasan ulang berhasil",
+		Message: "Penjelasan ulang sedang diproses",
 		Data:    toExplainResponse(explanation),
 	})
 }

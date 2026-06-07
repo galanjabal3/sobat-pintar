@@ -9,6 +9,7 @@ import (
 
 type SummaryRepository interface {
 	Create(ctx context.Context, summary *model.Summary) error
+	Retry(ctx context.Context, id, userID string) error
 	Complete(ctx context.Context, id string, summaryText string) error
 	Fail(ctx context.Context, id string, message string) error
 	GetByID(ctx context.Context, id string) (*model.Summary, error)
@@ -30,6 +31,14 @@ func (r *summaryRepository) Create(ctx context.Context, summary *model.Summary) 
 	query := `INSERT INTO summaries (id, user_id, source_type, file_url, content, summary, status, error_message, created_at, completed_at)
 			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 	_, err := r.db.Exec(ctx, query, summary.ID, summary.UserID, summary.SourceType, summary.FileURL, summary.Content, summary.Summary, summary.Status, summary.ErrorMessage, summary.CreatedAt, summary.CompletedAt)
+	return err
+}
+
+func (r *summaryRepository) Retry(ctx context.Context, id, userID string) error {
+	query := `UPDATE summaries
+			  SET status = 'processing', error_message = NULL, completed_at = NULL
+			  WHERE id = $1 AND user_id = $2`
+	_, err := r.db.Exec(ctx, query, id, userID)
 	return err
 }
 

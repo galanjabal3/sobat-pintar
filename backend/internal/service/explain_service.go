@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"sobat-pintar/internal/model"
 	"sobat-pintar/internal/repository"
-	"sobat-pintar/pkg/gemini"
 	"sobat-pintar/pkg/logger"
 )
 
@@ -39,14 +38,14 @@ type ExplainService interface {
 // ... existing code
 
 func (s *explainService) ReExplain(ctx context.Context, userID, id string) (*model.Explanation, error) {
-	explanation, err := s.repo.GetByID(ctx, id)
+	original, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if explanation.UserID != userID {
+	if original.UserID != userID {
 		return nil, ErrExplanationUnauthorized
 	}
-	if explanation.Status != AIResultStatusCompleted {
+	if original.Status == AIResultStatusProcessing {
 		return nil, ErrAIResultNotReady
 	}
 
@@ -54,36 +53,44 @@ func (s *explainService) ReExplain(ctx context.Context, userID, id string) (*mod
 		return nil, err
 	}
 
-	answer, err := s.geminiClient.ReExplainQuestion(ctx, explanation.QuestionText, explanation.Answer, explanation.Level)
-	if err != nil {
+	if err := s.repo.Retry(ctx, original.ID, userID); err != nil {
 		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureExplain), userID, AIFeatureExplain)
 		return nil, err
 	}
 
-	explanation.Answer = answer
-	explanation.ID = uuid.New().String() // Generate new ID for the new record
-	explanation.Status = AIResultStatusCompleted
-	explanation.ErrorMessage = nil
-	explanation.CreatedAt = time.Now()
-	completedAt := explanation.CreatedAt
-	explanation.CompletedAt = &completedAt
-	err = s.repo.Create(ctx, explanation) // Storing new re-explanation version
-	if err != nil {
-		logAIQuotaRefundError(s.refundAIQuota(ctx, userID, AIFeatureExplain), userID, AIFeatureExplain)
-		return nil, err
-	}
+	previousAnswer := original.Answer
+	original.Answer = ""
+	original.Status = AIResultStatusProcessing
+	original.ErrorMessage = nil
+	original.CompletedAt = nil
 
-	return explanation, nil
+	go s.completeExplanation(
+		context.Background(),
+		original.ID,
+		userID,
+		original.QuestionText,
+		original.ImageURL,
+		original.Level,
+		previousAnswer,
+	)
+
+	return original, nil
 }
 
 type explainService struct {
 	repo         repository.ExplainRepository
-	geminiClient *gemini.Client
+	geminiClient explainGenerator
 	gamification GamificationService
 	quota        AIQuotaService
 }
 
-func NewExplainService(repo repository.ExplainRepository, geminiClient *gemini.Client, gamification GamificationService, quota AIQuotaService) ExplainService {
+type explainGenerator interface {
+	ExplainQuestion(ctx context.Context, question, level string) (string, error)
+	ExplainQuestionWithImage(ctx context.Context, question, imageURL, level string) (string, error)
+	ReExplainQuestion(ctx context.Context, question, previousExplanation, level string) (string, error)
+}
+
+func NewExplainService(repo repository.ExplainRepository, geminiClient explainGenerator, gamification GamificationService, quota AIQuotaService) ExplainService {
 	return &explainService{
 		repo:         repo,
 		geminiClient: geminiClient,
@@ -117,17 +124,19 @@ func (s *explainService) Explain(ctx context.Context, userID, question, imageURL
 		return nil, err
 	}
 
-	go s.completeExplanation(context.Background(), explanation.ID, userID, question, imageURL, level)
+	go s.completeExplanation(context.Background(), explanation.ID, userID, question, imageURL, level, "")
 
 	return explanation, nil
 }
 
-func (s *explainService) completeExplanation(ctx context.Context, id, userID, question, imageURL, level string) {
+func (s *explainService) completeExplanation(ctx context.Context, id, userID, question, imageURL, level, previousAnswer string) {
 	var answer string
 	var err error
 
 	if imageURL != "" {
 		answer, err = s.geminiClient.ExplainQuestionWithImage(ctx, question, imageURL, level)
+	} else if previousAnswer != "" {
+		answer, err = s.geminiClient.ReExplainQuestion(ctx, question, previousAnswer, level)
 	} else {
 		answer, err = s.geminiClient.ExplainQuestion(ctx, question, level)
 	}
