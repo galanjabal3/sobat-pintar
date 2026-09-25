@@ -1,5 +1,7 @@
 # 🤖 Sobat Pintar
 
+![CI](https://github.com/galanjabal3/sobat-pintar/actions/workflows/ci.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/license-MIT-7c3aed)
+
 > **Teman belajar AI untuk semua pelajar Indonesia**
 
 Sobat Pintar adalah platform belajar berbasis AI yang dirancang khusus untuk pelajar Indonesia dari tingkat TK hingga SMA. Dengan maskot **Sobi** yang friendly, aplikasi ini hadir sebagai teman belajar — bukan guru yang kaku.
