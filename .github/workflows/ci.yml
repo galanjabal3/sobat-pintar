@@ -29,9 +29,15 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    # next.config.mjs throws when NEXT_PUBLIC_API_URL / NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    # are missing (next lint/build load the config with NODE_ENV=production).
+    # Dummy values are enough for lint/build; real values come from deploy env.
+    env:
+      NEXT_PUBLIC_API_URL: "https://ci.example.com"
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: "ci-dummy.apps.googleusercontent.com"
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@v4
 
